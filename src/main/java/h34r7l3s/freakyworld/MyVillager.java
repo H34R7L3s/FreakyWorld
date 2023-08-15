@@ -126,6 +126,7 @@ public class MyVillager implements Listener {
 
         if (message.equalsIgnoreCase("/bp") || message.startsWith("/bp ")) {
             event.setMessage("/nocommand");
+            //Das hier ist mein erster Test
             Logger.getLogger("Minecraft").info("Cancelled /bp command for player: " + player.getName());
         }
     }
