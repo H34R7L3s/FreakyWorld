@@ -1,28 +1,49 @@
+
 package h34r7l3s.freakyworld;
 
 import org.bukkit.Bukkit;
+import org.bukkit.Location;
+import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
+import org.bukkit.Particle;
+import org.bukkit.Sound;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.util.Arrays;
-import java.util.List;
+import java.util.HashMap;
+import java.util.UUID;
 
 public class QuestVillager implements Listener {
 
     private final JavaPlugin plugin;
     private final NamespacedKey questVillagerKey;
+    private final HashMap<UUID, Integer> playerNotesFound = new HashMap<>();
+    private final Location[] noteLocations = {
+            new Location(Bukkit.getWorld("world"), -250, 77, 1851),
+            new Location(Bukkit.getWorld("world"), -260, 77, 1851),
+            new Location(Bukkit.getWorld("world"), -242, 77, 1840),
+            new Location(Bukkit.getWorld("world"), -243, 75, 1827)
+    };
 
     public QuestVillager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.questVillagerKey = new NamespacedKey(plugin, "QuestVillagerName");
+        spawnQuestVillager();
     }
 
+    private void spawnQuestVillager() {
+        Location villagerLocation = new Location(Bukkit.getWorld("world"), -249, 86, 1864);
+        Villager questVillager = (Villager) villagerLocation.getWorld().spawnEntity(villagerLocation, EntityType.VILLAGER);
+        questVillager.setCustomName("QuestVillager");
+        questVillager.setInvulnerable(true);
+        questVillager.setAI(false);
+    }
     @EventHandler
     public void onPlayerInteractAtEntity(PlayerInteractAtEntityEvent event) {
         if (event.getRightClicked().getType() == EntityType.VILLAGER) {
@@ -33,35 +54,35 @@ public class QuestVillager implements Listener {
                 villager.setInvulnerable(true);
                 villager.setAI(false);
 
-                List<String> sentences = Arrays.asList(
-                        "Hallo Abenteurer!",
-                        "Ich habe eine besondere Herausforderung für dich.",
-                        "Wenn du diese Quest meisterst, werde ich dir den Weg zu einem besonderen Dorfbewohner zeigen.",
-                        "Bist du bereit für die Herausforderung?"
-                );
-
-                new BukkitRunnable() {
-                    int index = 0;
-
-                    @Override
-                    public void run() {
-                        if (index < sentences.size()) {
-                            player.sendMessage(villager.getCustomName() + ": " + sentences.get(index));
-                            index++;
-                        } else {
-                            // Hier können Sie den Code hinzufügen, um die Quest zu starten oder weitere Anweisungen zu geben.
-                            // Zum Beispiel:
-                            player.sendMessage(villager.getCustomName() + ": " + "Beginne deine Quest, indem du [Aktion] machst.");
-                            cancel();
-                        }
-                    }
-                }.runTaskTimer(plugin, 0L, 60L);
+                player.sendMessage("QuestVillager: " + "Hallo Abenteurer! Ich habe die Noten meiner berühmtesten Melodie verloren. Kannst du mir helfen, sie zu finden?");
+                player.sendMessage("QuestVillager: " + "Suche nach speziellen Notenblöcken in der Welt. Sie geben eine einzigartige Note ab, wenn du in ihre Nähe kommst.");
 
                 event.setCancelled(true);
             }
         }
     }
 
-    // Hier können Sie zusätzliche Methoden und Event-Handler hinzufügen, um die Quest-Logik zu implementieren.
-    // Zum Beispiel, wenn der Spieler die Quest abschließt, können Sie den "MyVillager" freischalten oder dem Spieler Anweisungen geben, wie er ihn finden kann.
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        Location location = player.getLocation();
+
+        for (Location noteLocation : noteLocations) {
+            if (location.distance(noteLocation) <= 5) { // Spieler ist in der Nähe eines Notenblocks
+                player.playSound(location, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
+                player.spawnParticle(Particle.NOTE, noteLocation, 10);
+                int notesFound = playerNotesFound.getOrDefault(player.getUniqueId(), 0) + 1;
+                playerNotesFound.put(player.getUniqueId(), notesFound);
+
+                player.sendMessage("QuestVillager: " + "Gut gemacht! Du hast eine Note gefunden. Noch " + (4 - notesFound) + " übrig.");
+
+                if (notesFound == 4) {
+                    player.sendMessage("QuestVillager: " + "Hervorragend! Du hast alle Noten gefunden. Kehre zu mir zurück und spiele die Melodie.");
+                }
+            }
+        }
+    }
 }
+
+
+//Hallo 
