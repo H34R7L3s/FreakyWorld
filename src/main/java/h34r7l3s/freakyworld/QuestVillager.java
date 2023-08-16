@@ -56,13 +56,20 @@ public class QuestVillager implements Listener {
                 villager.setInvulnerable(true);
                 villager.setAI(false);
 
-                player.sendMessage("QuestVillager: " + "Hallo Abenteurer! Ich habe die Noten meiner berühmtesten Melodie verloren. Kannst du mir helfen, sie zu finden?");
-                player.sendMessage("QuestVillager: " + "Suche nach speziellen Notenblöcken in der Welt. Sie geben eine einzigartige Note ab, wenn du in ihre Nähe kommst.");
+                Set<Location> discoveredNotes = playerNotesDiscovered.getOrDefault(player.getUniqueId(), new HashSet<>());
+                if (discoveredNotes.size() == noteLocations.length) {
+                    player.sendMessage("QuestVillager: " + "Hervorragend! Du hast alle Noten gefunden und die Melodie gespielt. Hier ist dein BattlePass!");
+                    // Hier können Sie weitere Aktionen hinzufügen, z. B. dem Spieler den BattlePass geben
+                } else {
+                    player.sendMessage("QuestVillager: " + "Hallo Abenteurer! Ich habe die Noten meiner berühmtesten Melodie verloren. Kannst du mir helfen, sie zu finden?");
+                    player.sendMessage("QuestVillager: " + "Suche nach speziellen Notenblöcken in der Welt. Sie geben eine einzigartige Note ab, wenn du in ihre Nähe kommst.");
+                }
 
                 event.setCancelled(true);
             }
         }
     }
+
 
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
