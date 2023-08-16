@@ -92,5 +92,15 @@ public class QuestVillager implements Listener {
             }
         }
     }
+
+    public void removeQuestVillager() {
+        Location villagerLocation = new Location(Bukkit.getWorld("world"), -249, 86, 1864);
+        Villager questVillager = (Villager) villagerLocation.getWorld().spawnEntity(villagerLocation, EntityType.VILLAGER);
+        if (questVillager != null && questVillager.getCustomName().equals("QuestVillager")) {
+            questVillager.remove();
+        }
+    }
+
+
 }
 
