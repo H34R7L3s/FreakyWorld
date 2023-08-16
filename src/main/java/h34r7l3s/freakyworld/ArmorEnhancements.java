@@ -16,9 +16,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.HashMap;
-import java.util.Random;
-import java.util.UUID;
+import java.util.*;
 
 public class ArmorEnhancements implements Listener {
 
@@ -102,20 +100,27 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
+    private final Set<UUID> playersWhoJumped = new HashSet<>();
+
     @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event) {
+    public void onPlayerJump(PlayerJumpEvent event) {
         Player player = event.getPlayer();
-        checkPlayerArmor(player);
+        ArmorType armorType = getFullArmorSetType(player.getInventory().getArmorContents());
+        if (armorType != ArmorType.NONE) {
+            playersWhoJumped.add(player.getUniqueId());
+            Bukkit.getScheduler().runTaskLater(plugin, () -> playersWhoJumped.remove(player.getUniqueId()), 20L); // Nach 1 Sekunde entfernen
+        }
     }
 
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
-        if (event.isSneaking()) {
+        if (event.isSneaking() && playersWhoJumped.contains(player.getUniqueId())) {
             Vector direction = player.getLocation().getDirection().multiply(2); // Geschwindigkeitsmultiplikator
             player.setVelocity(direction);
         }
     }
+
 
     private void checkPlayerArmor(Player player) {
         ItemStack[] armor = player.getInventory().getArmorContents();
