@@ -1,6 +1,5 @@
 package h34r7l3s.freakyworld;
 
-
 import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
@@ -11,23 +10,21 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
+import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
-import java.util.*;
+import java.util.HashMap;
+import java.util.Random;
+import java.util.UUID;
 
 public class ArmorEnhancements implements Listener {
 
     private enum ArmorType {
         SKY, FIRE, WATER, STONE, NONE
     }
-
-    private final HashMap<UUID, Boolean> playerFlightStatus = new HashMap<>();
 
     private final JavaPlugin plugin;
     private final HashMap<UUID, BossBar> playerBossBars = new HashMap<>();
@@ -62,7 +59,9 @@ public class ArmorEnhancements implements Listener {
                     } else {
                         bossBar.setColor(BarColor.PURPLE);
                         bossBar.setStyle(BarStyle.SOLID);
-                        bossBar.setTitle("Rüstung des vergessenen Helden");
+                        ArmorType armorType = getFullArmorSetType(Bukkit.getPlayer(uuid).getInventory().getArmorContents());
+                        bossBar.setTitle(getArmorTitle(armorType));
+                        bossBar.setProgress(1.0); // Set the progress to full
                         bossBarProgress.remove(uuid); // Remove the player from progress tracking
                     }
                 }
@@ -103,47 +102,20 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
-
-    private final HashMap<UUID, Integer> playerJumpCount = new HashMap<>();
-
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-
-        if (event.getFrom().getY() < event.getTo().getY() && player.isOnGround()) {
-            //System.out.println(player.getName() + " hat gesprungen!"); // Debug-Ausgabe
-            Bukkit.getServer().getPluginManager().callEvent(new PlayerJumpEvent(player));
-        }
+        checkPlayerArmor(player);
     }
-
-
-
 
     @EventHandler
-    public void onPlayerJump(PlayerJumpEvent event) {
+    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
-        ArmorType armorType = getFullArmorSetType(player.getInventory().getArmorContents());
-
-        if (armorType == ArmorType.SKY) {
-            int jumpCount = playerJumpCount.getOrDefault(player.getUniqueId(), 0);
-
-            if (jumpCount == 0) {
-                Vector boostUpwards = new Vector(0, 1.5, 0);
-                player.setVelocity(player.getVelocity().add(boostUpwards));
-                player.playSound(player.getLocation(), Sound.ENTITY_FIREWORK_ROCKET_LAUNCH, 1f, 1f);
-                playerJumpCount.put(player.getUniqueId(), 1);
-            } else if (jumpCount == 1) {
-                if (!player.isGliding() && player.getInventory().getChestplate() != null && player.getInventory().getChestplate().getType() == Material.ELYTRA) {
-                    player.setGliding(true);
-                    playerJumpCount.put(player.getUniqueId(), 2);
-                }
-            } else {
-                playerJumpCount.put(player.getUniqueId(), 0);  // Zurücksetzen, wenn der Spieler bereits zweimal gesprungen hat
-            }
+        if (event.isSneaking()) {
+            Vector direction = player.getLocation().getDirection().multiply(2); // Geschwindigkeitsmultiplikator
+            player.setVelocity(direction);
         }
     }
-
-
 
     private void checkPlayerArmor(Player player) {
         ItemStack[] armor = player.getInventory().getArmorContents();
@@ -166,7 +138,6 @@ public class ArmorEnhancements implements Listener {
             }
         }
     }
-
 
     private ArmorType getFullArmorSetType(ItemStack[] armor) {
         ArmorType type = getArmorType(armor[0]);
@@ -235,19 +206,23 @@ public class ArmorEnhancements implements Listener {
 
 
     private void displayArmorEffects(Player player, ArmorType armorType) {
-        Location loc = player.getLocation();
+        Location loc = player.getLocation().add(0, 1, 0); // Zentriert auf den Spieler, leicht erhöht
+        double offsetX = (Math.random() - 0.5) * 2; // Zufälliger Wert zwischen -1 und 1
+        double offsetY = (Math.random() - 0.5) * 2;
+        double offsetZ = (Math.random() - 0.5) * 2;
+
         switch (armorType) {
             case SKY:
-                loc.getWorld().spawnParticle(Particle.CLOUD, loc, 10, 0.5, 0.5, 0.5, 0.05);
+                loc.getWorld().spawnParticle(Particle.CLOUD, loc, 10, offsetX, offsetY, offsetZ, 0.05);
                 break;
             case FIRE:
-                loc.getWorld().spawnParticle(Particle.FLAME, loc, 10, 0.5, 0.5, 0.5, 0.05);
+                loc.getWorld().spawnParticle(Particle.FLAME, loc, 10, offsetX, offsetY, offsetZ, 0.05);
                 break;
             case WATER:
-                loc.getWorld().spawnParticle(Particle.WATER_DROP, loc, 10, 0.5, 0.5, 0.5, 0.05);
+                loc.getWorld().spawnParticle(Particle.WATER_DROP, loc, 10, offsetX, offsetY, offsetZ, 0.05);
                 break;
             case STONE:
-                loc.getWorld().spawnParticle(Particle.FLAME, loc, 10, 0.5, 0.5, 0.5, 0.05, Material.STONE.createBlockData());
+                loc.getWorld().spawnParticle(Particle.BLOCK_CRACK, loc, 10, offsetX, offsetY, offsetZ, 0.05, Material.STONE.createBlockData());
                 break;
             default:
                 break;
