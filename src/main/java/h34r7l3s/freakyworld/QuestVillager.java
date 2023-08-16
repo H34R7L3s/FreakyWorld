@@ -31,6 +31,7 @@ public class QuestVillager implements Listener {
             new Location(Bukkit.getWorld("world"), -243, 75, 1827)
     };
 
+
     public QuestVillager(JavaPlugin plugin) {
         this.plugin = plugin;
         this.questVillagerKey = new NamespacedKey(plugin, "QuestVillagerName");
