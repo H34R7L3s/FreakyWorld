@@ -18,9 +18,11 @@ import org.bukkit.plugin.java.JavaPlugin;
 
 import java.util.HashMap;
 import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
 public class QuestVillager implements Listener {
-
+    private final HashMap<UUID, Set<Location>> playerNotesDiscovered = new HashMap<>();
     private final JavaPlugin plugin;
     private final NamespacedKey questVillagerKey;
     private final HashMap<UUID, Integer> playerNotesFound = new HashMap<>();
@@ -67,22 +69,28 @@ public class QuestVillager implements Listener {
         Player player = event.getPlayer();
         Location location = player.getLocation();
 
-        for (Location noteLocation : noteLocations) {
-            if (location.distance(noteLocation) <= 5) { // Spieler ist in der Nähe eines Notenblocks
-                player.playSound(location, Sound.BLOCK_NOTE_BLOCK_PLING, 1.0f, 1.0f);
-                player.spawnParticle(Particle.NOTE, noteLocation, 10);
-                int notesFound = playerNotesFound.getOrDefault(player.getUniqueId(), 0) + 1;
-                playerNotesFound.put(player.getUniqueId(), notesFound);
+        for (int i = 0; i < noteLocations.length; i++) {
+            Location noteLocation = noteLocations[i];
+            if (location.distance(noteLocation) <= 5) {
+                Set<Location> discoveredNotes = playerNotesDiscovered.getOrDefault(player.getUniqueId(), new HashSet<>());
+                if (!discoveredNotes.contains(noteLocation)) {
+                    discoveredNotes.add(noteLocation);
+                    playerNotesDiscovered.put(player.getUniqueId(), discoveredNotes);
 
-                player.sendMessage("QuestVillager: " + "Gut gemacht! Du hast eine Note gefunden. Noch " + (4 - notesFound) + " übrig.");
+                    // Play a unique sound for each note location
+                    Sound sound = Sound.values()[Sound.BLOCK_NOTE_BLOCK_PLING.ordinal() + i];
+                    player.playSound(location, sound, 1.0f, 1.0f);
+                    player.spawnParticle(Particle.NOTE, noteLocation, 10);
 
-                if (notesFound == 4) {
-                    player.sendMessage("QuestVillager: " + "Hervorragend! Du hast alle Noten gefunden. Kehre zu mir zurück und spiele die Melodie.");
+                    int notesRemaining = 4 - discoveredNotes.size();
+                    player.sendMessage("QuestVillager: " + "Gut gemacht! Du hast eine Note gefunden. Noch " + notesRemaining + " übrig.");
+
+                    if (notesRemaining == 0) {
+                        player.sendMessage("QuestVillager: " + "Hervorragend! Du hast alle Noten gefunden. Kehre zu mir zurück und spiele die Melodie.");
+                    }
                 }
             }
         }
     }
 }
 
-
-//Hallo 123
