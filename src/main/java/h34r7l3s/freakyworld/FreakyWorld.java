@@ -9,7 +9,7 @@ import org.bukkit.Bukkit;
 import java.util.logging.Logger;
 
 public final class FreakyWorld extends JavaPlugin {
-
+    private QuestVillager questVillager;
     private GuildGUIListener guildListener;
     Logger logger = this.getLogger();
     @Override
@@ -58,6 +58,12 @@ public final class FreakyWorld extends JavaPlugin {
         guildListener = new GuildGUIListener(this);
         getServer().getPluginManager().registerEvents(guildListener, this);
         logger.info("Registered GildenSystem");
+
+        logger.info("QuestVil");
+        questVillager = new QuestVillager(this);  // Initialisieren des QuestVillager-Listeners
+        getServer().getPluginManager().registerEvents(questVillager, this);  // Registrieren des QuestVillager-Listeners
+        logger.info("Registered QuestVil");
+
     }
 
 
@@ -65,6 +71,7 @@ public final class FreakyWorld extends JavaPlugin {
     public void onDisable() {
         CustomVillagerTrader.removeCustomVillager();
         guildListener.removeGuildVillager();
+        questVillager.removeQuestVillager();
         // Plugin shutdown logic
     }
 }
