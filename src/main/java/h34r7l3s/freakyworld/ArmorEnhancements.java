@@ -10,7 +10,9 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
+import org.bukkit.event.player.PlayerToggleSprintEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -100,26 +102,29 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
-    private final Set<UUID> playersWhoJumped = new HashSet<>();
+    private final Set<UUID> playersWhoDoubleJumped = new HashSet<>();
 
     @EventHandler
-    public void onPlayerJump(PlayerJumpEvent event) {
+    public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
         Player player = event.getPlayer();
-        ArmorType armorType = getFullArmorSetType(player.getInventory().getArmorContents());
-        if (armorType != ArmorType.NONE) {
-            playersWhoJumped.add(player.getUniqueId());
-            Bukkit.getScheduler().runTaskLater(plugin, () -> playersWhoJumped.remove(player.getUniqueId()), 20L); // Nach 1 Sekunde entfernen
+        if (!event.isFlying()) {
+            if (playersWhoDoubleJumped.contains(player.getUniqueId())) {
+                playersWhoDoubleJumped.remove(player.getUniqueId());
+                Bukkit.getPluginManager().callEvent(new CustomBoostEvent(player)); // Benutzerdefiniertes Event auslösen
+            } else {
+                Bukkit.getScheduler().runTaskLater(plugin, () -> playersWhoDoubleJumped.remove(player.getUniqueId()), 20L);
+            }
         }
     }
 
     @EventHandler
-    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
+    public void onCustomBoost(CustomBoostEvent event) {
         Player player = event.getPlayer();
-        if (event.isSneaking() && playersWhoJumped.contains(player.getUniqueId())) {
-            Vector direction = player.getLocation().getDirection().multiply(2); // Geschwindigkeitsmultiplikator
-            player.setVelocity(direction);
-        }
+        Vector direction = player.getLocation().getDirection().multiply(2);
+        player.setVelocity(direction);
     }
+
+
 
 
     private void checkPlayerArmor(Player player) {
