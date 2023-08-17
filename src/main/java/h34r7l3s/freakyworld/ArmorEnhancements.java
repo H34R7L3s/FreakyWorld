@@ -100,17 +100,51 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
+    private final HashMap<UUID, Long> lastSneakTime = new HashMap<>();
+    private final HashMap<UUID, Long> lastBoostTime = new HashMap<>();
+    private final HashMap<UUID, Integer> availableBoosts = new HashMap<>();
+    private final long DOUBLE_CLICK_INTERVAL = 500; // 500ms or 0.5 seconds
+    private final long BOOST_COOLDOWN = 5000; // 5000ms or 5 seconds
+    private final int MAX_BOOSTS = 2;
+
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
         ArmorType armorType = getFullArmorSetType(player.getInventory().getArmorContents());
 
+        long currentTime = System.currentTimeMillis();
+
+        // Initialize available boosts for the player if not already set
+        availableBoosts.putIfAbsent(player.getUniqueId(), MAX_BOOSTS);
+
         // Check if the player is wearing a full set of a specific type of armor
         if (armorType != ArmorType.NONE && event.isSneaking()) {
-            Vector direction = player.getLocation().getDirection().multiply(2); // Speed multiplier
-            player.setVelocity(direction);
+            // Check if the player has sneaked recently (double click detection)
+            if (lastSneakTime.containsKey(player.getUniqueId()) && (currentTime - lastSneakTime.get(player.getUniqueId()) <= DOUBLE_CLICK_INTERVAL)) {
+                // Check if player has available boosts
+                if (availableBoosts.get(player.getUniqueId()) > 0) {
+                    Vector direction = player.getLocation().getDirection().multiply(2); // Speed multiplier
+                    player.setVelocity(direction);
+
+                    // Decrease the available boosts by 1
+                    availableBoosts.put(player.getUniqueId(), availableBoosts.get(player.getUniqueId()) - 1);
+
+                    // If all boosts are used up, reset the cooldown
+                    if (availableBoosts.get(player.getUniqueId()) == 0) {
+                        lastBoostTime.put(player.getUniqueId(), currentTime);
+                    }
+                } else {
+                    // Reset available boosts after cooldown
+                    if (!lastBoostTime.containsKey(player.getUniqueId()) || (currentTime - lastBoostTime.get(player.getUniqueId()) >= BOOST_COOLDOWN)) {
+                        availableBoosts.put(player.getUniqueId(), MAX_BOOSTS);
+                    }
+                }
+            }
+            lastSneakTime.put(player.getUniqueId(), currentTime);
         }
     }
+
+
 
     private void checkPlayerArmor(Player player) {
         ItemStack[] armor = player.getInventory().getArmorContents();
