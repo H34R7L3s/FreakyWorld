@@ -79,7 +79,8 @@ public class QuestVillager implements Listener {
 
         for (int i = 0; i < noteLocations.length; i++) {
             Location noteLocation = noteLocations[i];
-            if (location.distance(noteLocation) <= 5) {
+            if (location.getWorld().equals(noteLocation.getWorld()) && location.distance(noteLocation) <= 5) {
+
                 Set<Location> discoveredNotes = playerNotesDiscovered.getOrDefault(player.getUniqueId(), new HashSet<>());
                 if (!discoveredNotes.contains(noteLocation)) {
                     discoveredNotes.add(noteLocation);
