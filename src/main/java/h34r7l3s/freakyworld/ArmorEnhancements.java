@@ -187,7 +187,6 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
-
     private String getArmorTitle(ArmorType armorType) {
         switch (armorType) {
             case SKY:
