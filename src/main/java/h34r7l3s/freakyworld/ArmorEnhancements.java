@@ -180,6 +180,22 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
+
+
+
+    @EventHandler
+    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
+        Player player = event.getPlayer();
+        ArmorType armorType = getFullArmorSetType(player.getInventory().getArmorContents());
+
+        // Check if the player is wearing a full set of a specific type of armor
+        if (armorType != ArmorType.NONE && event.isSneaking()) {
+            Vector direction = player.getLocation().getDirection().multiply(2); // Geschwindigkeitsmultiplikator
+            player.setVelocity(direction);
+        }
+    }
+
+
     private String getArmorTitle(ArmorType armorType) {
         switch (armorType) {
             case SKY:
@@ -195,6 +211,7 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
+
     private void startArmorEffectLoop() {
         new BukkitRunnable() {
             @Override
@@ -208,6 +225,7 @@ public class ArmorEnhancements implements Listener {
             }
         }.runTaskTimer(plugin, 0L, 20L); // Every second (20 ticks)
     }
+
 
     private void displayArmorEffects(Player player, ArmorType armorType) {
         Location loc = player.getLocation().add(0, 1, 0); // Centered on the player, slightly raised
