@@ -23,6 +23,7 @@ import java.util.Set;
 
 public class QuestVillager implements Listener {
     private final HashMap<UUID, Set<Location>> playerNotesDiscovered = new HashMap<>();
+    private final HashSet<UUID> playersStartedQuest = new HashSet<>();
     private final JavaPlugin plugin;
     private final NamespacedKey questVillagerKey;
     private final HashMap<UUID, Integer> playerNotesFound = new HashMap<>();
@@ -64,6 +65,7 @@ public class QuestVillager implements Listener {
                 } else {
                     player.sendMessage("QuestVillager: " + "Hallo Abenteurer! Ich habe die Noten meiner berühmtesten Melodie verloren. Kannst du mir helfen, sie zu finden?");
                     player.sendMessage("QuestVillager: " + "Suche nach speziellen Notenblöcken in der Welt. Sie geben eine einzigartige Note ab, wenn du in ihre Nähe kommst.");
+                    playersStartedQuest.add(player.getUniqueId());
                 }
 
                 event.setCancelled(true);
@@ -71,10 +73,15 @@ public class QuestVillager implements Listener {
         }
     }
 
-
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+
+        // Überprüfe, ob der Spieler die Quest gestartet hat
+        if (!playersStartedQuest.contains(player.getUniqueId())) {
+            return; // Wenn der Spieler die Quest nicht gestartet hat, beende die Methode hier
+        }
+
         Location location = player.getLocation();
 
         for (int i = 0; i < noteLocations.length; i++) {
