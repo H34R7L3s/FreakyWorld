@@ -102,27 +102,6 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
-    private final Set<UUID> playersWhoDoubleJumped = new HashSet<>();
-
-    @EventHandler
-    public void onPlayerToggleFlight(PlayerToggleFlightEvent event) {
-        Player player = event.getPlayer();
-        if (!event.isFlying()) {
-            if (playersWhoDoubleJumped.contains(player.getUniqueId())) {
-                playersWhoDoubleJumped.remove(player.getUniqueId());
-                Bukkit.getPluginManager().callEvent(new CustomBoostEvent(player)); // Benutzerdefiniertes Event auslösen
-            } else {
-                Bukkit.getScheduler().runTaskLater(plugin, () -> playersWhoDoubleJumped.remove(player.getUniqueId()), 20L);
-            }
-        }
-    }
-
-    @EventHandler
-    public void onCustomBoost(CustomBoostEvent event) {
-        Player player = event.getPlayer();
-        Vector direction = player.getLocation().getDirection().multiply(2);
-        player.setVelocity(direction);
-    }
 
 
 
@@ -196,7 +175,14 @@ public class ArmorEnhancements implements Listener {
     }
 
 
-
+    @EventHandler
+    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
+        Player player = event.getPlayer();
+        if (event.isSneaking()) {
+            Vector direction = player.getLocation().getDirection().multiply(2); // Geschwindigkeitsmultiplikator
+            player.setVelocity(direction);
+        }
+    }
 
     private String getArmorTitle(ArmorType armorType) {
         switch (armorType) {
