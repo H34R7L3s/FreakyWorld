@@ -203,7 +203,7 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
-
+//
 
     private void displayArmorEffects(Player player, ArmorType armorType) {
         Location loc = player.getLocation().add(0, 1, 0); // Zentriert auf den Spieler, leicht erhöht
