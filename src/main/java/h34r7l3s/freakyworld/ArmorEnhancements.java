@@ -183,7 +183,7 @@ public class ArmorEnhancements implements Listener {
             player.setVelocity(direction);
         }
     }
-
+//Hier
     private String getArmorTitle(ArmorType armorType) {
         switch (armorType) {
             case SKY:
