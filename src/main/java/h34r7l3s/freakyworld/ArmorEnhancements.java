@@ -9,10 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
-import org.bukkit.event.player.PlayerToggleSprintEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -33,6 +30,7 @@ public class ArmorEnhancements implements Listener {
 
     public ArmorEnhancements(JavaPlugin plugin) {
         this.plugin = plugin;
+        startArmorEffectLoop();
 
         // Periodically check players' armor
         new BukkitRunnable() {
@@ -75,7 +73,7 @@ public class ArmorEnhancements implements Listener {
                 for (UUID uuid : bossBarProgress.keySet()) {
                     BossBar bossBar = playerBossBars.get(uuid);
                     if (bossBar == null) {
-                        continue; // Überspringt diesen Durchlauf, wenn die BossBar null ist
+                        continue; // Skip this iteration if the BossBar is null
                     }
                     float progress = bossBarProgress.get(uuid);
 
@@ -102,9 +100,17 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
+    @EventHandler
+    public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
+        Player player = event.getPlayer();
+        ArmorType armorType = getFullArmorSetType(player.getInventory().getArmorContents());
 
-
-
+        // Check if the player is wearing a full set of a specific type of armor
+        if (armorType != ArmorType.NONE && event.isSneaking()) {
+            Vector direction = player.getLocation().getDirection().multiply(2); // Speed multiplier
+            player.setVelocity(direction);
+        }
+    }
 
     private void checkPlayerArmor(Player player) {
         ItemStack[] armor = player.getInventory().getArmorContents();
@@ -175,6 +181,8 @@ public class ArmorEnhancements implements Listener {
     }
 
 
+
+
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
@@ -186,6 +194,7 @@ public class ArmorEnhancements implements Listener {
             player.setVelocity(direction);
         }
     }
+
 
     private String getArmorTitle(ArmorType armorType) {
         switch (armorType) {
@@ -202,11 +211,25 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
-//
+
+    private void startArmorEffectLoop() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : Bukkit.getOnlinePlayers()) {
+                    ArmorType armorType = getFullArmorSetType(player.getInventory().getArmorContents());
+                    if (armorType != ArmorType.NONE) {
+                        displayArmorEffects(player, armorType);
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Every second (20 ticks)
+    }
+
 
     private void displayArmorEffects(Player player, ArmorType armorType) {
-        Location loc = player.getLocation().add(0, 1, 0); // Zentriert auf den Spieler, leicht erhöht
-        double offsetX = (Math.random() - 0.5) * 2; // Zufälliger Wert zwischen -1 und 1
+        Location loc = player.getLocation().add(0, 1, 0); // Centered on the player, slightly raised
+        double offsetX = (Math.random() - 0.5) * 2; // Random value between -1 and 1
         double offsetY = (Math.random() - 0.5) * 2;
         double offsetZ = (Math.random() - 0.5) * 2;
 
