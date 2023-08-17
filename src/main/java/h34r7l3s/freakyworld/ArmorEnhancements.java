@@ -178,12 +178,16 @@ public class ArmorEnhancements implements Listener {
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
-        if (event.isSneaking()) {
+        ArmorType armorType = getFullArmorSetType(player.getInventory().getArmorContents());
+
+        // Check if the player is wearing a full set of a specific type of armor
+        if (armorType != ArmorType.NONE && event.isSneaking()) {
             Vector direction = player.getLocation().getDirection().multiply(2); // Geschwindigkeitsmultiplikator
             player.setVelocity(direction);
         }
     }
-//Hier
+
+
     private String getArmorTitle(ArmorType armorType) {
         switch (armorType) {
             case SKY:
