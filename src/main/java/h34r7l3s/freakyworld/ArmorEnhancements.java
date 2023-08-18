@@ -110,6 +110,7 @@ public class ArmorEnhancements implements Listener {
     private Map<UUID, Long> lastBoostedPlayers = new HashMap<>();
     private static final long JUMP_BOOST_INTERVAL = 2000; // 2 Sekunden
     private Map<UUID, Boolean> hasPlayerPressedJump = new HashMap<>();
+    private Map<UUID, Long> initialBoostTime = new HashMap<>();
 
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
@@ -131,6 +132,7 @@ public class ArmorEnhancements implements Listener {
                     player.setVelocity(direction);
                     // Nachdem der Boost-Effekt ausgelöst wurde:
                     lastBoostedPlayers.put(player.getUniqueId(), System.currentTimeMillis());
+                    initialBoostTime.put(player.getUniqueId(), System.currentTimeMillis());
                     hasPlayerPressedJump.put(player.getUniqueId(), false);
                     lastSneakTime.put(player.getUniqueId(), currentTime);
 
@@ -173,12 +175,13 @@ public class ArmorEnhancements implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+        long currentTime = System.currentTimeMillis();
 
         // Überprüfen Sie, ob der Spieler in der Luft ist und die Leertaste gedrückt hat
         if (!player.isOnGround() && player.getVelocity().getY() > 0) {
-            // Überprüfen Sie, ob der Spieler kürzlich einen Boost verwendet hat
             if (lastBoostedPlayers.containsKey(player.getUniqueId()) &&
-                    (System.currentTimeMillis() - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL) &&
+                    (currentTime - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL) &&
+                    (currentTime - initialBoostTime.getOrDefault(player.getUniqueId(), 0L) >= 500) && // Warten Sie mindestens 500ms
                     !hasPlayerPressedJump.getOrDefault(player.getUniqueId(), false)) {
                 // Der Spieler hat die Leertaste gedrückt, nachdem er den Boost aktiviert hat
                 hasPlayerPressedJump.put(player.getUniqueId(), true);
@@ -186,6 +189,7 @@ public class ArmorEnhancements implements Listener {
             }
         }
     }
+
 
 
 
