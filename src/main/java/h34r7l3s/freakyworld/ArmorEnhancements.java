@@ -109,6 +109,7 @@ public class ArmorEnhancements implements Listener {
     private final int MAX_BOOSTS = 2;
     private Map<UUID, Long> lastBoostedPlayers = new HashMap<>();
     private static final long JUMP_BOOST_INTERVAL = 2000; // 2 Sekunden
+    private Map<UUID, Boolean> hasPlayerPressedJump = new HashMap<>();
 
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
@@ -130,6 +131,7 @@ public class ArmorEnhancements implements Listener {
                     player.setVelocity(direction);
                     // Nachdem der Boost-Effekt ausgelöst wurde:
                     lastBoostedPlayers.put(player.getUniqueId(), System.currentTimeMillis());
+                    hasPlayerPressedJump.put(player.getUniqueId(), false);
 
 
                     // Decrease the available boosts by 1
@@ -170,16 +172,20 @@ public class ArmorEnhancements implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        long currentTime = System.currentTimeMillis();
+        if (player.isOnGround()) {
+            return; // Spieler ist auf dem Boden, also nicht weiter prüfen
+        }
 
         // Überprüfen Sie, ob der Spieler kürzlich einen Boost verwendet hat
-        if (lastBoostedPlayers.containsKey(player.getUniqueId()) && (currentTime - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL)) {
-            if (event.getFrom().getY() < event.getTo().getY() && player.getVelocity().getY() > 0) {
-                PlayerJumpEvent jumpEvent = new PlayerJumpEvent(player);
-                Bukkit.getServer().getPluginManager().callEvent(jumpEvent);
-            }
+        if (lastBoostedPlayers.containsKey(player.getUniqueId()) &&
+                (System.currentTimeMillis() - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL) &&
+                !hasPlayerPressedJump.getOrDefault(player.getUniqueId(), false)) {
+            // Der Spieler hat die Leertaste gedrückt, nachdem er den Boost aktiviert hat
+            hasPlayerPressedJump.put(player.getUniqueId(), true);
+            Bukkit.getPluginManager().callEvent(new PlayerJumpEvent(player));
         }
     }
+
 
 
     private void checkPlayerArmor(Player player) {
