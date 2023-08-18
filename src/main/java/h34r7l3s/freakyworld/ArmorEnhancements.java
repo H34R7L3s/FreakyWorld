@@ -107,10 +107,12 @@ public class ArmorEnhancements implements Listener {
     private final long DOUBLE_CLICK_INTERVAL = 500; // 500ms or 0.5 seconds
     private final long BOOST_COOLDOWN = 5000; // 5000ms or 5 seconds
     private final int MAX_BOOSTS = 2;
+
     private Map<UUID, Long> lastBoostedPlayers = new HashMap<>();
     private static final long JUMP_BOOST_INTERVAL = 2000; // 2 Sekunden
     private Map<UUID, Boolean> hasPlayerPressedJump = new HashMap<>();
     private Map<UUID, Long> initialBoostTime = new HashMap<>();
+
 
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
@@ -130,11 +132,14 @@ public class ArmorEnhancements implements Listener {
                 if (availableBoosts.get(player.getUniqueId()) > 0) {
                     Vector direction = player.getLocation().getDirection().multiply(2); // Speed multiplier
                     player.setVelocity(direction);
+
                     // Nachdem der Boost-Effekt ausgelöst wurde:
                     lastBoostedPlayers.put(player.getUniqueId(), System.currentTimeMillis());
                     initialBoostTime.put(player.getUniqueId(), System.currentTimeMillis());
+
                     hasPlayerPressedJump.put(player.getUniqueId(), false);
                     lastSneakTime.put(player.getUniqueId(), currentTime);
+
 
 
                     // Decrease the available boosts by 1
@@ -152,6 +157,7 @@ public class ArmorEnhancements implements Listener {
                 }
             }
             lastSneakTime.put(player.getUniqueId(), currentTime);
+
         }
     }
     @EventHandler
@@ -170,11 +176,13 @@ public class ArmorEnhancements implements Listener {
                 // Verringern Sie die verfügbaren Boosts um 1
                 availableBoosts.put(player.getUniqueId(), availableBoosts.get(player.getUniqueId()) - 1);
             }
+
         }
     }
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+
         long currentTime = System.currentTimeMillis();
 
         // Überprüfen Sie, ob der Spieler in der Luft ist und die Leertaste gedrückt hat
@@ -182,6 +190,7 @@ public class ArmorEnhancements implements Listener {
             if (lastBoostedPlayers.containsKey(player.getUniqueId()) &&
                     (currentTime - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL) &&
                     (currentTime - initialBoostTime.getOrDefault(player.getUniqueId(), 0L) >= 500) && // Warten Sie mindestens 500ms
+
                     !hasPlayerPressedJump.getOrDefault(player.getUniqueId(), false)) {
                 // Der Spieler hat die Leertaste gedrückt, nachdem er den Boost aktiviert hat
                 hasPlayerPressedJump.put(player.getUniqueId(), true);
@@ -189,7 +198,6 @@ public class ArmorEnhancements implements Listener {
             }
         }
     }
-
 
 
 
