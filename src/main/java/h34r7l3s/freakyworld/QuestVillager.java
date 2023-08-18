@@ -7,6 +7,7 @@ import org.bukkit.Material;
 import org.bukkit.NamespacedKey;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
+import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
@@ -111,11 +112,14 @@ public class QuestVillager implements Listener {
 
     public void removeQuestVillager() {
         Location villagerLocation = new Location(Bukkit.getWorld("world"), -249, 86, 1864);
-        Villager questVillager = (Villager) villagerLocation.getWorld().spawnEntity(villagerLocation, EntityType.VILLAGER);
-        if (questVillager != null && questVillager.getCustomName().equals("QuestVillager")) {
-            questVillager.remove();
+        double radius = 5.0; // Ein Radius, in dem nach Villagern gesucht wird
+        for (Entity entity : villagerLocation.getWorld().getNearbyEntities(villagerLocation, radius, radius, radius)) {
+            if (entity instanceof Villager && "QuestVillager".equals(((Villager) entity).getCustomName())) {
+                entity.remove();
+            }
         }
     }
+
 
 
 }
