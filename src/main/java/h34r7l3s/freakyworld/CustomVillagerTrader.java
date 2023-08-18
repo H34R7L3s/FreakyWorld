@@ -49,6 +49,8 @@ public class CustomVillagerTrader implements Listener {
         customVillager.setCanPickupItems(false);
         customVillager.setProfession(Villager.Profession.CARTOGRAPHER);
         customVillager.setAI(false);  // This will make the villager not move.
+        customVillager.setInvulnerable(true);
+
         setupCustomTrades(customVillager);
     }
     private void setupCustomTrades(Villager villager) {
