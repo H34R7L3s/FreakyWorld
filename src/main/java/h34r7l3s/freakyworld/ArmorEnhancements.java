@@ -275,13 +275,13 @@ public class ArmorEnhancements implements Listener {
     private String getArmorTitle(ArmorType armorType) {
         switch (armorType) {
             case SKY:
-                return "Rüstung des Himmels";
+                return "Meister des Himmels";
             case FIRE:
-                return "Rüstung des Feuers";
+                return "Meister des Feuers";
             case WATER:
-                return "Rüstung des Meeres";
+                return "Meister des Meeres";
             case STONE:
-                return "Rüstung des Berges";
+                return "Meister des Berges";
             default:
                 return "Unbekannte Rüstung";
         }
