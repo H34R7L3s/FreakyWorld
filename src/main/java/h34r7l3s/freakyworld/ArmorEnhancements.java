@@ -132,6 +132,7 @@ public class ArmorEnhancements implements Listener {
                     // Nachdem der Boost-Effekt ausgelöst wurde:
                     lastBoostedPlayers.put(player.getUniqueId(), System.currentTimeMillis());
                     hasPlayerPressedJump.put(player.getUniqueId(), false);
+                    lastSneakTime.put(player.getUniqueId(), currentTime);
 
 
                     // Decrease the available boosts by 1
@@ -172,19 +173,20 @@ public class ArmorEnhancements implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
-        if (player.isOnGround()) {
-            return; // Spieler ist auf dem Boden, also nicht weiter prüfen
-        }
 
-        // Überprüfen Sie, ob der Spieler kürzlich einen Boost verwendet hat
-        if (lastBoostedPlayers.containsKey(player.getUniqueId()) &&
-                (System.currentTimeMillis() - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL) &&
-                !hasPlayerPressedJump.getOrDefault(player.getUniqueId(), false)) {
-            // Der Spieler hat die Leertaste gedrückt, nachdem er den Boost aktiviert hat
-            hasPlayerPressedJump.put(player.getUniqueId(), true);
-            Bukkit.getPluginManager().callEvent(new PlayerJumpEvent(player));
+        // Überprüfen Sie, ob der Spieler in der Luft ist und die Leertaste gedrückt hat
+        if (!player.isOnGround() && player.getVelocity().getY() > 0) {
+            // Überprüfen Sie, ob der Spieler kürzlich einen Boost verwendet hat
+            if (lastBoostedPlayers.containsKey(player.getUniqueId()) &&
+                    (System.currentTimeMillis() - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL) &&
+                    !hasPlayerPressedJump.getOrDefault(player.getUniqueId(), false)) {
+                // Der Spieler hat die Leertaste gedrückt, nachdem er den Boost aktiviert hat
+                hasPlayerPressedJump.put(player.getUniqueId(), true);
+                Bukkit.getPluginManager().callEvent(new PlayerJumpEvent(player));
+            }
         }
     }
+
 
 
 
