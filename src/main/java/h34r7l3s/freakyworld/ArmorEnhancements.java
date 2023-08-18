@@ -9,6 +9,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -107,6 +108,10 @@ public class ArmorEnhancements implements Listener {
     private final long BOOST_COOLDOWN = 5000; // 5000ms or 5 seconds
     private final int MAX_BOOSTS = 2;
 
+    private Map<UUID, Long> lastBoostedPlayers = new HashMap<>();
+    private static final long JUMP_BOOST_INTERVAL = 2000; // 2 Sekunden
+
+
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
         Player player = event.getPlayer();
@@ -126,6 +131,11 @@ public class ArmorEnhancements implements Listener {
                     Vector direction = player.getLocation().getDirection().multiply(2); // Speed multiplier
                     player.setVelocity(direction);
 
+                    // Nachdem der Boost-Effekt ausgelöst wurde:
+                    lastBoostedPlayers.put(player.getUniqueId(), System.currentTimeMillis());
+
+
+
                     // Decrease the available boosts by 1
                     availableBoosts.put(player.getUniqueId(), availableBoosts.get(player.getUniqueId()) - 1);
 
@@ -141,6 +151,39 @@ public class ArmorEnhancements implements Listener {
                 }
             }
             lastSneakTime.put(player.getUniqueId(), currentTime);
+
+        }
+    }
+    @EventHandler
+    public void onPlayerJump(PlayerJumpEvent event) {
+        Player player = event.getPlayer();
+        long currentTime = System.currentTimeMillis();
+
+        // Überprüfen Sie, ob der Spieler kürzlich einen Boost verwendet hat
+        if (lastBoostedPlayers.containsKey(player.getUniqueId()) && (currentTime - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL)) {
+            // Überprüfen Sie, ob der Spieler Boosts verfügbar hat
+            if (availableBoosts.get(player.getUniqueId()) > 0) {
+                // Boost-Effekt nach oben anwenden
+                Vector upBoost = new Vector(0, 1, 0).multiply(2); // Stärke des Boosts
+                player.setVelocity(upBoost);
+
+                // Verringern Sie die verfügbaren Boosts um 1
+                availableBoosts.put(player.getUniqueId(), availableBoosts.get(player.getUniqueId()) - 1);
+            }
+        }
+    }
+    @EventHandler
+    public void onPlayerMove(PlayerMoveEvent event) {
+        Player player = event.getPlayer();
+        long currentTime = System.currentTimeMillis();
+
+        // Überprüfen Sie, ob der Spieler kürzlich einen Boost verwendet hat
+        if (lastBoostedPlayers.containsKey(player.getUniqueId()) && (currentTime - lastBoostedPlayers.get(player.getUniqueId()) <= JUMP_BOOST_INTERVAL)) {
+            if (event.getFrom().getY() < event.getTo().getY() && player.getVelocity().getY() > 0) {
+                PlayerJumpEvent jumpEvent = new PlayerJumpEvent(player);
+                Bukkit.getServer().getPluginManager().callEvent(jumpEvent);
+            }
+
         }
     }
 
