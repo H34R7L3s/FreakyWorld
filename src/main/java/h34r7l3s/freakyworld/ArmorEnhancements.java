@@ -107,9 +107,11 @@ public class ArmorEnhancements implements Listener {
     private final long DOUBLE_CLICK_INTERVAL = 500; // 500ms or 0.5 seconds
     private final long BOOST_COOLDOWN = 5000; // 5000ms or 5 seconds
     private final int MAX_BOOSTS = 2;
+
     private Map<UUID, Long> lastBoostedPlayers = new HashMap<>();
     private static final long JUMP_BOOST_INTERVAL = 2000; // 2 Sekunden
     private Map<UUID, Boolean> hasPlayerPressedJump = new HashMap<>();
+
 
     @EventHandler
     public void onPlayerToggleSneak(PlayerToggleSneakEvent event) {
@@ -129,9 +131,11 @@ public class ArmorEnhancements implements Listener {
                 if (availableBoosts.get(player.getUniqueId()) > 0) {
                     Vector direction = player.getLocation().getDirection().multiply(2); // Speed multiplier
                     player.setVelocity(direction);
+
                     // Nachdem der Boost-Effekt ausgelöst wurde:
                     lastBoostedPlayers.put(player.getUniqueId(), System.currentTimeMillis());
                     hasPlayerPressedJump.put(player.getUniqueId(), false);
+
 
 
                     // Decrease the available boosts by 1
@@ -149,6 +153,7 @@ public class ArmorEnhancements implements Listener {
                 }
             }
             lastSneakTime.put(player.getUniqueId(), currentTime);
+
         }
     }
     @EventHandler
@@ -172,6 +177,7 @@ public class ArmorEnhancements implements Listener {
     @EventHandler
     public void onPlayerMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+
         if (player.isOnGround()) {
             return; // Spieler ist auf dem Boden, also nicht weiter prüfen
         }
@@ -183,6 +189,7 @@ public class ArmorEnhancements implements Listener {
             // Der Spieler hat die Leertaste gedrückt, nachdem er den Boost aktiviert hat
             hasPlayerPressedJump.put(player.getUniqueId(), true);
             Bukkit.getPluginManager().callEvent(new PlayerJumpEvent(player));
+
         }
     }
 
