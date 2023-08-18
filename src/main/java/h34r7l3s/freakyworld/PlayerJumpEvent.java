@@ -1,8 +1,11 @@
 package h34r7l3s.freakyworld;
 
+import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.HandlerList;
 import org.bukkit.event.player.PlayerEvent;
+import org.bukkit.event.player.PlayerMoveEvent;
 
 public class PlayerJumpEvent extends PlayerEvent {
     private static final HandlerList handlers = new HandlerList();
@@ -19,4 +22,10 @@ public class PlayerJumpEvent extends PlayerEvent {
     public static HandlerList getHandlerList() {
         return handlers;
     }
+
+
+
+
+
+
 }
