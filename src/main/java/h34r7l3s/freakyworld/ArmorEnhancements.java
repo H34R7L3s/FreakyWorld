@@ -38,8 +38,12 @@ public class ArmorEnhancements implements Listener {
             @Override
             public void run() {
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    checkPlayerArmor(player);
+                    if (player != null && player.isOnline()) {
+                        checkPlayerArmor(player);
+                    }
                 }
+
+
             }
         }.runTaskTimer(plugin, 0L, 100L); // Check every 5 seconds (100 ticks)
 
@@ -48,20 +52,23 @@ public class ArmorEnhancements implements Listener {
             @Override
             public void run() {
                 for (UUID uuid : playerBossBars.keySet()) {
-                    BossBar bossBar = playerBossBars.get(uuid);
-                    if (bossBar.getColor() == BarColor.PURPLE) {
-                        bossBar.setColor(BarColor.YELLOW);
-                        bossBar.setStyle(BarStyle.SEGMENTED_10);
-                        bossBar.setTitle("LEGENDARY ITEM");
-                        bossBar.setProgress(0); // Start the progress at 0
-                        bossBarProgress.put(uuid, 0f);
-                    } else {
-                        bossBar.setColor(BarColor.PURPLE);
-                        bossBar.setStyle(BarStyle.SOLID);
-                        ArmorType armorType = getFullArmorSetType(Bukkit.getPlayer(uuid).getInventory().getArmorContents());
-                        bossBar.setTitle(getArmorTitle(armorType));
-                        bossBar.setProgress(1.0); // Set the progress to full
-                        bossBarProgress.remove(uuid); // Remove the player from progress tracking
+                    Player currentPlayer = Bukkit.getPlayer(uuid);
+                    if (currentPlayer != null && currentPlayer.isOnline()) {
+                        BossBar bossBar = playerBossBars.get(uuid);
+                        if (bossBar.getColor() == BarColor.PURPLE) {
+                            bossBar.setColor(BarColor.YELLOW);
+                            bossBar.setStyle(BarStyle.SEGMENTED_10);
+                            bossBar.setTitle("LEGENDARY ITEM");
+                            bossBar.setProgress(0); // Start the progress at 0
+                            bossBarProgress.put(uuid, 0f);
+                        } else {
+                            bossBar.setColor(BarColor.PURPLE);
+                            bossBar.setStyle(BarStyle.SOLID);
+                            ArmorType armorType = getFullArmorSetType(currentPlayer.getInventory().getArmorContents());
+                            bossBar.setTitle(getArmorTitle(armorType));
+                            bossBar.setProgress(1.0); // Set the progress to full
+                            bossBarProgress.remove(uuid); // Remove the player from progress tracking
+                        }
                     }
                 }
             }

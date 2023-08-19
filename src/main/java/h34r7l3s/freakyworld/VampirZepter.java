@@ -46,7 +46,7 @@ public class VampirZepter implements Listener {
 
 
     private void createParticleSnake(Location start, Location end, Player player, double healthToRegain) {
-        int steps = 10; // Anzahl der Schritte für die Interpolation
+        int steps = 3; // Anzahl der Schritte für die Interpolation
         long delayBetweenSteps = 0L; // 2 Ticks Verzögerung zwischen jedem Schritt
 
         for (int i = 0; i <= steps; i++) {
