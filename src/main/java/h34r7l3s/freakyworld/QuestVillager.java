@@ -61,7 +61,7 @@ public class QuestVillager implements Listener {
 
                 Set<Location> discoveredNotes = playerNotesDiscovered.getOrDefault(player.getUniqueId(), new HashSet<>());
                 if (discoveredNotes.size() == noteLocations.length) {
-                    player.sendMessage("QuestVillager: " + "Hervorragend! Du hast alle Noten gefunden und die Melodie gespielt. Hier ist dein BattlePass!");
+                    player.sendMessage("QuestVillager: " + "Hervorragend! Du hast alle Noten gefunden und die Melodie gespielt. Such dir einen Villager und nenne Ihn -MeinVillager- Er zeigt dir den BattlePass!");
                     // Hier können Sie weitere Aktionen hinzufügen, z. B. dem Spieler den BattlePass geben
                 } else {
                     player.sendMessage("QuestVillager: " + "Hallo Abenteurer! Ich habe die Noten meiner berühmtesten Melodie verloren. Kannst du mir helfen, sie zu finden?");

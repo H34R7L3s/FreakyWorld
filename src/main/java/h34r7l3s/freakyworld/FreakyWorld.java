@@ -10,6 +10,7 @@ import java.util.logging.Logger;
 
 public final class FreakyWorld extends JavaPlugin {
     private QuestVillager questVillager;
+    private JavaPlugin plugin;
     private GuildGUIListener guildListener;
     Logger logger = this.getLogger();
     @Override
@@ -65,7 +66,13 @@ public final class FreakyWorld extends JavaPlugin {
         questVillager = new QuestVillager(this);  // Initialisieren des QuestVillager-Listeners
         getServer().getPluginManager().registerEvents(questVillager, this);  // Registrieren des QuestVillager-Listeners
         logger.info("Registered QuestVil");
+        // VampirZepter Initialisierung und Registrierung
+        VampirZepter vampirZepterListener = new VampirZepter();
+        getServer().getPluginManager().registerEvents(vampirZepterListener, this);
+        logger.info("Registered VampirZepter event listener");
 
+        // Starten Sie den visuellen Effekt für das VampirZepter
+        vampirZepterListener.startVampirZepterEffectLoop(this);
     }
 
 
