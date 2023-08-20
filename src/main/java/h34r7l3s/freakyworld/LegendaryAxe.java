@@ -28,10 +28,15 @@ public class LegendaryAxe implements Listener {
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
         String oraxenId = OraxenItems.getIdByItem(itemInHand);
 
+        System.out.println("Item in Hand: " + itemInHand);
+        System.out.println("Oraxen ID: " + oraxenId);
+
         if (oraxenId != null && oraxenId.equals(ORAXEN_ID) && isLog(event.getBlock().getType())) {
+            System.out.println("Chopping tree...");
             chopTree(event);
         }
     }
+
 
     private Player getNearestPlayer(Location location, double maxDistance) {
         double nearestDistanceSquared = maxDistance * maxDistance;
@@ -54,21 +59,27 @@ public class LegendaryAxe implements Listener {
 
     private void chopTree(BlockBreakEvent event) {
         Player player = event.getPlayer();
+        System.out.println("Chopping tree...");
+
         Set<Block> logsToBreak = new HashSet<>();
         collectLogs(event.getBlock(), logsToBreak, 0);
 
         for (Block log : logsToBreak) {
             log.breakNaturally();
+            System.out.println("Breaking log at " + log.getLocation());
         }
 
         // Pflanzen Sie nur einen Setzling an der ursprünglichen Position
         Material originalType = event.getBlock().getType();
+        System.out.println("Original block type: " + originalType);
 
         // Füge eine Verzögerung von 20 Ticks (1 Sekunde) hinzu, bevor du versuchst, den Setzling zu pflanzen
         Bukkit.getScheduler().runTaskLater(FreakyWorld.getPlugin(FreakyWorld.class), () -> {
+            System.out.println("Planting sapling...");
             plantSapling(event.getBlock(), originalType, player);
         }, 20L);
     }
+
 
 
 
@@ -105,28 +116,43 @@ public class LegendaryAxe implements Listener {
         if (saplingType != null) {
             int saplingsRequired = (saplingType == Material.DARK_OAK_SAPLING) ? 4 : 1;
             System.out.println("Saplings Required: " + saplingsRequired);
-            if (player.getInventory().containsAtLeast(new ItemStack(saplingType), saplingsRequired)) {
+
+            ItemStack saplingItem = new ItemStack(saplingType, saplingsRequired);
+            System.out.println("Checking inventory for saplings...");
+
+            if (player.getInventory().containsAtLeast(saplingItem, saplingsRequired)) {
+                System.out.println("Found enough saplings in inventory.");
+
                 if (saplingsRequired == 4) {
                     Block block1 = block.getRelative(BlockFace.NORTH);
                     Block block2 = block.getRelative(BlockFace.EAST);
                     Block block3 = block1.getRelative(BlockFace.EAST);
+
+                    System.out.println("Checking planting suitability for blocks...");
                     if (isSuitableForPlanting(block) && isSuitableForPlanting(block1) && isSuitableForPlanting(block2) && isSuitableForPlanting(block3)) {
+                        System.out.println("Planting 4 saplings.");
                         block.setType(saplingType);
                         block1.setType(saplingType);
                         block2.setType(saplingType);
                         block3.setType(saplingType);
                         player.getInventory().removeItem(new ItemStack(saplingType, 4));
+                    } else {
+                        System.out.println("Planting 4 saplings not suitable.");
                     }
                 } else {
                     if (isSuitableForPlanting(block)) {
+                        System.out.println("Planting single sapling.");
                         block.setType(saplingType);
-                        player.getInventory().removeItem(new ItemStack(saplingType, 1));
+                        player.getInventory().removeItem(saplingItem);
                     }
+                    tryInstantGrow(block);
                 }
-                tryInstantGrow(block);
+            } else {
+                System.out.println("Not enough saplings in inventory.");
             }
         }
     }
+
 
 
 
