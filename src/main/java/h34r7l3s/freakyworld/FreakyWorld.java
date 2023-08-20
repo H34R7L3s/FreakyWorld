@@ -73,6 +73,9 @@ public final class FreakyWorld extends JavaPlugin {
 
         // Starten Sie den visuellen Effekt für das VampirZepter
         vampirZepterListener.startVampirZepterEffectLoop(this);
+
+        getServer().getPluginManager().registerEvents(new LegendaryAxe(), this);
+
     }
 
 

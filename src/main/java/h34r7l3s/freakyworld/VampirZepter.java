@@ -15,6 +15,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.Particle.DustOptions;
 import org.bukkit.Color;
+import org.bukkit.util.Vector;
 
 import static io.th0rgal.oraxen.shaded.playeranimator.api.PlayerAnimatorPlugin.plugin;
 
@@ -46,8 +47,8 @@ public class VampirZepter implements Listener {
 
 
     private void createParticleSnake(Location start, Location end, Player player, double healthToRegain) {
-        int steps = 3; // Anzahl der Schritte für die Interpolation
-        long delayBetweenSteps = 0L; // 2 Ticks Verzögerung zwischen jedem Schritt
+        int steps = 6; // Anzahl der Schritte für die Interpolation
+        long delayBetweenSteps = 1L; // 2 Ticks Verzögerung zwischen jedem Schritt
 
         for (int i = 0; i <= steps; i++) {
             double t = (double) i / steps;
@@ -62,8 +63,8 @@ public class VampirZepter implements Listener {
                 DustOptions redstoneOptions = new DustOptions(Color.RED, 1); // Farbe Rot und Größe 1
                 particleLocation.getWorld().spawnParticle(Particle.REDSTONE, particleLocation, 20, redstoneOptions);
 
-                start.getWorld().spawnParticle(Particle.FLAME, particleLocation, 20); // Erhöhte Anzahl
-                start.getWorld().spawnParticle(Particle.LAVA, particleLocation, 20); // Erhöhte Anzahl
+                start.getWorld().spawnParticle(Particle.FLAME, particleLocation, 4); // Erhöhte Anzahl
+                start.getWorld().spawnParticle(Particle.LAVA, particleLocation, 2); // Erhöhte Anzahl
                 start.getWorld().spawnParticle(Particle.DRAGON_BREATH, particleLocation, 20); // Zusätzlicher Partikeltyp
             }, i * delayBetweenSteps);
         }
@@ -71,7 +72,9 @@ public class VampirZepter implements Listener {
         // Verzögerte Heilung, nachdem die Leuchtschlange den Spieler erreicht hat
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             player.setHealth(Math.min(player.getHealth() + healthToRegain, player.getMaxHealth()));
-            player.getWorld().spawnParticle(Particle.HEART, player.getLocation().add(0, 1, 0), 10);
+            Vector direction = player.getLocation().getDirection().normalize().multiply(2); // 3 Blöcke in die Blickrichtung
+            Location loc = player.getLocation().add(direction).add(0, 2, 0); // 2 Blöcke nach oben
+            player.getWorld().spawnParticle(Particle.HEART, loc, 10);
         }, (steps + 1) * delayBetweenSteps);
     }
 
