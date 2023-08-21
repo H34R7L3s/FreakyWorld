@@ -40,7 +40,7 @@ public class GuildGUIListener implements Listener {
         REMOVING_MEMBER,  // Neu hinzugefügt
         VIEWING_GUILD,
         SETTING_DESCRIPTION,
-        ADDING_MESSAGE   // Hier hinzugefügt
+        ADDING_MESSAGE   // Hier hinzugefügta
     }
 
 
