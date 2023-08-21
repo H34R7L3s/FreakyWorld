@@ -60,7 +60,9 @@ public final class FreakyWorld extends JavaPlugin {
         logger.info("Gilden System");
         guildListener = new GuildGUIListener(this);
         getServer().getPluginManager().registerEvents(guildListener, this);
+        guildListener.spawnGuildMasterVillager();  // Fügen Sie diese Zeile hinzu, um den Villager zu spawnen
         logger.info("Registered GildenSystem");
+
 
         logger.info("QuestVil");
         questVillager = new QuestVillager(this);  // Initialisieren des QuestVillager-Listeners

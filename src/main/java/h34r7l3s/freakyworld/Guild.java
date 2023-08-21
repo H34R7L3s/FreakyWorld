@@ -1,10 +1,10 @@
 package h34r7l3s.freakyworld;
 
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import org.bukkit.Location;
+import org.bukkit.Material;
+
+import java.util.*;
 
 public class Guild {
     private String name;
@@ -16,6 +16,24 @@ public class Guild {
         this.name = name;
         this.members = new HashSet<>();
         addMember(leader, GuildRank.LEADER);  // Adds the leader when the guild is created
+    }
+    private List<String> guildMessages = new ArrayList<>();
+
+    public void addMessage(String message) {
+        guildMessages.add(message);
+    }
+    private String description;
+
+    public String getDescription() {
+        return description;
+    }
+
+    public void setDescription(String description) {
+        this.description = description;
+    }
+
+    public List<String> getMessages() {
+        return guildMessages;
     }
 
 
@@ -40,6 +58,15 @@ public class Guild {
 
     public void addMember(String member) {
         members.add(member);
+    }
+    private Location homeLocation;
+
+    public Location getHomeLocation() {
+        return homeLocation;
+    }
+
+    public void setHomeLocation(Location location) {
+        this.homeLocation = location;
     }
 
 
@@ -72,4 +99,23 @@ public class Guild {
             memberRanks.put(member, rank);
         }
     }
+    private Map<Material, Integer> treasury = new HashMap<>();
+
+    public void deposit(Material material, int amount) {
+        treasury.put(material, treasury.getOrDefault(material, 0) + amount);
+    }
+
+    public boolean withdraw(Material material, int amount) {
+        if (treasury.getOrDefault(material, 0) >= amount) {
+            treasury.put(material, treasury.get(material) - amount);
+            return true;
+        }
+        return false;
+    }
+
+    public Map<Material, Integer> getTreasury() {
+        return treasury;
+    }
+
+
 }
