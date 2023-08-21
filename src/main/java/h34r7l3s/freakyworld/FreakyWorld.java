@@ -60,7 +60,9 @@ public final class FreakyWorld extends JavaPlugin {
         logger.info("Gilden System");
         guildListener = new GuildGUIListener(this);
         getServer().getPluginManager().registerEvents(guildListener, this);
+        guildListener.spawnGuildMasterVillager();  // Fügen Sie diese Zeile hinzu, um den Villager zu spawnen
         logger.info("Registered GildenSystem");
+
 
         logger.info("QuestVil");
         questVillager = new QuestVillager(this);  // Initialisieren des QuestVillager-Listeners
@@ -81,9 +83,25 @@ public final class FreakyWorld extends JavaPlugin {
 
     @Override
     public void onDisable() {
-        CustomVillagerTrader.removeCustomVillager();
-        guildListener.removeGuildVillager();
-        questVillager.removeQuestVillager();
+        try {
+            CustomVillagerTrader.removeVillagers();
+        } catch (Exception e) {
+            e.printStackTrace();  // Oder irgendeine andere Form der Fehlerprotokollierung
+        }
+
+        try {
+            guildListener.removeGuildVillager();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        try {
+            questVillager.removeQuestVillager();
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
         // Plugin shutdown logic
     }
+
 }
