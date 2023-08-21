@@ -18,6 +18,9 @@ public class Guild {
         addMember(leader, GuildRank.LEADER);  // Adds the leader when the guild is created
     }
     private List<String> guildMessages = new ArrayList<>();
+    public boolean isHomeSet() {
+        return homeLocation != null;
+    }
 
     public void addMessage(String message) {
         guildMessages.add(message);
