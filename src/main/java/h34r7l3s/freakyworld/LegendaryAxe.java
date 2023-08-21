@@ -28,11 +28,13 @@ public class LegendaryAxe implements Listener {
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
         String oraxenId = OraxenItems.getIdByItem(itemInHand);
 
+
         //System.out.println("Item in Hand: " + itemInHand);
         //System.out.println("Oraxen ID: " + oraxenId);
 
         if (oraxenId != null && oraxenId.equals(ORAXEN_ID) && isLog(event.getBlock().getType())) {
             //System.out.println("Chopping tree...");
+
             chopTree(event);
         }
     }
@@ -59,23 +61,29 @@ public class LegendaryAxe implements Listener {
 
     private void chopTree(BlockBreakEvent event) {
         Player player = event.getPlayer();
+
        // System.out.println("Chopping tree...");
+
 
         Set<Block> logsToBreak = new HashSet<>();
         collectLogs(event.getBlock(), logsToBreak, 0);
 
         for (Block log : logsToBreak) {
             log.breakNaturally();
+
             //System.out.println("Breaking log at " + log.getLocation());
+
         }
 
         // Pflanzen Sie nur einen Setzling an der ursprünglichen Position
         Material originalType = event.getBlock().getType();
+
         //System.out.println("Original block type: " + originalType);
 
         // Füge eine Verzögerung von 20 Ticks (1 Sekunde) hinzu, bevor du versuchst, den Setzling zu pflanzen
         Bukkit.getScheduler().runTaskLater(FreakyWorld.getPlugin(FreakyWorld.class), () -> {
             //System.out.println("Planting sapling...");
+
             plantSapling(event.getBlock(), originalType, player);
         }, 20L);
     }
@@ -161,7 +169,9 @@ public class LegendaryAxe implements Listener {
         Material below = block.getRelative(BlockFace.DOWN).getType();
         boolean suitable = (block.getType() == Material.AIR || block.getType() == Material.TALL_GRASS)
                 && (below == Material.GRASS_BLOCK || below == Material.DIRT || below == Material.PODZOL || below == Material.COARSE_DIRT);
+
         //System.out.println("Block is " + (suitable ? "suitable" : "not suitable") + " for planting.");
+
         return suitable;
     }
 
