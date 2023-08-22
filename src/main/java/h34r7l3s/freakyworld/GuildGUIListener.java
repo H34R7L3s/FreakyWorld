@@ -60,9 +60,14 @@ public class GuildGUIListener implements Listener {
         }
     }
     private void openSetDescriptionMenu(Player player) {
-        playerStates.put(player, PlayerState.SETTING_DESCRIPTION);
-        player.closeInventory();
-        player.sendMessage("Bitte gebe die neue Beschreibung für deine Gilde im Chat ein.");
+        Guild guild = viewedGuilds.get(player);
+        if (guild != null && guild.getMemberRank(player.getName()) == Guild.GuildRank.LEADER) {
+            playerStates.put(player, PlayerState.SETTING_DESCRIPTION);
+            player.closeInventory();
+            player.sendMessage("Bitte gebe die neue Beschreibung für deine Gilde im Chat ein.");
+        } else {
+            player.sendMessage("Nur der Anführer kann die Beschreibung ändern!");
+        }
     }
     private void openGuildMenu(Player player) {
         Inventory guildMenu = Bukkit.createInventory(null, 27, "Gilden Menü");
@@ -111,9 +116,13 @@ public class GuildGUIListener implements Listener {
             Guild clickedGuild = guildManager.getGuild(itemName);
 
             if ("Neue Gilde gründen".equals(itemName)) {
-                playerStates.put(player, PlayerState.CREATING_GUILD);
-                player.closeInventory();
-                player.sendMessage("Bitte gebe den Namen der neuen Gilde im Chat ein.");
+                if (guildManager.getPlayerGuild(player.getName()) == null) {
+                    playerStates.put(player, PlayerState.CREATING_GUILD);
+                    player.closeInventory();
+                    player.sendMessage("Bitte gebe den Namen der neuen Gilde im Chat ein.");
+                } else {
+                    player.sendMessage("Du bist bereits in einer Gilde!");
+                }
             } else if (clickedGuild != null) {
                 viewedGuilds.put(player, clickedGuild);
                 showGuildOptions(player, clickedGuild);
@@ -168,12 +177,16 @@ public class GuildGUIListener implements Listener {
             Player invitedPlayer = Bukkit.getPlayer(invitedPlayerName);
             if (invitedPlayer == null) return;
 
-            Guild guild = viewedGuilds.get(player);
-            if (guild == null) return;
+            if (guildManager.getPlayerGuild(invitedPlayerName) == null) {
+                Guild guild = viewedGuilds.get(player);
+                if (guild == null) return;
 
-            guild.addMember(invitedPlayer.getName(), Guild.GuildRank.MEMBER);
-            player.sendMessage(invitedPlayer.getName() + " wurde zu " + guild.getName() + " hinzugefügt!");
-            invitedPlayer.sendMessage("Du wurdest zu " + guild.getName() + " hinzugefügt!");
+                guild.addMember(invitedPlayer.getName(), Guild.GuildRank.MEMBER);
+                player.sendMessage(invitedPlayer.getName() + " wurde zu " + guild.getName() + " hinzugefügt!");
+                invitedPlayer.sendMessage("Du wurdest zu " + guild.getName() + " hinzugefügt!");
+            } else {
+                player.sendMessage(invitedPlayerName + " ist bereits in einer Gilde!");
+            }
         } else if (inventoryTitle.equals("Mitglied entfernen")) {
             event.setCancelled(true);
             Guild guild = viewedGuilds.get(player);
@@ -326,13 +339,16 @@ public class GuildGUIListener implements Listener {
     }
     @EventHandler
     public void onBannerPlace(BlockPlaceEvent event) {
-        if (event.getBlock().getType() == Material.WHITE_BANNER) {  // Sie können dies für andere Bannerfarben ändern oder alle Farben überprüfen
+        if (event.getBlock().getType() == Material.WHITE_BANNER) {
             Player player = event.getPlayer();
             Guild guild = guildManager.getPlayerGuild(player.getName());
 
-            if (guild != null && (guild.getMemberRank(player.getName()) == Guild.GuildRank.LEADER || guild.getMemberRank(player.getName()) == Guild.GuildRank.OFFICER)) {
+            if (guild != null && guild.getMemberRank(player.getName()) == Guild.GuildRank.LEADER) {
                 guild.setHomeLocation(event.getBlock().getLocation());
                 player.sendMessage("Gildenheim am Banner gesetzt!");
+            } else {
+                player.sendMessage("Nur der Anführer kann den Gildenheim-Ort setzen!");
+                event.setCancelled(true);
             }
         }
     }
