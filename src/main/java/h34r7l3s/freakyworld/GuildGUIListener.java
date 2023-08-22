@@ -486,6 +486,7 @@ public class GuildGUIListener implements Listener {
         Villager villager = (Villager) Bukkit.getWorld("world").spawnEntity(location, EntityType.VILLAGER);
         villager.setCustomName("Gildenmeister");
         villager.setAI(false);
+        villager.setInvulnerable(true);
         guildVillager = villager;
     }
     public void removeGuildVillager() {
