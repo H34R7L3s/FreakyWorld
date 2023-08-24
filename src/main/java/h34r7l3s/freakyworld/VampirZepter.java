@@ -33,17 +33,15 @@ public class VampirZepter implements Listener {
                 // Direktes Spawnen von Partikeln an der Position des Opfers
                 DustOptions redstoneOptions = new DustOptions(Color.RED, 1); // Farbe Rot
                 victim.getWorld().spawnParticle(Particle.REDSTONE, victim.getLocation(), 20, redstoneOptions);
-                victim.getWorld().spawnParticle(Particle.FLAME, victim.getLocation(), 20);
-                victim.getWorld().spawnParticle(Particle.LAVA, victim.getLocation(), 20);
-                victim.getWorld().spawnParticle(Particle.DRAGON_BREATH, victim.getLocation(), 20);
+                victim.getWorld().spawnParticle(Particle.FLAME, victim.getLocation(), 10);
+                victim.getWorld().spawnParticle(Particle.LAVA, victim.getLocation(), 10);
+                victim.getWorld().spawnParticle(Particle.DRAGON_BREATH, victim.getLocation(), 50);
 
                 // Erzeugen der Partikel-Schlange von Opfer zu Spieler
                 createParticleSnake(victim.getLocation(), player.getLocation(), player, 2.0); // Heilung um 2 Herzen
             }
         }
     }
-
-
 
 
     private void createParticleSnake(Location start, Location end, Player player, double healthToRegain) {
@@ -71,11 +69,41 @@ public class VampirZepter implements Listener {
 
         // Verzögerte Heilung, nachdem die Leuchtschlange den Spieler erreicht hat
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            player.setHealth(Math.min(player.getHealth() + healthToRegain, player.getMaxHealth()));
+
+            double currentHealth = player.getHealth();
+            double healingAmount;
+
+            // Entscheiden, wie viel Gesundheit basierend auf den aktuellen Herzen des Spielers wiederhergestellt werden soll
+            if (currentHealth >= 20) { // 10 Herzen
+                healingAmount = Math.random() < 0.8 ? getRandomValue(1, 2) : getRandomValue(3, 4);
+                // Boost evtl. zu hoch
+
+            } else if (currentHealth >= 16) { // 8 Herzen
+                healingAmount = Math.random() < 0.6 ? getRandomValue(2, 3) : getRandomValue(4, 5);
+                // Boost evt. zu hooch
+
+            } else if (currentHealth >= 12) { // 6 Herzen
+                healingAmount = Math.random() < 0.4 ? getRandomValue(3, 4) : getRandomValue(5, 6);
+                // Boost OK
+
+            } else if (currentHealth >= 8) { // 4 Herzen
+                healingAmount = Math.random() < 0.2 ? getRandomValue(4, 5) : getRandomValue(6, 7);
+                // Boost == unsterblich? XD
+
+            } else { // 2/1 Herzen
+                healingAmount = getRandomValue(7, 8);
+                // ????
+
+
+            }
+
+            player.setHealth(Math.min(player.getHealth() + healingAmount, player.getMaxHealth()));
+
             Vector direction = player.getLocation().getDirection().normalize().multiply(2); // 3 Blöcke in die Blickrichtung
             Location loc = player.getLocation().add(direction).add(0, 2, 0); // 2 Blöcke nach oben
             player.getWorld().spawnParticle(Particle.HEART, loc, 10);
         }, (steps + 1) * delayBetweenSteps);
+
     }
 
 
@@ -83,9 +111,6 @@ public class VampirZepter implements Listener {
     private double lerp(double start, double end, double t) {
         return start + t * (end - start);
     }
-
-
-
 
 
     @EventHandler
@@ -114,4 +139,16 @@ public class VampirZepter implements Listener {
             }
         }.runTaskTimer(plugin, 0L, 20L);
     }
+
+
+    // Funktion, um einen zufälligen Wert zwischen min und max zu erhalten
+    private double getRandomValue(double min, double max) {
+        return min + (Math.random() * (max - min + 1));
+    }
 }
+
+/*
+Durchschnitt: 5-7 normaler Zombie
+
+
+ */

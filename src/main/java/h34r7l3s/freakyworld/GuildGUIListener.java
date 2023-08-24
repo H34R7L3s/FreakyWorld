@@ -60,6 +60,7 @@ public class GuildGUIListener implements Listener {
         }
     }
     private void openSetDescriptionMenu(Player player) {
+
         Guild guild = viewedGuilds.get(player);
         if (guild != null && guild.getMemberRank(player.getName()) == Guild.GuildRank.LEADER) {
             playerStates.put(player, PlayerState.SETTING_DESCRIPTION);
@@ -68,6 +69,7 @@ public class GuildGUIListener implements Listener {
         } else {
             player.sendMessage("Nur der Anführer kann die Beschreibung ändern!");
         }
+
     }
     private void openGuildMenu(Player player) {
         Inventory guildMenu = Bukkit.createInventory(null, 27, "Gilden Menü");
@@ -116,6 +118,7 @@ public class GuildGUIListener implements Listener {
             Guild clickedGuild = guildManager.getGuild(itemName);
 
             if ("Neue Gilde gründen".equals(itemName)) {
+
                 if (guildManager.getPlayerGuild(player.getName()) == null) {
                     playerStates.put(player, PlayerState.CREATING_GUILD);
                     player.closeInventory();
@@ -123,6 +126,7 @@ public class GuildGUIListener implements Listener {
                 } else {
                     player.sendMessage("Du bist bereits in einer Gilde!");
                 }
+
             } else if (clickedGuild != null) {
                 viewedGuilds.put(player, clickedGuild);
                 showGuildOptions(player, clickedGuild);
@@ -177,6 +181,7 @@ public class GuildGUIListener implements Listener {
             Player invitedPlayer = Bukkit.getPlayer(invitedPlayerName);
             if (invitedPlayer == null) return;
 
+
             if (guildManager.getPlayerGuild(invitedPlayerName) == null) {
                 Guild guild = viewedGuilds.get(player);
                 if (guild == null) return;
@@ -187,6 +192,7 @@ public class GuildGUIListener implements Listener {
             } else {
                 player.sendMessage(invitedPlayerName + " ist bereits in einer Gilde!");
             }
+
         } else if (inventoryTitle.equals("Mitglied entfernen")) {
             event.setCancelled(true);
             Guild guild = viewedGuilds.get(player);
@@ -259,7 +265,50 @@ public class GuildGUIListener implements Listener {
         if (guild != null) {
             guild.addMessage(message);
             player.sendMessage("Nachricht zur Gilde hinzugefügt!");
+
         }
+    }
+    private void openGuildMessagesMenu(Player player, Guild guild) {
+        Inventory guildMessagesMenu = Bukkit.createInventory(null, 54, "Gilden-Nachrichten");
+
+        // Nachrichten anzeigen
+        for (String message : guild.getMessages()) {
+            ItemStack messageItem = new ItemStack(Material.PAPER);
+            ItemMeta messageMeta = messageItem.getItemMeta();
+            messageMeta.setDisplayName(message);
+            messageItem.setItemMeta(messageMeta);
+            guildMessagesMenu.addItem(messageItem);
+
+        }
+
+        // Rück-Knopf
+        addBackButton(guildMessagesMenu);
+
+        // Option zum Hinzufügen einer neuen Nachricht
+        ItemStack addMessageItem = new ItemStack(Material.GREEN_WOOL);
+        ItemMeta addMessageMeta = addMessageItem.getItemMeta();
+        addMessageMeta.setDisplayName("Neue Nachricht hinzufügen");
+        addMessageItem.setItemMeta(addMessageMeta);
+        guildMessagesMenu.setItem(53, addMessageItem);  // Setzt es im letzten Slot
+
+        player.openInventory(guildMessagesMenu);
+    }
+
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        Guild guild = guildManager.getPlayerGuild(player.getName());
+        if (guild != null) {
+            for (String message : guild.getMessages()) {
+                player.sendMessage(message);
+            }
+        }
+    }
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        playerStates.remove(player);
+        viewedGuilds.remove(player);
     }
     private void openGuildMessagesMenu(Player player, Guild guild) {
         Inventory guildMessagesMenu = Bukkit.createInventory(null, 54, "Gilden-Nachrichten");
@@ -339,6 +388,7 @@ public class GuildGUIListener implements Listener {
     }
     @EventHandler
     public void onBannerPlace(BlockPlaceEvent event) {
+
         if (event.getBlock().getType() == Material.WHITE_BANNER) {
             Player player = event.getPlayer();
             Guild guild = guildManager.getPlayerGuild(player.getName());
@@ -349,6 +399,7 @@ public class GuildGUIListener implements Listener {
             } else {
                 player.sendMessage("Nur der Anführer kann den Gildenheim-Ort setzen!");
                 event.setCancelled(true);
+
             }
         }
     }
@@ -503,6 +554,7 @@ public class GuildGUIListener implements Listener {
         villager.setCustomName("Gildenmeister");
         villager.setAI(false);
         villager.setInvulnerable(true);
+
         guildVillager = villager;
     }
     public void removeGuildVillager() {
