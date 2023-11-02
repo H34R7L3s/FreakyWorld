@@ -31,7 +31,7 @@ public class MyVillager implements Listener {
 
     public MyVillager(JavaPlugin plugin) {
         this.plugin = plugin;
-        this.villagerKey = new NamespacedKey(plugin, "VillagerName");
+        this.villagerKey = new NamespacedKey(plugin, "Unbekannter");
     }
 
     @EventHandler
@@ -43,7 +43,7 @@ public class MyVillager implements Listener {
             // Überprüfe, ob der Villager ein benutzerdefiniertes NameTag hat
             if (villager.getCustomName() != null) {
                 // Überprüfe, ob der Villager den gewünschten Namen hat
-                if (villager.getCustomName().equals("MeinVillager")) {
+                if (villager.getCustomName().equals("Unbekannter")) {
                     // Setze den Villager als unverwundbar und verhindere, dass er sich bewegt
                     villager.setInvulnerable(true);
                     villager.setAI(false);
@@ -52,9 +52,9 @@ public class MyVillager implements Listener {
                     List<String> sentences = Arrays.asList(
                             "FREAKS?! Es freut mich, euch zu sehen!",
                             "Ich habe etwas Besonderes vorbereitet. Viel Arbeit wartet auf euch!",
-                            "In den kommenden 7 Wochen, werden nach und nach..",
-                            "7 Aufgaben-Bereiche freigeschaltet!",
-                            "Zeit habt ihr dafür soviel ihr nur braucht...!",
+                            "Muss ich da viel erklären?",
+                            "....",
+                            "Schau es dir einfach mal an",
                             "Hier:"
                     );
 
@@ -87,7 +87,7 @@ public class MyVillager implements Listener {
     public void onEntityDamage(EntityDamageEvent event) {
         if (event.getEntity().getType() == EntityType.VILLAGER) {
             Villager villager = (Villager) event.getEntity();
-            if (villager.getCustomName() != null && villager.getCustomName().equals("MeinVillager")) {
+            if (villager.getCustomName() != null && villager.getCustomName().equals("Unbekannter")) {
                 event.setCancelled(true);
             }
         }
@@ -97,7 +97,7 @@ public class MyVillager implements Listener {
     public void onEntityTarget(EntityTargetEvent event) {
         if (event.getEntity().getType() == EntityType.VILLAGER) {
             Villager villager = (Villager) event.getEntity();
-            if (villager.getCustomName() != null && villager.getCustomName().equals("MeinVillager")) {
+            if (villager.getCustomName() != null && villager.getCustomName().equals("Unbekannter")) {
                 event.setCancelled(true);
             }
         }

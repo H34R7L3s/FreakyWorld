@@ -1,10 +1,12 @@
 package h34r7l3s.freakyworld;
 
 
-import org.bukkit.*;
+import org.bukkit.Color;
 import io.th0rgal.oraxen.api.OraxenItems;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
-import org.bukkit.block.BlockFace;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -17,7 +19,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
-
+import org.bukkit.Bukkit;
+import org.bukkit.Tag;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -60,9 +63,9 @@ public class BloomAura implements Listener {
                             for (double y = -BOOST_RADIUS; y <= BOOST_RADIUS; y++) {
                                 for (double z = -BOOST_RADIUS; z <= BOOST_RADIUS; z++) {
                                     if (isNearWater) {
-                                        loc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc.clone().add(x, y + 1, z), 3, 0.5, 0.5, 0.5);
+                                        loc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc.clone().add(x, y + 1, z), 5, 0.5, 0.5, 0.5);
                                     } else {
-                                        Particle.DustOptions dustOptions = new Particle.DustOptions(Color.RED, 0.5f);
+                                        Particle.DustOptions dustOptions = new Particle.DustOptions(Color.RED, 1);
                                         loc.getWorld().spawnParticle(Particle.REDSTONE, loc.clone().add(x, y + 1, z), 5, 0.5, 0.5, 0.5, dustOptions);
                                     }
                                 }
@@ -182,46 +185,15 @@ public class BloomAura implements Listener {
                             ageable.setAge(ageable.getAge() + 1);
                             block.setBlockData(ageable);
                         }
-                    } else if (block.getType() == Material.CACTUS || block.getType() == Material.SUGAR_CANE || block.getType() == Material.BAMBOO) {
+                    } else if (block.getType() == Material.CACTUS || block.getType() == Material.SUGAR_CANE) {
                         if (block.getRelative(0, 1, 0).getType() == Material.AIR) {
                             block.getRelative(0, 1, 0).setType(block.getType());
-                        }
-                    } else if (block.getType() == Material.MELON_STEM || block.getType() == Material.PUMPKIN_STEM) {
-                        org.bukkit.block.data.Ageable stem = (org.bukkit.block.data.Ageable) block.getBlockData();
-                        if (stem.getAge() < stem.getMaximumAge()) {
-                            stem.setAge(stem.getAge() + 1);
-                            block.setBlockData(stem);
-                        }
-                    } else if (block.getType().name().endsWith("_SAPLING")) {
-                        // Hier können Sie den Wachstumszustand des Setzlings erhöhen oder ihn in einen Baum verwandeln
-                        block.setType(Material.AIR); // Entfernen Sie den Setzling
-                        block.getWorld().generateTree(block.getLocation(), TreeType.TREE); // Erzeugen Sie einen Baum an der Stelle des Setzlings
-                    } else if (block.getType() == Material.BROWN_MUSHROOM || block.getType() == Material.RED_MUSHROOM) {
-                        // Hier können Sie den Wachstumszustand des Pilzes erhöhen oder ihn in einen Riesenpilz verwandeln
-                        block.setType(Material.AIR); // Entfernen Sie den Pilz
-                        block.getWorld().generateTree(block.getLocation(), block.getType() == Material.BROWN_MUSHROOM ? TreeType.BROWN_MUSHROOM : TreeType.RED_MUSHROOM); // Erzeugen Sie einen Riesenpilz an der Stelle des Pilzes
-                    } else if (block.getType() == Material.SEAGRASS || block.getType() == Material.TALL_SEAGRASS) {
-                        // Hier können Sie den Wachstumszustand des Seegrases erhöhen
-                        block.setType(Material.TALL_SEAGRASS);
-                    } else if (block.getType() == Material.KELP) {
-                        // Hier können Sie den Wachstumszustand des Seetangs erhöhen
-                        if (block.getRelative(0, 1, 0).getType() == Material.WATER) {
-                            block.getRelative(0, 1, 0).setType(Material.KELP_PLANT);
-                        }
-                    } else if (block.getType() == Material.VINE) {
-                        // Hier können Sie den Wachstumszustand der Weinreben erhöhen
-                        for (BlockFace face : BlockFace.values()) {
-                            if (block.getRelative(face).getType() == Material.AIR) {
-                                block.getRelative(face).setType(Material.VINE);
-                            }
                         }
                     }
                 }
             }
         }
     }
-
-
 
     private boolean isNearWater(Location location) {
         for (double x = -BOOST_RADIUS; x <= BOOST_RADIUS; x++) {

@@ -1,10 +1,12 @@
 package h34r7l3s.freakyworld;
 
 import io.th0rgal.oraxen.api.OraxenItems;
+import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.entity.EntityType;
+import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -44,47 +46,68 @@ public class CustomVillagerTrader implements Listener {
         if (event.getRightClicked() instanceof Villager) {
             Villager villager = (Villager) event.getRightClicked();
 
-            if (villager.equals(weaponsVillager)) {
-                setupWeaponsTrades(villager);
-            } else if (villager.equals(combatVillager)) {
-                setupCombatTrades(villager);
-            } else if (villager.equals(armorVillager)) {
-                setupArmorTrades(villager);
-            } else if (villager.equals(specialVillager)) {
-                setupSpecialTrades(villager);
-            } else {
-                return;
-            }
+            if (villager.equals(weaponsVillager) || villager.equals(combatVillager) || villager.equals(armorVillager) || villager.equals(specialVillager)) {
+                // Überprüfen, ob der Spieler das erforderliche Item im Inventar hat
+                if (!hasOraxenItem(event.getPlayer(), "silber") && !hasOraxenItem(event.getPlayer(), "gold")) {
+                    event.getPlayer().sendMessage(ChatColor.RED + "Du bist uns unbekannt! Du " + ChatColor.DARK_PURPLE + "Freak" + ChatColor.RED + "! " + ChatColor.GOLD + "Nichts hast du an dir, was mich interessieren könnte!" + ChatColor.RED + " Also lasset uns ins Ruhe, " + ChatColor.DARK_PURPLE + "Freak" + ChatColor.RED + ".");
+                    event.setCancelled(true);
+                    return;
+                }
 
-            event.getPlayer().openMerchant(villager, true);
-            event.setCancelled(true);
+                if (villager.equals(weaponsVillager)) {
+                    setupWeaponsTrades(villager);
+                } else if (villager.equals(combatVillager)) {
+                    setupCombatTrades(villager);
+                } else if (villager.equals(armorVillager)) {
+                    setupArmorTrades(villager);
+                } else if (villager.equals(specialVillager)) {
+                    setupSpecialTrades(villager);
+                }
+
+                event.getPlayer().openMerchant(villager, true);
+                event.setCancelled(true);
+            }
         }
     }
 
+    private boolean hasOraxenItem(Player player, String itemId) {
+        ItemStack targetItem = OraxenItems.getItemById(itemId).build();
+        if (targetItem.hasItemMeta() && targetItem.getItemMeta().hasDisplayName()) {
+            String targetDisplayName = targetItem.getItemMeta().getDisplayName();
+            for (ItemStack item : player.getInventory().getContents()) {
+                if (item != null && item.hasItemMeta() && item.getItemMeta().hasDisplayName() && item.getItemMeta().getDisplayName().equals(targetDisplayName)) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+
     private void setupWeaponsVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, -251, 86, 1850);
+        Location loc = new Location(world, 111, 64, -165);
         weaponsVillager = spawnVillager(loc, "Tools Trader");
         setupWeaponsTrades(weaponsVillager);
     }
 
     private void setupCombatVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, -254, 86, 1849);
+        Location loc = new Location(world, 105, 64, -154);
         combatVillager = spawnVillager(loc, "Mystery Trader");
         setupCombatTrades(combatVillager);
     }
 
     private void setupArmorVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, -257, 86, 1849);
+        Location loc = new Location(world, 105, 64, -162);
         armorVillager = spawnVillager(loc, "Armor Trader");
         setupArmorTrades(armorVillager);
     }
 
     private void setupSpecialVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, -257, 86, 1852);
+        Location loc = new Location(world, 111, 64, -156);
         specialVillager = spawnVillager(loc, "Special Trader");
         setupSpecialTrades(specialVillager);
     }
@@ -96,6 +119,12 @@ public class CustomVillagerTrader implements Listener {
         villager.setProfession(Villager.Profession.WEAPONSMITH);
         villager.setAI(false);
         villager.setInvulnerable(true);
+
+        // Den Villager um 90 Grad nach rechts drehen
+        float newYaw = (villager.getLocation().getYaw() + 90) % 360;
+        villager.getLocation().setYaw(newYaw);
+        villager.teleport(villager.getLocation());
+
         return villager;
     }
     private void setupWeaponsTrades(Villager villager) {
@@ -118,22 +147,22 @@ public class CustomVillagerTrader implements Listener {
 
     private void setupArmorTrades(Villager villager) {
         ArrayList<MerchantRecipe> trades = new ArrayList<>();
-        trades.add(createTrade(createGoldStack(3), OraxenItems.getItemById("sky_crown").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(4), OraxenItems.getItemById("sky_guard").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(3), OraxenItems.getItemById("sky_boots").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(4), OraxenItems.getItemById("sky_leggings").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(3), OraxenItems.getItemById("fire_crown").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(4), OraxenItems.getItemById("fire_guard").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(3), OraxenItems.getItemById("fire_boots").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(4), OraxenItems.getItemById("fire_leggings").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(3), OraxenItems.getItemById("water_crown").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(4), OraxenItems.getItemById("water_guard").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(3), OraxenItems.getItemById("water_boots").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(4), OraxenItems.getItemById("water_leggings").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(3), OraxenItems.getItemById("stone_crown").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(4), OraxenItems.getItemById("stone_guard").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(3), OraxenItems.getItemById("stone_boots").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(4), OraxenItems.getItemById("stone_leggings").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(13), OraxenItems.getItemById("sky_crown").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(14), OraxenItems.getItemById("sky_guard").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(13), OraxenItems.getItemById("sky_boots").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(14), OraxenItems.getItemById("sky_leggings").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(13), OraxenItems.getItemById("fire_crown").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(14), OraxenItems.getItemById("fire_guard").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(13), OraxenItems.getItemById("fire_boots").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(14), OraxenItems.getItemById("fire_leggings").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(13), OraxenItems.getItemById("water_crown").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(14), OraxenItems.getItemById("water_guard").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(13), OraxenItems.getItemById("water_boots").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(14), OraxenItems.getItemById("water_leggings").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(13), OraxenItems.getItemById("stone_crown").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(14), OraxenItems.getItemById("stone_guard").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(13), OraxenItems.getItemById("stone_boots").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(14), OraxenItems.getItemById("stone_leggings").build(), 1, 5));
         villager.setRecipes(trades);
     }
 
