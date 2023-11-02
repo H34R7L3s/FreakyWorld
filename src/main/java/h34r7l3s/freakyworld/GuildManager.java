@@ -1,9 +1,6 @@
 package h34r7l3s.freakyworld;
 
 
-import org.bukkit.Bukkit;
-import org.bukkit.entity.Player;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -44,15 +41,6 @@ public class GuildManager {
     }
 
     public void deleteGuild(String name) {
-        Guild guild = guilds.get(name);
-        if (guild != null) {
-            for (String member : guild.getMembers()) {
-                Player player = Bukkit.getPlayer(member);
-                if (player != null) {
-                    player.sendMessage("Deine Gilde " + name + " wurde gelöscht.");
-                }
-            }
-            guilds.remove(name);
-        }
+        guilds.remove(name);
     }
 }

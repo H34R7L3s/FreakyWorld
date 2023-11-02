@@ -109,17 +109,12 @@ public class Guild {
     }
 
     public boolean withdraw(Material material, int amount) {
-
-        int currentAmount = treasury.getOrDefault(material, 0);
-        if (currentAmount >= amount) {
-            treasury.put(material, currentAmount - amount);
-
+        if (treasury.getOrDefault(material, 0) >= amount) {
+            treasury.put(material, treasury.get(material) - amount);
             return true;
         }
         return false;
     }
-
-
 
     public Map<Material, Integer> getTreasury() {
         return treasury;

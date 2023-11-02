@@ -38,12 +38,8 @@ public class ArmorEnhancements implements Listener {
             @Override
             public void run() {
                 for (Player player : Bukkit.getOnlinePlayers()) {
-                    if (player != null && player.isOnline()) {
-                        checkPlayerArmor(player);
-                    }
+                    checkPlayerArmor(player);
                 }
-
-
             }
         }.runTaskTimer(plugin, 0L, 100L); // Check every 5 seconds (100 ticks)
 
@@ -52,23 +48,20 @@ public class ArmorEnhancements implements Listener {
             @Override
             public void run() {
                 for (UUID uuid : playerBossBars.keySet()) {
-                    Player currentPlayer = Bukkit.getPlayer(uuid);
-                    if (currentPlayer != null && currentPlayer.isOnline()) {
-                        BossBar bossBar = playerBossBars.get(uuid);
-                        if (bossBar.getColor() == BarColor.PURPLE) {
-                            bossBar.setColor(BarColor.YELLOW);
-                            bossBar.setStyle(BarStyle.SEGMENTED_10);
-                            bossBar.setTitle("LEGENDARY ITEM");
-                            bossBar.setProgress(0); // Start the progress at 0
-                            bossBarProgress.put(uuid, 0f);
-                        } else {
-                            bossBar.setColor(BarColor.PURPLE);
-                            bossBar.setStyle(BarStyle.SOLID);
-                            ArmorType armorType = getFullArmorSetType(currentPlayer.getInventory().getArmorContents());
-                            bossBar.setTitle(getArmorTitle(armorType));
-                            bossBar.setProgress(1.0); // Set the progress to full
-                            bossBarProgress.remove(uuid); // Remove the player from progress tracking
-                        }
+                    BossBar bossBar = playerBossBars.get(uuid);
+                    if (bossBar.getColor() == BarColor.PURPLE) {
+                        bossBar.setColor(BarColor.YELLOW);
+                        bossBar.setStyle(BarStyle.SEGMENTED_10);
+                        bossBar.setTitle("LEGENDARY ITEM");
+                        bossBar.setProgress(0); // Start the progress at 0
+                        bossBarProgress.put(uuid, 0f);
+                    } else {
+                        bossBar.setColor(BarColor.PURPLE);
+                        bossBar.setStyle(BarStyle.SOLID);
+                        ArmorType armorType = getFullArmorSetType(Bukkit.getPlayer(uuid).getInventory().getArmorContents());
+                        bossBar.setTitle(getArmorTitle(armorType));
+                        bossBar.setProgress(1.0); // Set the progress to full
+                        bossBarProgress.remove(uuid); // Remove the player from progress tracking
                     }
                 }
             }
@@ -282,13 +275,13 @@ public class ArmorEnhancements implements Listener {
     private String getArmorTitle(ArmorType armorType) {
         switch (armorType) {
             case SKY:
-                return "Meister des Himmels";
+                return "Rüstung des Himmels";
             case FIRE:
-                return "Meister des Feuers";
+                return "Rüstung des Feuers";
             case WATER:
-                return "Meister des Meeres";
+                return "Rüstung des Meeres";
             case STONE:
-                return "Meister des Berges";
+                return "Rüstung des Berges";
             default:
                 return "Unbekannte Rüstung";
         }
