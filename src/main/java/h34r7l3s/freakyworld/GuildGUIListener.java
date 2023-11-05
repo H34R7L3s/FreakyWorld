@@ -310,47 +310,6 @@ public class GuildGUIListener implements Listener {
         playerStates.remove(player);
         viewedGuilds.remove(player);
     }
-    private void openGuildMessagesMenu(Player player, Guild guild) {
-        Inventory guildMessagesMenu = Bukkit.createInventory(null, 54, "Gilden-Nachrichten");
-
-        // Nachrichten anzeigen
-        for (String message : guild.getMessages()) {
-            ItemStack messageItem = new ItemStack(Material.PAPER);
-            ItemMeta messageMeta = messageItem.getItemMeta();
-            messageMeta.setDisplayName(message);
-            messageItem.setItemMeta(messageMeta);
-            guildMessagesMenu.addItem(messageItem);
-        }
-
-        // Rück-Knopf
-        addBackButton(guildMessagesMenu);
-
-        // Option zum Hinzufügen einer neuen Nachricht
-        ItemStack addMessageItem = new ItemStack(Material.GREEN_WOOL);
-        ItemMeta addMessageMeta = addMessageItem.getItemMeta();
-        addMessageMeta.setDisplayName("Neue Nachricht hinzufügen");
-        addMessageItem.setItemMeta(addMessageMeta);
-        guildMessagesMenu.setItem(53, addMessageItem);  // Setzt es im letzten Slot
-
-        player.openInventory(guildMessagesMenu);
-    }
-
-    @EventHandler
-    public void onPlayerJoin(PlayerJoinEvent event) {
-        Player player = event.getPlayer();
-        Guild guild = guildManager.getPlayerGuild(player.getName());
-        if (guild != null) {
-            for (String message : guild.getMessages()) {
-                player.sendMessage(message);
-            }
-        }
-    }
-    @EventHandler
-    public void onPlayerQuit(PlayerQuitEvent event) {
-        Player player = event.getPlayer();
-        playerStates.remove(player);
-        viewedGuilds.remove(player);
-    }
 
     @EventHandler
     public void onPlayerChat(AsyncPlayerChatEvent event) {
