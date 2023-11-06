@@ -324,13 +324,17 @@ public class GuildGUIListener implements Listener {
             boolean success = guildManager.createGuild(guildName, player.getName());
             if (success) {
                 player.sendMessage("Die Gilde " + guildName + " wurde erfolgreich erstellt!");
+                playerStates.put(player, PlayerState.NONE);  // Setzen des PlayerState auf NONE
+                openGuildMenu(player);  // Öffnen des Gildenmenüs für den Spieler
             } else {
                 player.sendMessage("Es gab einen Fehler beim Erstellen der Gilde. Möglicherweise existiert bereits eine Gilde mit diesem Namen.");
+                playerStates.put(player, PlayerState.NONE);  // Auch hier sollten wir den PlayerState zurücksetzen
             }
-        } if (state == PlayerState.ADDING_MESSAGE) {
+        } else if (state == PlayerState.ADDING_MESSAGE) {
             event.setCancelled(true);
             addGuildMessage(player, event.getMessage());
-        }else if (state == PlayerState.SETTING_DESCRIPTION) {
+            playerStates.put(player, PlayerState.NONE);  // Auch hier den PlayerState zurücksetzen, nachdem die Nachricht hinzugefügt wurde
+        } else if (state == PlayerState.SETTING_DESCRIPTION) {
             event.setCancelled(true);
 
             Guild guild = viewedGuilds.get(player);
@@ -338,13 +342,14 @@ public class GuildGUIListener implements Listener {
                 String description = event.getMessage();
                 guild.setDescription(description);
                 player.sendMessage("Die Beschreibung deiner Gilde wurde erfolgreich aktualisiert!");
-                playerStates.put(player, PlayerState.NONE);
-
+                playerStates.put(player, PlayerState.NONE);  // PlayerState zurücksetzen nach dem Aktualisieren der Beschreibung
             } else {
                 player.sendMessage("Es gab einen Fehler beim Festlegen der Beschreibung. Du gehörst möglicherweise keiner Gilde an.");
+                playerStates.put(player, PlayerState.NONE);  // Auch hier den PlayerState zurücksetzen
             }
         }
     }
+
     @EventHandler
     public void onBannerPlace(BlockPlaceEvent event) {
 
