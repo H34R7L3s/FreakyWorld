@@ -37,7 +37,7 @@ public final class FreakyWorld extends JavaPlugin {
     @Override
     public void onEnable() {
         //getServer().getPluginManager().registerEvents(new ArmorEnhancements(this), this);
-
+        this.saveDefaultConfig();
         logger.info("Before creating factory");
         LightningArrowMechanicFactory factory;
         factory = new LightningArrowMechanicFactory("lightning_arrow_mechanic");

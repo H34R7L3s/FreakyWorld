@@ -39,6 +39,11 @@ public class Guild {
         return guildMessages;
     }
 
+    public Map<String, GuildRank> getMemberRanks() {
+        return new HashMap<>(memberRanks);
+    }
+
+
 
     public enum GuildRank {
         LEADER("Anführer"),
@@ -88,14 +93,20 @@ public class Guild {
         memberRanks.put(member, rank);
     }
     public boolean hasPermission(String playerName, String permission) {
-        // Implementieren Sie die Logik hier, um zu überprüfen, ob der Spieler die erforderliche Berechtigung hat.
-        // Zum Beispiel:
-        GuildRank rank = getMemberRank(playerName);
-        if (permission.equals("remove_member")) {
-            return rank == GuildRank.LEADER; // Nur der Anführer darf Mitglieder entfernen.
+        GuildRank rank = memberRanks.get(playerName);
+        if (rank == null) {
+            return false;
         }
-        // Fügen Sie weitere Berechtigungsprüfungen hinzu, wie benötigt.
-        return false;
+
+        switch (permission) {
+            case "treasury_access":
+                return rank == GuildRank.LEADER || rank == GuildRank.OFFICER;
+            case "remove_member":
+                return rank == GuildRank.LEADER;
+            // Add other permissions as necessary
+            default:
+                return false;
+        }
     }
     public boolean removeMember(String memberName) {
         // Implementieren Sie die Logik hier, um das Mitglied zu entfernen.
@@ -129,7 +140,9 @@ public class Guild {
         }
         return false;
     }
-
+    public void clearTreasury() {
+        this.treasury.clear();
+    }
     public Map<Material, Integer> getTreasury() {
         return treasury;
     }

@@ -12,6 +12,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.player.AsyncPlayerChatEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
@@ -22,6 +23,7 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.entity.EntityType;
+import h34r7l3s.freakyworld.GuildSaver;
 
 
 import java.util.*;
@@ -29,6 +31,7 @@ import java.util.*;
 public class GuildGUIListener implements Listener {
 
     private final JavaPlugin plugin;
+    private final GuildSaver guildSaver;
     private GuildManager guildManager;
     private Map<Player, PlayerState> playerStates = new HashMap<>();
     private Map<Player, Guild> viewedGuilds = new HashMap<>();
@@ -47,6 +50,7 @@ public class GuildGUIListener implements Listener {
     public GuildGUIListener(JavaPlugin plugin) {
         this.plugin = plugin;
         this.guildManager = new GuildManager();
+        this.guildSaver = new GuildSaver(plugin);
     }
 
     @EventHandler
@@ -165,7 +169,18 @@ public class GuildGUIListener implements Listener {
                     openChangeRankMenu(player, guild);
                     break;
                 case "Schatztruhe öffnen":
-                    openTreasuryMenu(player, guild);
+                    if (guild == null) {
+                        guild = viewedGuilds.get(player);
+                        if (guild == null) return;
+                    }
+
+                    Guild.GuildRank rank = guild.getMemberRank(player.getName());
+                    if (rank == Guild.GuildRank.LEADER || rank == Guild.GuildRank.OFFICER) {
+                        // Öffnen Sie das Inventar der Schatztruhe
+                        openTreasuryMenu(player, guild);
+                    } else {
+                        player.sendMessage("Du hast nicht die erforderlichen Berechtigungen, um den Gildenschatz zu öffnen.");
+                    }
                     break;
                 default:
                     // Für zukünftige Funktionen, die hinzugefügt werden könnten
@@ -498,6 +513,32 @@ public class GuildGUIListener implements Listener {
         }
 
         player.openInventory(guildOptions);
+    }
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        if (event.getView().getTitle().equals("Gilden-Schatz")) {
+            Player player = (Player) event.getPlayer();
+            Guild guild = viewedGuilds.get(player);
+
+            if (guild != null) {
+                // Clear the current treasury before updating it
+                guild.clearTreasury();
+
+                for (ItemStack item : event.getInventory().getContents()) {
+                    if (item != null && item.getType() != Material.AIR) {
+                        // Update the treasury item by item
+                        guild.deposit(item.getType(), item.getAmount());
+                    }
+                }
+
+                // Assuming you have a method to save the guild data
+                saveGuildData(guild);
+            }
+        }
+    }
+    // Add a method to clear the treasury in your Guild class
+    public void saveGuildData(Guild guild) {
+        guildSaver.saveGuildData(guild); // Assuming guildSaver is an instance of GuildSaver
     }
 
     private void openTreasuryMenu(Player player, Guild guild) {
