@@ -330,21 +330,32 @@ public class GuildGUIListener implements Listener {
             event.setCancelled(true);
 
             String guildName = event.getMessage();
-
             boolean success = guildManager.createGuild(guildName, player.getName());
             if (success) {
                 player.sendMessage("Die Gilde " + guildName + " wurde erfolgreich erstellt!");
-                playerStates.put(player, PlayerState.NONE);  // Setzen des PlayerState auf NONE
-                openGuildMenu(player);  // Öffnen des Gildenmenüs für den Spieler
+                // Öffnen des Gildenmenüs für den Spieler
+                openGuildMenu(player);
             } else {
                 player.sendMessage("Es gab einen Fehler beim Erstellen der Gilde. Möglicherweise existiert bereits eine Gilde mit diesem Namen.");
-                playerStates.put(player, PlayerState.NONE);  // Auch hier sollten wir den PlayerState zurücksetzen
             }
+            // Setzen des PlayerState auf NONE in jedem Fall
+            playerStates.put(player, PlayerState.NONE);
         } else if (state == PlayerState.ADDING_MESSAGE) {
             event.setCancelled(true);
-            addGuildMessage(player, event.getMessage());
-            playerStates.put(player, PlayerState.NONE);  // Auch hier den PlayerState zurücksetzen, nachdem die Nachricht hinzugefügt wurde
-        } else if (state == PlayerState.SETTING_DESCRIPTION) {
+
+            String message = event.getMessage();
+            Guild guild = viewedGuilds.get(player);
+            if (guild != null) {
+                guild.addMessage(message); // Hier wird die Nachricht hinzugefügt
+                player.sendMessage("Die Nachricht wurde erfolgreich an die Gilde angepinnt.");
+                // Öffnen des Nachrichtenmenüs für den Spieler
+                openGuildMessagesMenu(player, guild);
+            } else {
+                player.sendMessage("Es gab einen Fehler. Du scheinst keiner Gilde anzugehören.");
+            }
+            // Setzen des PlayerState auf NONE in jedem Fall
+            playerStates.put(player, PlayerState.NONE);
+        }  else if (state == PlayerState.SETTING_DESCRIPTION) {
             event.setCancelled(true);
 
             Guild guild = viewedGuilds.get(player);
