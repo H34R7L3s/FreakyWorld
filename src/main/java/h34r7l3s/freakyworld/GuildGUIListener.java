@@ -76,34 +76,40 @@ public class GuildGUIListener implements Listener {
 
     }
     private void openGuildMenu(Player player) {
-        Inventory guildMenu = Bukkit.createInventory(null, 27, "Gilden Menü");
+        Bukkit.getScheduler().runTask(plugin, new Runnable() {
+            @Override
+            public void run() {
+                Inventory guildMenu = Bukkit.createInventory(null, 27, "Gilden Menü");
 
-        // Anzeigen aller Gilden
-        int slot = 0;
-        for (Guild guild : guildManager.getAllGuilds()) {
-            ItemStack guildItem = new ItemStack(Material.PAPER);
-            ItemMeta meta = guildItem.getItemMeta();
-            meta.setDisplayName(guild.getName());
+                // Anzeigen aller Gilden
+                int slot = 0;
+                for (Guild guild : guildManager.getAllGuilds()) {
+                    ItemStack guildItem = new ItemStack(Material.PAPER);
+                    ItemMeta meta = guildItem.getItemMeta();
+                    meta.setDisplayName(guild.getName());
 
-            // Setzen der Beschreibung als Lore
-            List<String> lore = new ArrayList<>();
-            lore.add(guild.getDescription());
-            meta.setLore(lore);
+                    // Setzen der Beschreibung als Lore
+                    List<String> lore = new ArrayList<>();
+                    lore.add(guild.getDescription());
+                    meta.setLore(lore);
 
-            guildItem.setItemMeta(meta);
-            guildMenu.setItem(slot, guildItem);
-            slot++;
-        }
+                    guildItem.setItemMeta(meta);
+                    guildMenu.setItem(slot, guildItem);
+                    slot++;
+                }
 
-        // Icon zum Gründen einer neuen Gilde
-        ItemStack createGuildItem = new ItemStack(Material.GREEN_WOOL);
-        ItemMeta createGuildMeta = createGuildItem.getItemMeta();
-        createGuildMeta.setDisplayName("Neue Gilde gründen");
-        createGuildItem.setItemMeta(createGuildMeta);
-        guildMenu.setItem(25, createGuildItem);
+                // Icon zum Gründen einer neuen Gilde
+                ItemStack createGuildItem = new ItemStack(Material.GREEN_WOOL);
+                ItemMeta createGuildMeta = createGuildItem.getItemMeta();
+                createGuildMeta.setDisplayName("Neue Gilde gründen");
+                createGuildItem.setItemMeta(createGuildMeta);
+                guildMenu.setItem(25, createGuildItem);
 
-        player.openInventory(guildMenu);
+                player.openInventory(guildMenu);
+            }
+        });
     }
+
 
 
     @EventHandler
@@ -294,31 +300,35 @@ public class GuildGUIListener implements Listener {
         }
     }
     private void openGuildMessagesMenu(Player player, Guild guild) {
-        Inventory guildMessagesMenu = Bukkit.createInventory(null, 54, "Gilden-Nachrichten");
+        Bukkit.getScheduler().runTask(plugin, new Runnable() {
+            @Override
+            public void run() {
+                Inventory guildMessagesMenu = Bukkit.createInventory(null, 54, "Gilden-Nachrichten");
 
-        // Nachrichten anzeigen
-        for (String message : guild.getMessages()) {
-            ItemStack messageItem = new ItemStack(Material.PAPER);
-            ItemMeta messageMeta = messageItem.getItemMeta();
-            messageMeta.setDisplayName(message);
-            messageItem.setItemMeta(messageMeta);
-            guildMessagesMenu.addItem(messageItem);
+                // Nachrichten anzeigen
+                for (String message : guild.getMessages()) {
+                    ItemStack messageItem = new ItemStack(Material.PAPER);
+                    ItemMeta messageMeta = messageItem.getItemMeta();
+                    messageMeta.setDisplayName(message);
+                    messageItem.setItemMeta(messageMeta);
+                    guildMessagesMenu.addItem(messageItem);
 
-        }
+                }
 
-        // Rück-Knopf
-        addBackButton(guildMessagesMenu);
+                // Rück-Knopf
+                addBackButton(guildMessagesMenu);
 
-        // Option zum Hinzufügen einer neuen Nachricht
-        ItemStack addMessageItem = new ItemStack(Material.GREEN_WOOL);
-        ItemMeta addMessageMeta = addMessageItem.getItemMeta();
-        addMessageMeta.setDisplayName("Neue Nachricht hinzufügen");
-        addMessageItem.setItemMeta(addMessageMeta);
-        guildMessagesMenu.setItem(53, addMessageItem);  // Setzt es im letzten Slot
+                // Option zum Hinzufügen einer neuen Nachricht
+                ItemStack addMessageItem = new ItemStack(Material.GREEN_WOOL);
+                ItemMeta addMessageMeta = addMessageItem.getItemMeta();
+                addMessageMeta.setDisplayName("Neue Nachricht hinzufügen");
+                addMessageItem.setItemMeta(addMessageMeta);
+                guildMessagesMenu.setItem(53, addMessageItem);  // Setzt es im letzten Slot
 
-        player.openInventory(guildMessagesMenu);
+                player.openInventory(guildMessagesMenu);
+            }
+        });
     }
-
     @EventHandler
     public void onPlayerJoin(PlayerJoinEvent event) {
         Player player = event.getPlayer();

@@ -109,11 +109,11 @@ public final class FreakyWorld extends JavaPlugin {
 
 
         restartInfos = new ArrayList<>();
-        restartInfos.add(new RestartInfo(LocalTime.of(22, 0), "Oha - noch wach? Freaky!"));
-        restartInfos.add(new RestartInfo(LocalTime.of(4, 0), "Hört ihr Sie schon zwitschern..."));
-        restartInfos.add(new RestartInfo(LocalTime.of(10, 0), "HappaHappa"));
-        restartInfos.add(new RestartInfo(LocalTime.of(14, 0), "Lets get Freaky!!"));
-        restartInfos.add(new RestartInfo(LocalTime.of(18, 0), "PowerNap"));
+        restartInfos.add(new RestartInfo(LocalTime.of(23, 0), "Oha - noch wach? Freaky!"));
+        restartInfos.add(new RestartInfo(LocalTime.of(5, 0), "Hört ihr Sie schon zwitschern..."));
+        restartInfos.add(new RestartInfo(LocalTime.of(11, 0), "HappaHappa"));
+        restartInfos.add(new RestartInfo(LocalTime.of(15, 0), "Lets get Freaky!!"));
+        restartInfos.add(new RestartInfo(LocalTime.of(19, 0), "PowerNap"));
         scheduleDailyRestarts();
         //
     }
@@ -138,7 +138,12 @@ public final class FreakyWorld extends JavaPlugin {
         } catch (Exception e) {
             e.printStackTrace();
         }
-
+        if (this.guildListener != null) {
+            this.guildListener.removeGuildVillager();
+        }
+        if (this.questVillager != null) {
+            this.questVillager.removeQuestVillager();
+        }
         // Plugin shutdown logic
     }
     class RestartInfo {
