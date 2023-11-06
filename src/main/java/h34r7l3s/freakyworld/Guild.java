@@ -87,10 +87,24 @@ public class Guild {
         members.add(member);
         memberRanks.put(member, rank);
     }
-
-    public void removeMember(String member) {
-        members.remove(member);
-        memberRanks.remove(member);
+    public boolean hasPermission(String playerName, String permission) {
+        // Implementieren Sie die Logik hier, um zu überprüfen, ob der Spieler die erforderliche Berechtigung hat.
+        // Zum Beispiel:
+        GuildRank rank = getMemberRank(playerName);
+        if (permission.equals("remove_member")) {
+            return rank == GuildRank.LEADER; // Nur der Anführer darf Mitglieder entfernen.
+        }
+        // Fügen Sie weitere Berechtigungsprüfungen hinzu, wie benötigt.
+        return false;
+    }
+    public boolean removeMember(String memberName) {
+        // Implementieren Sie die Logik hier, um das Mitglied zu entfernen.
+        // Zum Beispiel:
+        if (this.members.contains(memberName)) {
+            this.members.remove(memberName);
+            return true; // Entfernen war erfolgreich.
+        }
+        return false; // Mitglied war nicht in der Liste.
     }
 
     public GuildRank getMemberRank(String member) {

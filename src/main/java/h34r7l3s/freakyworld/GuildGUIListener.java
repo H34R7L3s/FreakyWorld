@@ -198,9 +198,19 @@ public class GuildGUIListener implements Listener {
             Guild guild = viewedGuilds.get(player);
             if (guild == null) return;
 
+            if (!guild.hasPermission(player.getName(), "remove_member")) {
+                player.sendMessage("Du hast keine Berechtigung, Mitglieder zu entfernen.");
+                return;
+            }
+
             String memberName = currentItem.getItemMeta().getDisplayName().split(" - ")[0];  // Extrahiert den Namen des Mitglieds
-            guild.removeMember(memberName);
-            player.sendMessage(memberName + " wurde aus " + guild.getName() + " entfernt.");
+            if (guild.removeMember(memberName)) {
+                player.sendMessage(memberName + " wurde aus " + guild.getName() + " entfernt.");
+                playerStates.put(player, PlayerState.NONE); // Zustand zurücksetzen
+            } else {
+                player.sendMessage("Es gab einen Fehler beim Entfernen des Mitglieds.");
+            }
+
         } else if (inventoryTitle.equals("Rang ändern")) {
             event.setCancelled(true);
             if (!(currentItem.getItemMeta() instanceof SkullMeta)) return;
