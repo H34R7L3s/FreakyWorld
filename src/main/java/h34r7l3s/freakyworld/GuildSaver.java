@@ -53,8 +53,10 @@ public class GuildSaver {
         // Save the file
         try {
             config.save(guildFile);
+            System.out.println("Guild data saved successfully for guild: " + guild.getName()); // Debug line
         } catch (IOException e) {
             e.printStackTrace();
+            System.out.println("Failed to save guild data for guild: " + guild.getName()); // Debug line
         }
     }
 

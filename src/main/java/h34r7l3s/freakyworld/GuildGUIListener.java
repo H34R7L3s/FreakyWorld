@@ -548,6 +548,7 @@ public class GuildGUIListener implements Listener {
     }
     // Add a method to clear the treasury in your Guild class
     public void saveGuildData(Guild guild) {
+        System.out.println("Attempting to save guild data for guild: " + guild.getName()); // Debug line
         guildSaver.saveGuildData(guild); // Assuming guildSaver is an instance of GuildSaver
     }
 
