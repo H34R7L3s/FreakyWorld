@@ -237,34 +237,41 @@ public class GuildGUIListener implements Listener {
             if (!(currentItem.getItemMeta() instanceof SkullMeta)) return;
             SkullMeta skullMeta = (SkullMeta) currentItem.getItemMeta();
             if (skullMeta.getOwningPlayer() == null) return;
+            if (currentItem.getType() == Material.BARRIER) {
+                // Überprüfen Sie, ob der DisplayName des Items "Zurück zum Gilden-Menü" ist
+                if (currentItem.getItemMeta().getDisplayName().equals("Zurück zum Gilden-Menü")) {
+                    // Hier öffnen Sie das Gilden-Menü für den Spieler
+                    openGuildMenu(player);
+                    String memberName = skullMeta.getOwningPlayer().getName();
+                    Guild guild = viewedGuilds.get(player);
+                    if (guild == null) return;
 
-            String memberName = skullMeta.getOwningPlayer().getName();
-            Guild guild = viewedGuilds.get(player);
-            if (guild == null) return;
+                    Guild.GuildRank currentRank = guild.getMemberRank(memberName);
+                    Guild.GuildRank newRank = (currentRank == Guild.GuildRank.LEADER)
+                            ? Guild.GuildRank.OFFICER
+                            : (currentRank == Guild.GuildRank.OFFICER)
+                            ? Guild.GuildRank.MEMBER
+                            : Guild.GuildRank.OFFICER;
+                    guild.setMemberRank(memberName, newRank);
+                    player.sendMessage(memberName + "'s Rang wurde zu " + newRank.getDisplayName() + " geändert.");
+                } else if (inventoryTitle.equals("Gilden-Schatz")) {
+                    Guild guild = viewedGuilds.get(player);
+                    if (guild == null) return;
 
-            Guild.GuildRank currentRank = guild.getMemberRank(memberName);
-            Guild.GuildRank newRank = (currentRank == Guild.GuildRank.LEADER)
-                    ? Guild.GuildRank.OFFICER
-                    : (currentRank == Guild.GuildRank.OFFICER)
-                    ? Guild.GuildRank.MEMBER
-                    : Guild.GuildRank.OFFICER;
-            guild.setMemberRank(memberName, newRank);
-            player.sendMessage(memberName + "'s Rang wurde zu " + newRank.getDisplayName() + " geändert.");
-        } else if (inventoryTitle.equals("Gilden-Schatz")) {
-            Guild guild = viewedGuilds.get(player);
-            if (guild == null) return;
-
-            // Bei Schließung des Inventars speichern Sie die Items in der Datenstruktur Ihrer Gilde
-            // Hier nur ein einfacher Ansatz:
-            guild.getTreasury().clear();
-            for (ItemStack item : event.getInventory().getContents()) {
-                if (item != null) {
-                    guild.getTreasury().put(item.getType(), item.getAmount());
+                    // Bei Schließung des Inventars speichern Sie die Items in der Datenstruktur Ihrer Gilde
+                    // Hier nur ein einfacher Ansatz:
+                    guild.getTreasury().clear();
+                    for (ItemStack item : event.getInventory().getContents()) {
+                        if (item != null) {
+                            guild.getTreasury().put(item.getType(), item.getAmount());
+                        }
+                    }
+                }
+                if (currentItem.getType() == Material.BARRIER) {
+                    showGuildOptions(player, viewedGuilds.get(player));
+                    return;
                 }
             }
-        }if (currentItem.getType() == Material.BARRIER) {
-            showGuildOptions(player, viewedGuilds.get(player));
-            return;
         }if (inventoryTitle.equals("Gilden-Nachrichten")) {
             event.setCancelled(true);
             String itemName = currentItem.getItemMeta().getDisplayName();
