@@ -1,5 +1,6 @@
 plugins {
     id 'java'
+    id 'com.github.johnrengelman.shadow' version '7.1.2' // Add this line for the Shadow plugin
 }
 
 group = 'H34R7L3s'
@@ -22,6 +23,8 @@ repositories {
 dependencies {
     compileOnly('com.github.oraxen:oraxen:1.159.0')
     compileOnly "io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT"
+    implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-beta.17'
+    implementation 'org.yaml:snakeyaml:2.2'
 }
 
 def targetJavaVersion = 17
@@ -48,3 +51,9 @@ processResources {
         expand props
     }
 }
+shadowJar {
+    archiveClassifier.set('')
+    configurations = [project.configurations.runtimeClasspath]
+}
+
+build.dependsOn shadowJar

@@ -10,9 +10,11 @@ import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
 import org.bukkit.Bukkit;
 
+import javax.security.auth.login.LoginException;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -25,17 +27,39 @@ import java.util.logging.Logger;
 public final class FreakyWorld extends JavaPlugin {
 
     private List<RestartInfo> restartInfos;
+    private DiscordBot discordBot;
 
     private boolean isRestartScheduled = false;  // Hilft dabei, Mehrfachwarnungen zu verhindern
     private String nitradoAPIKey;  // Deklaration hier
     private String serverID;
-
+    private String discordToken;
     private QuestVillager questVillager;
     private JavaPlugin plugin;
     private GuildGUIListener guildListener;
     Logger logger = this.getLogger();
     @Override
     public void onEnable() {
+        FileConfiguration secretsConfig = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "secrets.yml"));
+
+        // Check if the secrets.yml file exists
+        if (!new File(getDataFolder(), "secrets.yml").exists()) {
+            getLogger().severe("Die Datei secrets.yml wurde nicht gefunden: " + getDataFolder().getPath() + "/secrets.yml");
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+
+        // Initialize the Discord Bot
+        try {
+            discordBot = new DiscordBot(secretsConfig);
+            getLogger().info("Discord Bot gestartet.");
+        } catch (LoginException | InterruptedException e) {
+            getLogger().severe("Konnte den Discord Bot nicht anmelden: " + e.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+        }
+
+
+
+
         //getServer().getPluginManager().registerEvents(new ArmorEnhancements(this), this);
         this.saveDefaultConfig();
         logger.info("Before creating factory");
@@ -101,7 +125,7 @@ public final class FreakyWorld extends JavaPlugin {
 
 
         //ab hier Testing
-        FileConfiguration secretsConfig = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "secrets.yml"));
+
         nitradoAPIKey = secretsConfig.getString("nitradoAPIKey");
         serverID = secretsConfig.getString("serverID");
 
@@ -124,28 +148,32 @@ public final class FreakyWorld extends JavaPlugin {
         try {
             CustomVillagerTrader.removeVillagers();
         } catch (Exception e) {
-            e.printStackTrace();  // Oder irgendeine andere Form der Fehlerprotokollierung
+            e.printStackTrace();  // Or some other form of error logging
+        }
+        if (discordBot != null) {
+            discordBot.shutdown();
+            getLogger().info("Discord Bot heruntergefahren.");
         }
 
-        try {
-            guildListener.removeGuildVillager();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-
-        try {
-            questVillager.removeQuestVillager();
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
+        // Check if guildListener is not null before trying to remove the Guild Villager
         if (this.guildListener != null) {
-            this.guildListener.removeGuildVillager();
+            try {
+                this.guildListener.removeGuildVillager();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
+        // Check if questVillager is not null before trying to remove the Quest Villager
         if (this.questVillager != null) {
-            this.questVillager.removeQuestVillager();
+            try {
+                this.questVillager.removeQuestVillager();
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
         }
         // Plugin shutdown logic
     }
+
     class RestartInfo {
         LocalTime restartTime;
         String message;

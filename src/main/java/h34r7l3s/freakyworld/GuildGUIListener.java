@@ -175,6 +175,7 @@ public class GuildGUIListener implements Listener {
                     openChangeRankMenu(player, guild);
                     break;
                 case "Schatztruhe öffnen":
+                    player.sendMessage("Debug: Schatztruhe öffnen wurde angeklickt");
                     if (guild == null) {
                         guild = viewedGuilds.get(player);
                         if (guild == null) return;
@@ -234,14 +235,18 @@ public class GuildGUIListener implements Listener {
 
         } else if (inventoryTitle.equals("Rang ändern")) {
             event.setCancelled(true);
+            System.out.println("Inside Rang ändern menu");
             if (!(currentItem.getItemMeta() instanceof SkullMeta)) return;
             SkullMeta skullMeta = (SkullMeta) currentItem.getItemMeta();
             if (skullMeta.getOwningPlayer() == null) return;
             if (currentItem.getType() == Material.BARRIER) {
                 // Überprüfen Sie, ob der DisplayName des Items "Zurück zum Gilden-Menü" ist
-                if (currentItem.getItemMeta().getDisplayName().equals("Zurück zum Gilden-Menü")) {
-                    // Hier öffnen Sie das Gilden-Menü für den Spieler
-                    openGuildMenu(player);
+                if (currentItem.getType() == Material.BARRIER) {
+                    System.out.println("Barrier item clicked"); // Weitere Debug-Nachricht
+                    if (currentItem.getItemMeta().getDisplayName().equals("Zurück zum Gilden-Menü")) {
+                        System.out.println("Back to Guild Menu item clicked"); // Noch eine Debug-Nachricht
+                        openGuildMenu(player); // ... (restlichen Code beibehalten)
+                    }
                     String memberName = skullMeta.getOwningPlayer().getName();
                     Guild guild = viewedGuilds.get(player);
                     if (guild == null) return;
@@ -258,8 +263,6 @@ public class GuildGUIListener implements Listener {
                     Guild guild = viewedGuilds.get(player);
                     if (guild == null) return;
 
-                    // Bei Schließung des Inventars speichern Sie die Items in der Datenstruktur Ihrer Gilde
-                    // Hier nur ein einfacher Ansatz:
                     guild.getTreasury().clear();
                     for (ItemStack item : event.getInventory().getContents()) {
                         if (item != null) {
