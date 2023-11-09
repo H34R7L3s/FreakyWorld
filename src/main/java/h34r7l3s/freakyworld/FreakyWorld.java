@@ -110,7 +110,10 @@ public final class FreakyWorld extends JavaPlugin {
 
 
         logger.info("QuestVil");
-        questVillager = new QuestVillager(this);  // Initialisieren des QuestVillager-Listeners
+        questVillager = new QuestVillager(this, discordBot); // Pass both 'this' (FreakyWorld instance) and 'discordBot'
+        questVillager.spawnVillager();
+        // Übergeben Sie die Instanz von DiscordBot
+        // Initialisieren des QuestVillager-Listeners
         getServer().getPluginManager().registerEvents(questVillager, this);  // Registrieren des QuestVillager-Listeners
         logger.info("Registered QuestVil");
         // VampirZepter Initialisierung und Registrierung
@@ -166,7 +169,7 @@ public final class FreakyWorld extends JavaPlugin {
         // Check if questVillager is not null before trying to remove the Quest Villager
         if (this.questVillager != null) {
             try {
-                this.questVillager.removeQuestVillager();
+                 this.questVillager.removeQuestVillager();
             } catch (Exception e) {
                 e.printStackTrace();
             }
