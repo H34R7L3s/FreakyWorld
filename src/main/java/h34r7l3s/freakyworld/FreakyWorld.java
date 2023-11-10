@@ -57,7 +57,11 @@ public final class FreakyWorld extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
         }
 
-
+        //VampSpells
+        logger.info("ElytraDoubleJumpEffect");
+        ElytraDoubleJumpEffect elytraDoubleJumpEffectListener = new ElytraDoubleJumpEffect(this);
+        getServer().getPluginManager().registerEvents(elytraDoubleJumpEffectListener, this);
+        logger.info("Registered ElytraDoubleJumpEffect event listener");
 
 
         //getServer().getPluginManager().registerEvents(new ArmorEnhancements(this), this);
