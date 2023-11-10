@@ -13,6 +13,8 @@ import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryDragEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
@@ -55,50 +57,31 @@ public class QuestVillager implements Listener {
         }
     }
 
+    // Diese Methode überprüft, ob ein Item in das Abgabeinventar gelegt werden darf.
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        // ...
+        Player player = (Player) event.getWhoClicked();
+        Inventory inv = event.getClickedInventory();
+        ItemStack clickedItem = event.getCurrentItem();
+        Inventory actionInv = event.getInventory(); // Das Inventar, in dem die Aktion stattfindet
 
-        if ("Geben Sie Ihre Items ab".equals(event.getView().getTitle())) {
-            ItemStack clickedItem = event.getCurrentItem();
-            Player player = (Player) event.getWhoClicked();
+        if (clickedItem == null) return;
 
-            if (clickedItem != null && clickedItem.getType() == Material.GREEN_WOOL) {
-                // Der Spieler hat auf den 'Abgeben'-Knopf geklickt
-                event.setCancelled(true); // Verhindern, dass der Wolle-Knopf genommen wird
-                handleItemSubmission(player, event.getInventory());
-            } else if (clickedItem != null && !validMaterials.contains(clickedItem.getType())) {
-                // Wenn das Item nicht zur Abgabe vorgesehen ist, verhindere das Platzieren
+        if (event.getView().getTitle().equals("Geben Sie Ihre Items ab")) {
+            if (event.getRawSlot() == 8 && clickedItem.getType() == Material.GREEN_WOOL) {
+                // Abgabe bestätigen und Items verarbeiten
+                event.setCancelled(true);
+                handleItemSubmission(player, actionInv);
+            } else if (!event.getInventory().equals(player.getInventory()) && !validMaterials.contains(clickedItem.getType())) {
+                // Verhindern, dass ungültige Items in das Abgabeinventar gelegt werden
+                event.setCancelled(true);
+            }
+            // Verhindern, dass der grüne Wolle-Knopf gezogen wird
+            if (event.getSlot() == 8) {
                 event.setCancelled(true);
             }
         }
     }
-
-    private void handleItemSubmission(Player player, Inventory inv) {
-        int totalAmount = 0;
-        // Gehen Sie durch das Inventar und zählen Sie die gültigen Items
-        for (int i = 0; i < inv.getSize() - 1; i++) { // Ignoriere den letzten Slot mit dem 'Abgeben'-Knopf
-            ItemStack item = inv.getItem(i);
-            if (item != null && validMaterials.contains(item.getType())) {
-                totalAmount += item.getAmount();
-                // Entferne das Item aus dem Inventar
-                inv.setItem(i, null);
-            }
-        }
-
-        if (totalAmount > 0) {
-            player.sendMessage(ChatColor.GREEN + "Du hast " + totalAmount + " Items abgegeben!");
-            // Hier sollten Sie die tatsächlichen Items und ihre Mengen speichern und an Discord senden
-            sendTradeConfirmationToDiscord(player, totalAmount);
-        }
-        player.closeInventory();
-    }
-
-    public void sendTradeConfirmationToDiscord(Player player, int totalAmount) {
-        String message = player.getName() + " hat insgesamt " + totalAmount + " Items abgegeben!";
-        discordBot.sendMessageToDiscord(message);
-    }
-
 
     private void openTradingInterface(Player player) {
         Inventory tradeInventory = Bukkit.createInventory(null, 9, "Geben Sie Ihre Items ab");
@@ -106,11 +89,69 @@ public class QuestVillager implements Listener {
         tradeInventory.setItem(8, new ItemStack(Material.GREEN_WOOL, 1));
         player.openInventory(tradeInventory);
     }
+    // Verhindern, dass Items durch Ziehen aus dem Quest-Inventar gezogen werden
+    @EventHandler
+    public void onInventoryDrag(InventoryDragEvent event) {
+        if (event.getView().getTitle().equals("Quest Items")) {
+            event.setCancelled(true);
+        }
+    }
+
+    // Diese Methode handhabt die Abgabe von Items.
+    // In QuestVillager Klasse
+    private void handleItemSubmission(Player player, Inventory inv) {
+        Map<Material, Integer> itemCounts = new HashMap<>();
+
+        for (int i = 0; i < inv.getSize() - 1; i++) {
+            ItemStack itemStack = inv.getItem(i);
+            if (itemStack != null && validMaterials.contains(itemStack.getType())) {
+                int count = itemCounts.getOrDefault(itemStack.getType(), 0);
+                itemCounts.put(itemStack.getType(), count + itemStack.getAmount());
+                // Entferne das Item aus dem Inventar
+                inv.clear(i);
+            }
+        }
+
+        int totalSubmitted = itemCounts.values().stream().mapToInt(Integer::intValue).sum();
+        player.sendMessage(ChatColor.GREEN + "Du hast insgesamt " + totalSubmitted + " Items abgegeben!");
+
+        // Senden Sie die Gesamtnachricht an Discord
+        sendTotalTradeConfirmationToDiscord(player, itemCounts);
+
+        // Schließe das Inventar nach der Verarbeitung
+        player.closeInventory();
+    }
+    public void sendTotalTradeConfirmationToDiscord(Player player, Map<Material, Integer> itemCounts) {
+        StringBuilder message = new StringBuilder(player.getName() + " hat folgende Items abgegeben:");
+        itemCounts.forEach((material, count) -> {
+            message.append("\n").append(count).append("x ").append(material.toString());
+        });
+
+        // Hier würde Ihr DiscordBot die Nachricht an den entsprechenden Kanal senden.
+        discordBot.sendMessageToDiscord(message.toString());
+    }
+    public void sendTradeConfirmationToDiscord(Player player, ItemStack itemStack, int amount) {
+        if (itemStack == null || player == null) {
+            return; // Sicherstellen, dass weder der Spieler noch der ItemStack null ist.
+        }
+
+        // Konvertiere das Material des ItemStacks in einen String für die Nachricht.
+        String itemName = itemStack.getType().toString();
+
+        // Erstelle die Nachricht, die an Discord gesendet werden soll.
+        String message = player.getName() + " hat " + amount + "x " + itemName + " abgegeben!";
+
+        // Hier würde Ihr DiscordBot die Nachricht an den entsprechenden Kanal senden.
+        // Dies hängt von der Implementierung Ihres DiscordBots ab.
+        discordBot.sendMessageToDiscord(message);
+    }
 
 
 
 
-    // Dieses Event tritt ein, wenn der Spieler das Handelsinventar benutzt
+
+
+        // Dieses Event tritt ein, wenn der Spieler das Handelsinventar benutzt
     @EventHandler
     public void onTrade(InventoryClickEvent event) {
         Inventory inv = event.getInventory();
@@ -138,11 +179,7 @@ public class QuestVillager implements Listener {
     }
 
 
-    // Beispiel für das Senden einer Nachricht an Discord
-    public void sendTradeConfirmationToDiscord(Player player, ItemStack item, int amount) {
-        String message = player.getName() + " hat " + amount + "x " + item.getType().toString() + " abgegeben!";
-        discordBot.sendMessageToDiscord(message);
-    }
+
 
 
     private void openQuestGUI(Player player) {
@@ -168,30 +205,33 @@ public class QuestVillager implements Listener {
     public void onInventoryClose(InventoryCloseEvent event) {
         Inventory inv = event.getInventory();
         if ("Geben Sie Ihre Items ab".equals(event.getView().getTitle())) {
-            int totalAmount = 0;
-            // Gehen Sie durch das Inventar und zählen Sie nur die vom Spieler platzierten Items
+            Map<Material, Integer> itemCounts = new HashMap<>();
+
+            // Zähle jedes gültige Item im Inventar
             for (ItemStack item : inv.getContents()) {
-                if (item != null && item.hasItemMeta() && item.getItemMeta().hasLore()) {
-                    // Beispiel, um zu überprüfen, ob es ein abgegebenes Item ist
-                    if (item.getItemMeta().getLore().contains("Abgegeben")) {
-                        totalAmount += item.getAmount();
-                    }
+                if (item != null && validMaterials.contains(item.getType())) {
+                    int count = itemCounts.getOrDefault(item.getType(), 0);
+                    itemCounts.put(item.getType(), count + item.getAmount());
                 }
             }
-            if (totalAmount > 0) {
-                Player player = (Player) event.getPlayer();
-                player.sendMessage(ChatColor.GREEN + "Du hast " + totalAmount + " Items abgegeben!");
-                sendTradeConfirmationToDiscord(player, Material.COBBLESTONE, totalAmount); // Material anpassen
-            }
+
+            // Sende Bestätigungsnachrichten und Discord-Nachrichten für jedes abgegebene Item
+            Player player = (Player) event.getPlayer();
+            itemCounts.forEach((material, count) -> {
+                player.sendMessage(ChatColor.GREEN + "Du hast " + count + "x " + material.toString() + " abgegeben!");
+
+                // Correctly create an ItemStack from the material and count
+                ItemStack itemStack = new ItemStack(material, count);
+
+                // Now call the method with the correct ItemStack parameter
+                sendTradeConfirmationToDiscord(player, itemStack, count);
+            });
         }
     }
 
 
 
-    public void sendTradeConfirmationToDiscord(Player player, Material item, int amount) {
-        String message = player.getName() + " hat " + amount + "x " + item.toString() + " abgegeben!";
-        discordBot.sendMessageToDiscord(message);
-    }
+
 
 
     public void removeQuestVillager() {
