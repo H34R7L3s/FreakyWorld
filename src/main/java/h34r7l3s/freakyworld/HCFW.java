@@ -64,8 +64,8 @@ public class HCFW implements Listener {
 
     private void checkPlayerLocks() {
         long currentTimeMillis = System.currentTimeMillis();
-
         Set<UUID> playersToRemove = new HashSet<>();
+
         for (UUID playerId : playersInHCFW) {
             Long deathTime = playerDeathTimes.get(playerId);
             if (deathTime != null) {
@@ -74,37 +74,47 @@ public class HCFW implements Listener {
 
                 if (timeSinceDeath >= lockDurationMillis) {
                     playersToRemove.add(playerId);
-                    playerDeathTimes.remove(playerId);
                 }
             }
         }
 
+        // Verschieben Sie die Logik zum Entfernen von Spielern nach der Schleife, um ConcurrentModificationExceptions zu vermeiden
         for (UUID playerId : playersToRemove) {
             playersInHCFW.remove(playerId);
+            playerDeathTimes.remove(playerId); // Stellen Sie sicher, dass der Todeszeitpunkt ebenfalls entfernt wird
         }
-        //plugin.getLogger().info("Spieler-Sperren überprüft.");
     }
-    // Überarbeitete Funktion checkAndTeleportPlayers
+
+
     private void checkAndTeleportPlayers() {
+        long currentTimeMillis = System.currentTimeMillis();
         for (Player player : Bukkit.getServer().getWorld("hcfw").getPlayers()) {
             UUID playerId = player.getUniqueId();
-            Long deathTime = playerDeathTimes.get(playerId);
-            long currentTimeMillis = System.currentTimeMillis();
-            long lockDurationMillis = TimeUnit.MINUTES.toMillis(30);
+            if (playersInHCFW.contains(playerId)) {
+                Long deathTime = playerDeathTimes.get(playerId);
+                long lockDurationMillis = TimeUnit.MINUTES.toMillis(30);
 
-            if (deathTime != null && currentTimeMillis - deathTime < lockDurationMillis) {
-                // Spieler ist noch gesperrt
-                long remainingTimeMillis = lockDurationMillis - (currentTimeMillis - deathTime);
-                long remainingMinutes = TimeUnit.MILLISECONDS.toMinutes(remainingTimeMillis);
-
-                player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
-                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0F, 1.0F);
-                player.sendMessage(ChatColor.RED + "Du kannst noch nicht in die HCFW gelangen. Bitte warte noch " +
-                        remainingMinutes + " Minuten.");
+                if (deathTime != null && currentTimeMillis - deathTime < lockDurationMillis) {
+                    // Spieler zurück zur Hauptwelt teleportieren
+                    player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
+                    player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0F, 1.0F);
+                    long timeRemaining = lockDurationMillis - (currentTimeMillis - deathTime);
+                    player.sendMessage(ChatColor.RED + "Du kannst noch nicht in die HCFW gelangen. Bitte warte noch " +
+                            TimeUnit.MILLISECONDS.toMinutes(timeRemaining) + " Minuten.");
+                }
             } else {
-                // Spieler darf in der HCFW-Welt bleiben
+                // Reset playerWelcomedMap und lastWelcomeTimeMap, wenn notwendig
+                resetWelcomeStateIfRequired(playerId);
                 handlePlayerAllowedInHCFW(player);
             }
+        }
+    }
+
+
+    private void resetWelcomeStateIfRequired(UUID playerId) {
+        if (!playerDeathTimes.containsKey(playerId)) {
+            playerWelcomedMap.remove(playerId);
+            lastWelcomeTimeMap.remove(playerId);
         }
     }
 
@@ -116,14 +126,13 @@ public class HCFW implements Listener {
 
     //Ändern in einmaliges ausführen, bei jedem beitreten / joinen in welt "hcfw"
     private final Map<UUID, Boolean> playerWelcomedMap = new HashMap<>();
+    private final Map<UUID, Long> lastWelcomeTimeMap = new HashMap<>();
 
     private void handlePlayerAllowedInHCFW(Player player) {
         UUID playerId = player.getUniqueId();
-
         if (!playerWelcomedMap.containsKey(playerId) || shouldReWelcome(playerId)) {
             // Spieler wurde noch nicht begrüßt oder sollte erneut begrüßt werden
             int eventProbability = plugin.getDiscordBot().getEventProbability();
-
             if (eventProbability >= 1) {
                 String title = ChatColor.GREEN + "Ein besonderes Event tritt ein!";
                 String subtitle = ChatColor.WHITE + "Event-Wahrscheinlichkeit: " + eventProbability + "%";
@@ -132,22 +141,26 @@ public class HCFW implements Listener {
             } else {
                 player.sendTitle(ChatColor.GREEN + "Willkommen in der HCFW!", "", 10, 70, 20);
             }
-
             playerWelcomedMap.put(playerId, true);
+            lastWelcomeTimeMap.put(playerId, System.currentTimeMillis());
         }
     }
 
 
 
 
-    private boolean shouldReWelcome(UUID playerId) {
-        // Überprüfen, ob der Spieler nach 30 Minuten Abwesenheit zurückkehrt
-        Long deathTime = playerDeathTimes.get(playerId);
-        long currentTimeMillis = System.currentTimeMillis();
-        long lockDurationMillis = TimeUnit.MINUTES.toMillis(30);
 
-        return (deathTime != null && currentTimeMillis - deathTime >= lockDurationMillis);
+
+
+
+    private boolean shouldReWelcome(UUID playerId) {
+        Long lastWelcomeTime = lastWelcomeTimeMap.get(playerId);
+        long currentTimeMillis = System.currentTimeMillis();
+        long reWelcomeDurationMillis = TimeUnit.MINUTES.toMillis(30);
+        return (lastWelcomeTime != null && (currentTimeMillis - lastWelcomeTime) >= reWelcomeDurationMillis);
     }
+
+
 
 
 
@@ -157,23 +170,24 @@ public class HCFW implements Listener {
     @EventHandler
     public void onPlayerDeathInHCFW(PlayerDeathEvent event) {
         Player player = event.getEntity();
-
         if (isInHCFW(player)) {
             UUID playerId = player.getUniqueId();
             player.getInventory().clear();
             savePlayerDeathInfo(player);
+
+            // Setzen Sie hier den Spielerzustand zurück und fügen Sie ihn erneut zu playersInHCFW hinzu
+            resetPlayerState(playerId);
             playersInHCFW.add(playerId);
+
             player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
             player.sendMessage(ChatColor.RED + "Du kannst nicht erneut in die HCFW gelangen, nachdem du gestorben bist.");
-
-            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                playersInHCFW.remove(playerId);
-                resetPlayerDeathInfo(player);
-            }, 20 * 60 * 30); // 30 Minuten später
         }
     }
 
-
+    private void resetPlayerState(UUID playerId) {
+        playerWelcomedMap.remove(playerId);
+        lastWelcomeTimeMap.remove(playerId);
+    }
     private void savePlayerDeathInfo(Player player) {
         UUID playerId = player.getUniqueId();
         long timestamp = System.currentTimeMillis();
