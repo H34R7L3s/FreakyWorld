@@ -28,7 +28,7 @@ public final class FreakyWorld extends JavaPlugin {
 
     private List<RestartInfo> restartInfos;
     private DiscordBot discordBot;
-
+    private HCFW hcfw;
     private boolean isRestartScheduled = false;  // Hilft dabei, Mehrfachwarnungen zu verhindern
     private String nitradoAPIKey;  // Deklaration hier
     private String serverID;
@@ -86,6 +86,9 @@ public final class FreakyWorld extends JavaPlugin {
 
         // Debugging: Print after items are loaded
         logger.info("Loaded items");
+        logger.info("HCFW ");
+        hcfw = new HCFW(this);
+        logger.info("Loaded HCFW");
 
         // Register the ArmorEnhancements event listener
         ArmorEnhancements armorListener = new ArmorEnhancements(this);
@@ -149,7 +152,9 @@ public final class FreakyWorld extends JavaPlugin {
         //
     }
 
-
+    public DiscordBot getDiscordBot() {
+        return discordBot;
+    }
     @Override
     public void onDisable() {
         try {
