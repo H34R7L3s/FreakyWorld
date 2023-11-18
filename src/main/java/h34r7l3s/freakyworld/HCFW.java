@@ -96,33 +96,79 @@ public class HCFW implements Listener {
                 if (timeSinceDeath < lockDurationMillis) {
                     // Spieler ist noch gesperrt
                     player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
+                    player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0F, 1.0F);
                     player.sendMessage(ChatColor.RED + "Du kannst noch nicht in die HCFW gelangen. Bitte warte noch " +
                             TimeUnit.MILLISECONDS.toMinutes(lockDurationMillis - timeSinceDeath) + " Minuten.");
                 } else {
                     // Spieler darf in der HCFW-Welt bleiben
                     handlePlayerAllowedInHCFW(player);
+                    player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
                 }
             } else {
                 // Spieler hat keinen Todeszeitpunkt, behandeln als erlaubt
                 handlePlayerAllowedInHCFW(player);
+                player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
             }
         }
     }
 
 
+
+
+
+    //Ändern in einmaliges ausführen, bei jedem beitreten / joinen in welt "hcfw"
+    private final Map<UUID, Boolean> playerWelcomedMap = new HashMap<>();
+
     private void handlePlayerAllowedInHCFW(Player player) {
-        // Hier können Sie Sounds und Benachrichtigungen einfügen
-        int eventProbability = plugin.getDiscordBot().getEventProbability();
-        if (eventProbability >= 50) {
-            String title = ChatColor.GREEN + "Ein besonderes Event tritt ein!";
-            String subtitle = ChatColor.WHITE + "Event-Wahrscheinlichkeit: " + eventProbability + "%";
-            player.sendTitle(title, subtitle, 10, 70, 20);
-            player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
+        UUID playerId = player.getUniqueId();
+
+        if (!playerWelcomedMap.containsKey(playerId)) {
+            // Spieler wurde noch nicht begrüßt
+            int eventProbability = plugin.getDiscordBot().getEventProbability();
+
+            if (eventProbability >= 1) {
+                String title = ChatColor.GREEN + "Ein besonderes Event tritt ein!";
+                String subtitle = ChatColor.WHITE + "Event-Wahrscheinlichkeit: " + eventProbability + "%";
+                player.sendTitle(title, subtitle, 10, 70, 20);
+                player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
+            } else {
+                // Hier die Nachricht anzeigen, dass der Spieler der HCFW beitreten kann
+                player.sendTitle(ChatColor.GREEN + "Du kannst der HCFW beitreten!", "", 10, 70, 20);
+            }
+
+            // Markiere den Spieler als begrüßt
+            playerWelcomedMap.put(playerId, true);
+        } else if (shouldReWelcome(playerId)) {
+            // Spieler sollte erneut begrüßt werden (nach 30 Minuten Abwesenheit)
+            int eventProbability = plugin.getDiscordBot().getEventProbability();
+
+            if (eventProbability >= 1) {
+                String title = ChatColor.GREEN + "Ein besonderes Event tritt ein!";
+                String subtitle = ChatColor.WHITE + "Event-Wahrscheinlichkeit: " + eventProbability + "%";
+                player.sendTitle(title, subtitle, 10, 70, 20);
+                player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
+            } else {
+                // Hier die Nachricht anzeigen, dass der Spieler der HCFW beitreten kann
+                player.sendTitle(ChatColor.GREEN + "Du kannst der HCFW beitreten!", "", 10, 70, 20);
+            }
         } else {
-            // Hier die Nachricht anzeigen, dass der Spieler der HCFW beitreten kann
-            player.sendTitle(ChatColor.GREEN + "Du kannst der HCFW beitreten!", "", 10, 70, 20);
+            // Spieler wurde bereits begrüßt und sollte nicht erneut begrüßt werden
+            // Eventuellen Code für andere Aktionen hier einfügen, falls erforderlich
         }
     }
+
+
+
+
+    private boolean shouldReWelcome(UUID playerId) {
+        // Überprüfen, ob der Spieler nach 30 Minuten Abwesenheit zurückkehrt
+        Long deathTime = playerDeathTimes.get(playerId);
+        long currentTimeMillis = System.currentTimeMillis();
+        long lockDurationMillis = TimeUnit.MINUTES.toMillis(30);
+
+        return (deathTime != null && currentTimeMillis - deathTime >= lockDurationMillis);
+    }
+
 
 
 
@@ -202,11 +248,15 @@ public class HCFW implements Listener {
             PreparedStatement statement = connection.prepareStatement("DELETE FROM player_deaths WHERE uuid = ?");
             statement.setString(1, playerId.toString());
             statement.executeUpdate();
+
+            // Spieler aus der HCFW-Welt entfernt, Markierung entfernen
+            playerWelcomedMap.remove(playerId);
         } catch (SQLException e) {
             e.printStackTrace();
         }
         plugin.getLogger().info("Spieler-Todesinformation für " + player.getName() + " zurückgesetzt.");
     }
+
 
     private void loadPlayerDeathTimes() {
         try {
@@ -227,5 +277,10 @@ public class HCFW implements Listener {
     private boolean isInHCFW(Player player) {
         return player.getWorld().getName().equalsIgnoreCase("hcfw");
     }
+//ab hier neue Funktionen
+//impllementieren die gewünscht sind
+//ab hier:
+
+
 
 }
