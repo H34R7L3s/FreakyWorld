@@ -84,6 +84,7 @@ public class HCFW implements Listener {
         }
         //plugin.getLogger().info("Spieler-Sperren überprüft.");
     }
+    // Überarbeitete Funktion checkAndTeleportPlayers
     private void checkAndTeleportPlayers() {
         for (Player player : Bukkit.getServer().getWorld("hcfw").getPlayers()) {
             UUID playerId = player.getUniqueId();
@@ -91,26 +92,23 @@ public class HCFW implements Listener {
             long currentTimeMillis = System.currentTimeMillis();
             long lockDurationMillis = TimeUnit.MINUTES.toMillis(30);
 
-            if (deathTime != null) {
-                long timeSinceDeath = currentTimeMillis - deathTime;
-                if (timeSinceDeath < lockDurationMillis) {
-                    // Spieler ist noch gesperrt
-                    player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
-                    player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0F, 1.0F);
-                    player.sendMessage(ChatColor.RED + "Du kannst noch nicht in die HCFW gelangen. Bitte warte noch " +
-                            TimeUnit.MILLISECONDS.toMinutes(lockDurationMillis - timeSinceDeath) + " Minuten.");
-                } else {
-                    // Spieler darf in der HCFW-Welt bleiben
-                    handlePlayerAllowedInHCFW(player);
-                    player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
-                }
+            if (deathTime != null && currentTimeMillis - deathTime < lockDurationMillis) {
+                // Spieler ist noch gesperrt
+                long remainingTimeMillis = lockDurationMillis - (currentTimeMillis - deathTime);
+                long remainingMinutes = TimeUnit.MILLISECONDS.toMinutes(remainingTimeMillis);
+
+                player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
+                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0F, 1.0F);
+                player.sendMessage(ChatColor.RED + "Du kannst noch nicht in die HCFW gelangen. Bitte warte noch " +
+                        remainingMinutes + " Minuten.");
             } else {
-                // Spieler hat keinen Todeszeitpunkt, behandeln als erlaubt
+                // Spieler darf in der HCFW-Welt bleiben
                 handlePlayerAllowedInHCFW(player);
-                player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
             }
         }
     }
+
+
 
 
 
@@ -122,8 +120,8 @@ public class HCFW implements Listener {
     private void handlePlayerAllowedInHCFW(Player player) {
         UUID playerId = player.getUniqueId();
 
-        if (!playerWelcomedMap.containsKey(playerId)) {
-            // Spieler wurde noch nicht begrüßt
+        if (!playerWelcomedMap.containsKey(playerId) || shouldReWelcome(playerId)) {
+            // Spieler wurde noch nicht begrüßt oder sollte erneut begrüßt werden
             int eventProbability = plugin.getDiscordBot().getEventProbability();
 
             if (eventProbability >= 1) {
@@ -132,28 +130,10 @@ public class HCFW implements Listener {
                 player.sendTitle(title, subtitle, 10, 70, 20);
                 player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
             } else {
-                // Hier die Nachricht anzeigen, dass der Spieler der HCFW beitreten kann
-                player.sendTitle(ChatColor.GREEN + "Du kannst der HCFW beitreten!", "", 10, 70, 20);
+                player.sendTitle(ChatColor.GREEN + "Willkommen in der HCFW!", "", 10, 70, 20);
             }
 
-            // Markiere den Spieler als begrüßt
             playerWelcomedMap.put(playerId, true);
-        } else if (shouldReWelcome(playerId)) {
-            // Spieler sollte erneut begrüßt werden (nach 30 Minuten Abwesenheit)
-            int eventProbability = plugin.getDiscordBot().getEventProbability();
-
-            if (eventProbability >= 1) {
-                String title = ChatColor.GREEN + "Ein besonderes Event tritt ein!";
-                String subtitle = ChatColor.WHITE + "Event-Wahrscheinlichkeit: " + eventProbability + "%";
-                player.sendTitle(title, subtitle, 10, 70, 20);
-                player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
-            } else {
-                // Hier die Nachricht anzeigen, dass der Spieler der HCFW beitreten kann
-                player.sendTitle(ChatColor.GREEN + "Du kannst der HCFW beitreten!", "", 10, 70, 20);
-            }
-        } else {
-            // Spieler wurde bereits begrüßt und sollte nicht erneut begrüßt werden
-            // Eventuellen Code für andere Aktionen hier einfügen, falls erforderlich
         }
     }
 
@@ -177,29 +157,19 @@ public class HCFW implements Listener {
     @EventHandler
     public void onPlayerDeathInHCFW(PlayerDeathEvent event) {
         Player player = event.getEntity();
-        plugin.getLogger().info("PlayerDeathEvent ausgelöst für Spieler: " + player.getName()); // Zusätzliches Debugging
 
         if (isInHCFW(player)) {
             UUID playerId = player.getUniqueId();
-            plugin.getLogger().info("Spieler " + player.getName() + " ist in HCFW gestorben.");
+            player.getInventory().clear();
+            savePlayerDeathInfo(player);
+            playersInHCFW.add(playerId);
+            player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
+            player.sendMessage(ChatColor.RED + "Du kannst nicht erneut in die HCFW gelangen, nachdem du gestorben bist.");
 
-            if (!playersInHCFW.contains(playerId)) {
-                player.getInventory().clear();
-                savePlayerDeathInfo(player);
-                playersInHCFW.add(playerId);
-
-                plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
-                    playersInHCFW.remove(playerId);
-                    resetPlayerDeathInfo(player);
-                }, 20 * 60 * 30); // 30 Minuten später
-
-                player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
-            } else {
-                player.sendMessage(ChatColor.RED + "Du kannst nicht erneut in die HCFW gelangen, nachdem du gestorben bist.");
-                player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0F, 1.0F);
-            }
-        } else {
-            plugin.getLogger().info("Spieler " + player.getName() + " ist nicht in HCFW gestorben.");
+            plugin.getServer().getScheduler().runTaskLater(plugin, () -> {
+                playersInHCFW.remove(playerId);
+                resetPlayerDeathInfo(player);
+            }, 20 * 60 * 30); // 30 Minuten später
         }
     }
 
