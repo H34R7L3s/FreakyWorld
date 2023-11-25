@@ -62,6 +62,21 @@ public class HCFW implements Listener {
         plugin.getLogger().info("Datenbank erfolgreich initialisiert.");
     }
 
+    private void loadPlayerDeathTimes() {
+        try {
+            PreparedStatement statement = connection.prepareStatement("SELECT * FROM player_deaths");
+            ResultSet resultSet = statement.executeQuery();
+
+            while (resultSet.next()) {
+                UUID playerId = UUID.fromString(resultSet.getString("uuid"));
+                Long deathTime = resultSet.getLong("death_time");
+                playerDeathTimes.put(playerId, deathTime);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        plugin.getLogger().info("Spieler-Todeszeiten geladen.");
+    }
     private void checkPlayerLocks() {
         long currentTimeMillis = System.currentTimeMillis();
         Set<UUID> playersToRemove = new HashSet<>();
@@ -84,138 +99,41 @@ public class HCFW implements Listener {
             playerDeathTimes.remove(playerId); // Stellen Sie sicher, dass der Todeszeitpunkt ebenfalls entfernt wird
         }
     }
-
-
-    private void checkAndTeleportPlayers() {
-        long currentTimeMillis = System.currentTimeMillis();
-        for (Player player : Bukkit.getServer().getWorld("hcfw").getPlayers()) {
-            UUID playerId = player.getUniqueId();
-            if (playersInHCFW.contains(playerId)) {
-                Long deathTime = playerDeathTimes.get(playerId);
-                long lockDurationMillis = TimeUnit.MINUTES.toMillis(30);
-
-                if (deathTime != null && currentTimeMillis - deathTime < lockDurationMillis) {
-                    // Spieler zurück zur Hauptwelt teleportieren
-                    player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
-                    player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0F, 1.0F);
-                    long timeRemaining = lockDurationMillis - (currentTimeMillis - deathTime);
-                    player.sendMessage(ChatColor.RED + "Du kannst noch nicht in die HCFW gelangen. Bitte warte noch " +
-                            TimeUnit.MILLISECONDS.toMinutes(timeRemaining) + " Minuten.");
-                }
+    @EventHandler
+    public void onPlayerJoin(PlayerJoinEvent event) {
+        Player player = event.getPlayer();
+        if (isPlayerLocked(player)) {
+            if (isInHCFW(player)) {
+                blockPlayerAccess(player);
             } else {
-                // Reset playerWelcomedMap und lastWelcomeTimeMap, wenn notwendig
-                resetWelcomeStateIfRequired(playerId);
-                handlePlayerAllowedInHCFW(player);
+                informPlayerOfWaitTime(player);
             }
+        } else {
+            welcomePlayer(player);
         }
     }
 
-
-    private void resetWelcomeStateIfRequired(UUID playerId) {
-        if (!playerDeathTimes.containsKey(playerId)) {
-            playerWelcomedMap.remove(playerId);
-            lastWelcomeTimeMap.remove(playerId);
+    private void informPlayerOfWaitTime(Player player) {
+        long timeRemaining = TimeUnit.MINUTES.toMillis(30) - (System.currentTimeMillis() - playerDeathTimes.get(player.getUniqueId()));
+        if (timeRemaining > 0) {
+            player.sendMessage(ChatColor.RED + "Du kannst noch nicht in die HCFW gelangen. Bitte warte noch " +
+                    TimeUnit.MILLISECONDS.toMinutes(timeRemaining) + " Minuten.");
         }
     }
-
-
-
-
-
-
-
-    //Ändern in einmaliges ausführen, bei jedem beitreten / joinen in welt "hcfw"
-    private final Map<UUID, Boolean> playerWelcomedMap = new HashMap<>();
-    private final Map<UUID, Long> lastWelcomeTimeMap = new HashMap<>();
-
-    private void handlePlayerAllowedInHCFW(Player player) {
-        UUID playerId = player.getUniqueId();
-        if (!playerWelcomedMap.containsKey(playerId) || shouldReWelcome(playerId)) {
-            // Spieler wurde noch nicht begrüßt oder sollte erneut begrüßt werden
-            int eventProbability = plugin.getDiscordBot().getEventProbability();
-            if (eventProbability >= 1) {
-                String title = ChatColor.GREEN + "Ein besonderes Event tritt ein!";
-                String subtitle = ChatColor.WHITE + "Event-Wahrscheinlichkeit: " + eventProbability + "%";
-                player.sendTitle(title, subtitle, 10, 70, 20);
-                player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
-            } else {
-                player.sendTitle(ChatColor.GREEN + "Willkommen in der HCFW!", "", 10, 70, 20);
-            }
-            playerWelcomedMap.put(playerId, true);
-            lastWelcomeTimeMap.put(playerId, System.currentTimeMillis());
-        }
-    }
-
-
-
-
-
-
-
-
-    private boolean shouldReWelcome(UUID playerId) {
-        Long lastWelcomeTime = lastWelcomeTimeMap.get(playerId);
-        long currentTimeMillis = System.currentTimeMillis();
-        long reWelcomeDurationMillis = TimeUnit.MINUTES.toMillis(30);
-        return (lastWelcomeTime != null && (currentTimeMillis - lastWelcomeTime) >= reWelcomeDurationMillis);
-    }
-
-
-
-
-
-
-
 
     @EventHandler
     public void onPlayerDeathInHCFW(PlayerDeathEvent event) {
         Player player = event.getEntity();
         if (isInHCFW(player)) {
             UUID playerId = player.getUniqueId();
-            player.getInventory().clear();
-            savePlayerDeathInfo(player);
+            playerDeathTimes.put(playerId, System.currentTimeMillis());
+            savePlayerDeathInfo(playerId);
+            // Löschen Sie alle Items, die der Spieler fallen lässt
+            event.getDrops().clear();
 
-            // Setzen Sie hier den Spielerzustand zurück und fügen Sie ihn erneut zu playersInHCFW hinzu
-            resetPlayerState(playerId);
-            playersInHCFW.add(playerId);
-
-            player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
             player.sendMessage(ChatColor.RED + "Du kannst nicht erneut in die HCFW gelangen, nachdem du gestorben bist.");
         }
     }
-
-    private void resetPlayerState(UUID playerId) {
-        playerWelcomedMap.remove(playerId);
-        lastWelcomeTimeMap.remove(playerId);
-    }
-    private void savePlayerDeathInfo(Player player) {
-        UUID playerId = player.getUniqueId();
-        long timestamp = System.currentTimeMillis();
-        try {
-            // Überprüfen, ob ein Eintrag für diese UUID existiert
-            PreparedStatement checkStmt = connection.prepareStatement("SELECT COUNT(*) FROM player_deaths WHERE uuid = ?");
-            checkStmt.setString(1, playerId.toString());
-            ResultSet rs = checkStmt.executeQuery();
-            if (rs.next() && rs.getInt(1) > 0) {
-                // Eintrag existiert, also aktualisieren
-                PreparedStatement updateStmt = connection.prepareStatement("UPDATE player_deaths SET death_time = ? WHERE uuid = ?");
-                updateStmt.setLong(1, timestamp);
-                updateStmt.setString(2, playerId.toString());
-                updateStmt.executeUpdate();
-                plugin.getLogger().info("Spieler-Todesinformation für " + player.getName() + " aktualisiert.");
-            } else {
-                // Kein Eintrag, also neuen erstellen
-                PreparedStatement insertStmt = connection.prepareStatement("INSERT INTO player_deaths (uuid, death_time) VALUES (?, ?)");
-                insertStmt.setString(1, playerId.toString());
-                insertStmt.setLong(2, timestamp);
-                insertStmt.executeUpdate();
-                plugin.getLogger().info("Spieler-Todesinformation für " + player.getName() + " gespeichert.");
-            }
-        } catch (SQLException e) {
-            plugin.getLogger().severe("Fehler beim Speichern der Spieler-Todesinformation: " + e.getMessage());
-        }
-    }
-
 
     @EventHandler
     public void onPlayerRespawnInHCFW(PlayerRespawnEvent event) {
@@ -225,46 +143,98 @@ public class HCFW implements Listener {
         }
     }
 
-    private void resetPlayerDeathInfo(Player player) {
-        UUID playerId = player.getUniqueId();
+    private enum LockStatus {
+        LOCKED, UNLOCKED, NOT_LOCKED
+    }
 
-        try {
-            PreparedStatement statement = connection.prepareStatement("DELETE FROM player_deaths WHERE uuid = ?");
-            statement.setString(1, playerId.toString());
-            statement.executeUpdate();
-
-            // Spieler aus der HCFW-Welt entfernt, Markierung entfernen
-            playerWelcomedMap.remove(playerId);
-        } catch (SQLException e) {
-            e.printStackTrace();
+    private LockStatus getPlayerLockStatus(Player player) {
+        Long deathTime = playerDeathTimes.get(player.getUniqueId());
+        if (deathTime == null) {
+            return LockStatus.NOT_LOCKED;
         }
-        plugin.getLogger().info("Spieler-Todesinformation für " + player.getName() + " zurückgesetzt.");
+        long timeSinceDeath = System.currentTimeMillis() - deathTime;
+        if (timeSinceDeath < TimeUnit.MINUTES.toMillis(30)) {
+            return LockStatus.LOCKED;
+        } else {
+            return LockStatus.UNLOCKED;
+        }
+    }
+
+    private void checkAndTeleportPlayers() {
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (isInHCFW(player)) {
+                LockStatus status = getPlayerLockStatus(player);
+                if (status == LockStatus.LOCKED) {
+                    blockPlayerAccess(player);
+                } else if (status == LockStatus.UNLOCKED) {
+                    playersInHCFW.add(player.getUniqueId()); // Spieler zur HCFW-Liste hinzufügen
+                    welcomePlayer(player); // Willkommen heißen, wenn gerade entsperrt
+                }
+            }
+        }
     }
 
 
-    private void loadPlayerDeathTimes() {
-        try {
-            PreparedStatement statement = connection.prepareStatement("SELECT * FROM player_deaths");
-            ResultSet resultSet = statement.executeQuery();
+    private boolean isPlayerLocked(Player player) {
+        Long deathTime = playerDeathTimes.get(player.getUniqueId());
+        if (deathTime == null) {
+            return false;
+        }
+        long timeSinceDeath = System.currentTimeMillis() - deathTime;
+        return timeSinceDeath < TimeUnit.MINUTES.toMillis(30);
+    }
 
-            while (resultSet.next()) {
-                UUID playerId = UUID.fromString(resultSet.getString("uuid"));
-                Long deathTime = resultSet.getLong("death_time");
-                playerDeathTimes.put(playerId, deathTime);
+    private void blockPlayerAccess(Player player) {
+        player.teleport(plugin.getServer().getWorld("world").getSpawnLocation());
+        player.playSound(player.getLocation(), Sound.BLOCK_ANVIL_LAND, 1.0F, 1.0F);
+        long timeRemaining = TimeUnit.MINUTES.toMillis(30) - (System.currentTimeMillis() - playerDeathTimes.get(player.getUniqueId()));
+        player.sendMessage(ChatColor.RED + "Du kannst noch nicht in die HCFW gelangen. Bitte warte noch " +
+                TimeUnit.MILLISECONDS.toMinutes(timeRemaining) + " Minuten.");
+    }
+
+    private void welcomePlayer(Player player) {
+        if (!isInHCFW(player)) return;
+        int eventProbability = plugin.getDiscordBot().getEventProbability();
+        if (eventProbability >= 1) {
+            player.sendTitle(ChatColor.GREEN + "Ein besonderes Event tritt ein!",
+                    ChatColor.WHITE + "Event-Wahrscheinlichkeit: " + eventProbability + "%", 10, 70, 20);
+            player.playSound(player.getLocation(), Sound.ENTITY_GHAST_SCREAM, 1.0F, 1.0F);
+        } else {
+            player.sendTitle(ChatColor.GREEN + "Willkommen in der HCFW!", "", 10, 70, 20);
+        }
+    }
+
+    private void savePlayerDeathInfo(UUID playerId) {
+        long timestamp = System.currentTimeMillis();
+        try {
+            PreparedStatement checkStmt = connection.prepareStatement("SELECT COUNT(*) FROM player_deaths WHERE uuid = ?");
+            checkStmt.setString(1, playerId.toString());
+            ResultSet rs = checkStmt.executeQuery();
+            if (rs.next() && rs.getInt(1) > 0) {
+                PreparedStatement updateStmt = connection.prepareStatement("UPDATE player_deaths SET death_time = ? WHERE uuid = ?");
+                updateStmt.setLong(1, timestamp);
+                updateStmt.setString(2, playerId.toString());
+                updateStmt.executeUpdate();
+            } else {
+                PreparedStatement insertStmt = connection.prepareStatement("INSERT INTO player_deaths (uuid, death_time) VALUES (?, ?)");
+                insertStmt.setString(1, playerId.toString());
+                insertStmt.setLong(2, timestamp);
+                insertStmt.executeUpdate();
             }
         } catch (SQLException e) {
             e.printStackTrace();
         }
-        plugin.getLogger().info("Spieler-Todeszeiten geladen.");
     }
 
     private boolean isInHCFW(Player player) {
-        return player.getWorld().getName().equalsIgnoreCase("hcfw");
+        boolean inHCFW = player.getWorld().getName().equalsIgnoreCase("hcfw");
+        if (!inHCFW) {
+            //plugin.getLogger().info("Spieler ist nicht in der Welt 'hcfw'.");
+        }
+        return inHCFW;
     }
-//ab hier neue Funktionen
-//impllementieren die gewünscht sind
-//ab hier:
-
-
+-
+    //weitere Hardocre Elemente
 
 }
+

@@ -27,7 +27,7 @@ import java.util.*;
 
 public class QuestVillager implements Listener {
     private FreakyWorld plugin;
-    private Location villagerLocation = new Location(Bukkit.getWorld("World"), -257, 86, 1851);
+    private Location villagerLocation = new Location(Bukkit.getWorld("World"), 0, 213, -16);
     private Villager questVillager;
     private DiscordBot discordBot;
     private Set<UUID> hasInteracted = new HashSet<>();
@@ -49,6 +49,13 @@ public class QuestVillager implements Listener {
         questVillager = (Villager) Bukkit.getWorld("World").spawnEntity(villagerLocation, EntityType.VILLAGER);
         questVillager.setCustomName("Quest Master");
         questVillager.setAI(false);
+        questVillager.setInvulnerable(true);
+
+        // Setzen der Rotation des Villagers um 180 Grad
+        float currentYaw = questVillager.getLocation().getYaw();
+        float newYaw = currentYaw + 180;
+        newYaw = newYaw % 360; // Stellt sicher, dass der Wert zwischen 0 und 360 liegt
+        questVillager.setRotation(newYaw, questVillager.getLocation().getPitch());
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -262,14 +269,14 @@ public class QuestVillager implements Listener {
         Inventory questInventory = Bukkit.createInventory(null, 9, "Quest Items");
 
         // Füge die benannten Items zum Inventar hinzu
-        questInventory.setItem(0, createNamedItem(Material.BREAD, "Essen!"));
-        questInventory.setItem(1, createNamedItem(Material.COBBLESTONE, "Steine!"));
-        questInventory.setItem(2, createNamedItem(Material.OBSIDIAN, "Mystische Steine?"));
-        questInventory.setItem(3, createNamedItem(Material.POTATO, "Kartoffeln!"));
-        questInventory.setItem(4, createNamedItem(Material.CARROT, "Karotten, wichtig!"));
-        questInventory.setItem(5, createNamedItem(Material.FLINT_AND_STEEL, "Feuer"));
-        questInventory.setItem(6, createNamedItem(Material.RAW_IRON, "Roheisenerz"));
-        questInventory.setItem(7, createNamedItem(Material.IRON_INGOT, "Eisen!"));
+        questInventory.setItem(0, createNamedItem(Material.BREAD, "Wir alle sind hungrig, Essen sollten wir also genug da haben!"));
+        questInventory.setItem(1, createNamedItem(Material.COBBLESTONE, "Steine! Wer weiss welche Bauwerke wir errichten muessen."));
+        questInventory.setItem(2, createNamedItem(Material.OBSIDIAN, "Mystische Steine? Wir haben keine Ahnung, was diese Welt fuer uns bereit haelt.."));
+        questInventory.setItem(3, createNamedItem(Material.POTATO, "Kartoffeln! Alle lieben Kartoffeln!"));
+        questInventory.setItem(4, createNamedItem(Material.CARROT, "Karotten, wichtig! Ansonsten haben wir vielleicht ein Problem.."));
+        questInventory.setItem(5, createNamedItem(Material.FLINT_AND_STEEL, "Feuer! Wir wollens warm!"));
+        questInventory.setItem(6, createNamedItem(Material.RAW_IRON, "Roheisenerz! Der Schmied verlangt danach!"));
+        questInventory.setItem(7, createNamedItem(Material.IRON_INGOT, "Eisen! Der Schmied verlangt danach!"));
         questInventory.setItem(8, createQuestBook());
 
         // Öffne das Inventar für den Spieler
@@ -328,15 +335,15 @@ public class QuestVillager implements Listener {
 
 
             List<String> pages = new ArrayList<>();
-            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Das Nether-Portal\n\n" + ChatColor.RESET +
-                    ChatColor.DARK_GRAY + "Eine alte Legende erzählt von einem geheimnisvollen Reich, bekannt als das Nether. Um dorthin zu gelangen, benötigt man besondere Materialien...");
-            pages.add(ChatColor.BLUE + "Sammelauftrag:\n" + ChatColor.DARK_GRAY +
-                    "Sammle diese Items, um das Nether-Portal zu öffnen.\n\n" +
-                    ChatColor.RED + "- Brot\n" + ChatColor.GOLD + "- Kobbelstein\n" + ChatColor.DARK_PURPLE + "- Obsidian\n" + ChatColor.DARK_GRAY + "... und mehr.");
-            pages.add(ChatColor.LIGHT_PURPLE + "Deine Aufgabe\n\n" + ChatColor.DARK_GRAY +
-                    "Jedes dieser Materialien hat eine einzigartige Kraft. Finde sie und bringe sie zurück, um das Portal zu aktivieren und deine Reise ins Nether zu beginnen.");
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 3 - NEW ERA\n\n" + ChatColor.RESET +
+                    ChatColor.DARK_GRAY + "Deine Reise beginnt, als unser Luftschiff in dieser mysterioesen Welt ankommt. Hier erwartet dich eine wichtige Aufgabe, und die Zukunft dieser Welt liegt in deinen Haenden.");
+            pages.add(ChatColor.BLUE + "Eure Aufgabe\n" + ChatColor.DARK_GRAY +
+                    "\n\n" +
+                    ChatColor.RED + "- ein Quartier unterhalb des Luftschiffs errichten\n" + ChatColor.GOLD + "- den ankommenden Dorfbewohnern Schutz bieten.\n" + ChatColor.DARK_PURPLE + "- schafft euch eine eigene sichere Unterkunft ausserhalb des Hauptquartiers!\n" + ChatColor.DARK_GRAY + "... und noch so viel mehr...");
+            pages.add(ChatColor.LIGHT_PURPLE + "Doch Vorsicht!\n\n" + ChatColor.DARK_GRAY +
+                    "In der Wildnis seid ihr auf euch allein gestellt. Ausserhalb des Hauptlagers herrscht Unsicherheit, und ihr muesst selbst entscheiden, wem ihr vertraut.");
             pages.add(ChatColor.DARK_BLUE + "Das Abenteuer wartet!\n\n" + ChatColor.DARK_GRAY +
-                    "Sei mutig, Abenteurer. Viel Glück auf deiner Reise ins Unbekannte. Das Nether und seine Geheimnisse erwarten dich!");
+                    "Sei mutig, Abenteurer. Viel Glueck auf deiner Reise ins Unbekannte. Wenn wir genug von den Items haben und das Hauptquartier steht, werden wir die naechste Welt aufsuchen. Weisst du hier vielleicht schon mehr und kannst uns helfen?");
 
             bookMeta.setPages(pages);
             bookMeta.setLore(lore);

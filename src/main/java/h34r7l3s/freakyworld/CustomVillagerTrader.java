@@ -1,10 +1,7 @@
 package h34r7l3s.freakyworld;
 
 import io.th0rgal.oraxen.api.OraxenItems;
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.World;
+import org.bukkit.*;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
@@ -86,31 +83,55 @@ public class CustomVillagerTrader implements Listener {
 
     private void setupWeaponsVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, 111, 64, -165);
+        Location loc = new Location(world, 0, 217, 7);
         weaponsVillager = spawnVillager(loc, "Tools Trader");
         setupWeaponsTrades(weaponsVillager);
     }
 
     private void setupCombatVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, 105, 64, -154);
+        Location loc = new Location(world, 0, 217, 3);
         combatVillager = spawnVillager(loc, "Mystery Trader");
         setupCombatTrades(combatVillager);
+        // Drehen des Combat Villagers um 180 Grad
+        rotateVillagerLater(combatVillager);
     }
 
     private void setupArmorVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, 105, 64, -162);
+        Location loc = new Location(world, 0, 217, -5);
         armorVillager = spawnVillager(loc, "Armor Trader");
         setupArmorTrades(armorVillager);
     }
 
     private void setupSpecialVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, 111, 64, -156);
+        Location loc = new Location(world, 0, 217, -9);
         specialVillager = spawnVillager(loc, "Special Trader");
         setupSpecialTrades(specialVillager);
+        // Drehen des Combat Villagers um 180 Grad
+        rotateVillagerLater(specialVillager);
     }
+    private void rotateVillagerLater(Villager villager) {
+        Bukkit.getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+            @Override
+            public void run() {
+                if (villager != null && !villager.isDead()) {
+                    Location loc = villager.getLocation();
+                    float currentYaw = loc.getYaw();
+                    float newYaw = currentYaw + 180;
+
+                    if (newYaw > 180) newYaw -= 360;
+                    else if (newYaw < -180) newYaw += 360;
+
+                    loc.setYaw(newYaw);
+                    villager.teleport(loc);
+                }
+            }
+        }, 20L); // 20 Ticks entsprechen 1 Sekunde
+    }
+
+
 
     private Villager spawnVillager(Location loc, String name) {
         Villager villager = (Villager) loc.getWorld().spawnEntity(loc, EntityType.VILLAGER);
@@ -121,9 +142,9 @@ public class CustomVillagerTrader implements Listener {
         villager.setInvulnerable(true);
 
         // Den Villager um 90 Grad nach rechts drehen
-        float newYaw = (villager.getLocation().getYaw() + 90) % 360;
-        villager.getLocation().setYaw(newYaw);
-        villager.teleport(villager.getLocation());
+        //float newYaw = (villager.getLocation().getYaw() + 90) % 360;
+        //villager.getLocation().setYaw(newYaw);
+        //villager.teleport(villager.getLocation());
 
         return villager;
     }

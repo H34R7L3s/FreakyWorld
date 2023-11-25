@@ -45,16 +45,14 @@ public class MyVillager implements Listener {
                 // Überprüfe, ob der Villager den gewünschten Namen hat
                 if (villager.getCustomName().equals("Unbekannter")) {
                     // Setze den Villager als unverwundbar und verhindere, dass er sich bewegt
-                    villager.setInvulnerable(true);
+                    villager.setInvulnerable(false);
                     villager.setAI(false);
 
                     // Definiere die Sätze, die der Villager sagen soll
                     List<String> sentences = Arrays.asList(
-                            "FREAKS?! Es freut mich, euch zu sehen!",
-                            "Ich habe etwas Besonderes vorbereitet. Viel Arbeit wartet auf euch!",
-                            "Muss ich da viel erklären?",
-                            "....",
-                            "Schau es dir einfach mal an",
+                            "Verrueckt was hier abgeht, oder?!",
+                            "Einfach Freaky. Wie diese Aufagben hier...",
+                            "Der Battlepass wird dein Leben bereichern, glaub mir!",
                             "Hier:"
                     );
 
