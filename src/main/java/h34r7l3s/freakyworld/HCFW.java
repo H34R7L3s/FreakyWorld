@@ -1,22 +1,49 @@
 package h34r7l3s.freakyworld;
 
+import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.*;
+import org.bukkit.attribute.Attribute;
+import org.bukkit.block.Biome;
+import org.bukkit.block.Block;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
+import org.bukkit.enchantments.Enchantment;
+import org.bukkit.entity.*;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
+import org.bukkit.event.entity.*;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
+import org.bukkit.event.player.PlayerRespawnEvent;
+import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.plugin.Plugin;
+import org.bukkit.potion.PotionData;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
+import org.bukkit.potion.PotionType;
+import org.bukkit.projectiles.ProjectileSource;
+import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.util.Vector;
+
+
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
-import org.bukkit.event.entity.PlayerDeathEvent;
-import org.bukkit.event.player.PlayerJoinEvent;
-import org.bukkit.event.player.PlayerRespawnEvent;
-import org.bukkit.plugin.Plugin;
-import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.event.block.BlockBreakEvent;
+import java.util.HashMap;
+import java.util.UUID;
+import java.util.Random;
 
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
+
 
 public class HCFW implements Listener {
 
@@ -31,6 +58,9 @@ public class HCFW implements Listener {
         this.playerDeathTimes = new HashMap<>();
         setupDatabase();
         loadPlayerDeathTimes();
+        initializeZombieConfigurations();
+        startZombieSpawnTimer();
+
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
 
         new BukkitRunnable() {
@@ -39,7 +69,22 @@ public class HCFW implements Listener {
                 checkPlayerLocks();
                 checkAndTeleportPlayers();
             }
-        }.runTaskTimer(plugin, 0L, 20L); // Alle 20 Ticks überprüfen
+        }.runTaskTimer(plugin, 0L, 20L);// Alle 20 Ticks überprüfen
+
+        //initializeEvent();
+    }
+
+    public void cleanupEvents() {
+        // Beenden aller laufenden Event-Runnables
+        // Entfernen von Custom Entities oder Items, die für das Event erstellt wurden
+        // Zurücksetzen von Event-bezogenen Zuständen
+
+        // Beispiel: Wenn Sie einen schwebenden Rahmen für das Event verwenden
+        if (eventItemFrame != null) {
+            eventItemFrame.remove();
+        }
+
+        // ... Weitere Bereinigungslogik ...
     }
 
     private void setupDatabase() {
@@ -233,8 +278,934 @@ public class HCFW implements Listener {
         }
         return inHCFW;
     }
--
+
     //weitere Hardocre Elemente
+
+    //skelette
+    @EventHandler
+    public void onSkeletonShoot(EntityShootBowEvent event) {
+        if (!(event.getEntity() instanceof Skeleton)) return;
+
+        Skeleton skeleton = (Skeleton) event.getEntity();
+        if (!skeleton.getWorld().getName().equalsIgnoreCase("hcfw")) return;
+
+        int difficultyLevel = plugin.getDiscordBot().getEventProbability();
+        Random random = new Random();
+        Arrow originalArrow = (Arrow) event.getProjectile();
+
+        // Eine einzige Zufallszahl für die gesamte Logik
+        int randomChance = random.nextInt(100);
+
+        // Wahrscheinlichkeiten für verschiedene Pfeiltypen festlegen
+        // Test
+        int lightningArrowProbability = 40; // 40% Chance für Thors Pfeil
+
+        // Zuerst prüfen, ob es ein Blitzpfeil sein soll
+        if (randomChance < lightningArrowProbability) {
+            originalArrow.setMetadata("LightningArrow", new FixedMetadataValue(plugin, true));
+        }
+        // Dann prüfen, ob es ein Trankpfeil sein soll, falls es kein Blitzpfeil ist
+        else if (randomChance < difficultyLevel) {
+            createTippedArrow(originalArrow, difficultyLevel);
+        }
+        // Wenn keine der Bedingungen erfüllt ist, bleibt es ein normaler Pfeil
+    }
+    @EventHandler
+    public void onProjectileHit(ProjectileHitEvent event) {
+        if (!(event.getEntity() instanceof Arrow)) return;
+        Arrow arrow = (Arrow) event.getEntity();
+
+        if (!arrow.getWorld().getName().equalsIgnoreCase("hcfw")) return;
+
+        Location hitLocation = arrow.getLocation();
+        Block block = hitLocation.getBlock();
+
+        if (block.getType() != Material.AIR) {
+            arrow.getWorld().strikeLightning(hitLocation);
+
+            // Verzögertes Entfernen des Pfeils
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    arrow.remove();
+                }
+            }.runTaskLater(plugin, 1L); // 1 Tick später
+        }
+    }
+
+
+
+
+
+    private void createTippedArrow(Arrow originalArrow, int difficultyLevel) {
+        Location arrowLocation = originalArrow.getLocation();
+        Vector arrowVelocity = originalArrow.getVelocity();
+        ProjectileSource shooter = originalArrow.getShooter();
+
+        // Entfernen Sie den ursprünglichen Pfeil
+        originalArrow.remove();
+
+        // Erstellen eines neuen Trankpfeils
+        Arrow tippedArrow = arrowLocation.getWorld().spawnArrow(arrowLocation, arrowVelocity, 1.0f, 12.0f, TippedArrow.class);
+
+        // Setzen Sie den Shooter, wenn es eine Entität ist
+        if (shooter instanceof ProjectileSource) {
+            tippedArrow.setShooter((ProjectileSource)shooter);
+        }
+
+        // Setzen Sie Trankdaten basierend auf der Schwierigkeit
+        if (tippedArrow instanceof TippedArrow) {
+            TippedArrow ta = (TippedArrow) tippedArrow;
+            if (difficultyLevel >= 80) {
+                ta.setBasePotionData(new PotionData(PotionType.INSTANT_DAMAGE, true, true));
+            } else {
+                ta.setBasePotionData(new PotionData(PotionType.INSTANT_DAMAGE));
+            }
+        }
+    }
+
+
+
+
+
+
+
+    //Zombie
+    // Methode zum Starten des Zombie-Spawn-Timers
+    public void startZombieSpawnTimer() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                spawnZombiesBasedOnProbability();
+            }
+        }.runTaskTimer(plugin, 0L, 1200L); // 1200 Ticks = 1 Minute
+    }
+
+    // Methode zum Spawnen von Zombies basierend auf der Event-Wahrscheinlichkeit
+    private void spawnZombiesBasedOnProbability() {
+        int difficultyLevel = plugin.getDiscordBot().getEventProbability();
+        int maxZombiesToSpawn = difficultyLevel; // Beispielsweise gleich der Schwierigkeitsstufe
+        World world = plugin.getServer().getWorld("hcfw");
+
+        for (int i = 0; i < maxZombiesToSpawn; i++) {
+            // Wähle eine zufällige Spawn-Position (Beispiel, anpassen nach Bedarf)
+            int x = new Random().nextInt(world.getMaxHeight());
+            int z = new Random().nextInt(world.getMaxHeight());
+            int y = world.getHighestBlockYAt(x, z);
+
+            Location spawnLocation = new Location(world, x, y, z);
+
+            // Überprüfe, ob die maximale Anzahl an Zombies erreicht ist
+            if (countCurrentZombies(world) >= calculateMaxZombies(difficultyLevel)) {
+                break; // Stoppe das Spawnen, wenn das Maximum erreicht ist
+            }
+
+            // Spawn einen Zombie
+            Zombie zombie = (Zombie) world.spawnEntity(spawnLocation, EntityType.ZOMBIE);
+
+            // Konfiguriere den Zombie wie in der onZombieSpawn-Methode
+            setupBasicZombieAttributes(zombie, difficultyLevel);
+            enhanceZombieAttributes(zombie, difficultyLevel);
+            giveZombieSpecialAbilities(zombie, difficultyLevel);
+            applyVisualEffects(zombie, difficultyLevel);
+            zombie.setCanPickupItems(false);
+            if (spawnLocation.getBlock().getType() == Material.WATER) {
+                zombie.getEquipment().setItemInMainHand(new ItemStack(Material.TRIDENT));
+            }
+        }
+    }
+    // Beispielmethoden
+    private int calculateMaxZombies(int difficultyLevel) {
+        // Berechne die maximale Anzahl an Zombies basierend auf dem Schwierigkeitsgrad
+        return difficultyLevel * 10; // Beispielrechnung
+    }
+
+    private int countCurrentZombies(World world) {
+        // Zähle die aktuellen Zombies in der Welt
+        int count = 0;
+        for (Entity entity : world.getEntities()) {
+            if (entity instanceof Zombie) {
+                count++;
+            }
+        }
+        return count;
+    }
+
+
+
+    private void setupBasicZombieAttributes(Zombie zombie, int difficultyLevel) {
+        ItemStack helmet = new ItemStack(Material.LEATHER_HELMET);
+        ItemStack sword = new ItemStack(Material.STONE_SWORD);
+
+        // Je nach Schwierigkeitsgrad unterschiedliche Ausrüstung
+        if (difficultyLevel >= 30) {
+            helmet = new ItemStack(Material.IRON_HELMET);
+            sword = new ItemStack(Material.IRON_SWORD);
+        } else if (difficultyLevel >= 60) {
+            helmet = new ItemStack(Material.DIAMOND_HELMET);
+            sword = new ItemStack(Material.DIAMOND_SWORD);
+        }
+
+        zombie.getEquipment().setHelmet(helmet);
+        zombie.getEquipment().setItemInMainHand(sword);
+
+        double maxHealth = 20.0;
+        // Je nach Schwierigkeitsgrad unterschiedliche Gesundheit
+        if (difficultyLevel >= 30) {
+            maxHealth *= 1.5;
+        } else if (difficultyLevel >= 60) {
+            maxHealth *= 2.0;
+        }
+
+        zombie.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(maxHealth);
+        zombie.setHealth(maxHealth);
+    }
+
+    private void enhanceZombieAttributes(Zombie zombie, int difficultyLevel) {
+        // Zusätzliche Verstärkungen basierend auf Schwierigkeitsgrad
+        if (difficultyLevel >= 30) {
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, 1));
+        }
+        if (difficultyLevel >= 60) {
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 1));
+        }
+        if (difficultyLevel >= 90) {
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, Integer.MAX_VALUE, 1));
+        }
+    }
+
+    private void giveZombieSpecialAbilities(Zombie zombie, int difficultyLevel) {
+        // Spezialfähigkeiten basierend auf Schwierigkeitsgrad
+        if (difficultyLevel >= 60) {
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
+        }
+        if (difficultyLevel >= 90) {
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, 3));
+        }
+    }
+
+    private void applyVisualEffects(Zombie zombie, int difficultyLevel) {
+        // Visuelle Effekte basierend auf Schwierigkeitsgrad
+        if (difficultyLevel >= 90) {
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 0));
+        }
+    }
+
+
+
+
+    private Location eventLocation;
+    public boolean isEventInitialized = false; // Dieser Wert zeigt an, ob das Event abgeschlossen wurde
+    public boolean isEventCompleted = false;
+
+
+    public boolean isEventActive = false;
+
+    private ItemFrame eventItemFrame;
+
+    public void initializeEvent() {
+        World world = plugin.getServer().getWorld("hcfw");
+        plugin.getLogger().info("Event initialized erreicht");
+        int maxAttempts = 5000000; // Maximale Anzahl von Versuchen, einen geeigneten Ort zu finden
+        int attempt = 0;
+
+        while (attempt < maxAttempts) {
+            // Zufällige Koordinaten in der Welt "hcfw" generieren
+            int x = new Random().nextInt(world.getMaxHeight());
+            int z = new Random().nextInt(world.getMaxHeight());
+            int y = world.getHighestBlockYAt(x, z);
+
+            // Überprüfen, ob die Position in einem ungünstigen Biome ist oder in der Nähe von Bäumen oder Wasser liegt
+            Biome biome = world.getBiome(x, y, z);
+            if (biome == Biome.JUNGLE || biome == Biome.RIVER || biome == Biome.OCEAN || biome == Biome.DEEP_OCEAN) {
+                attempt++;
+                continue;
+            }
+
+            boolean unsuitableLocation = false;
+            int checkRadius = 10; // Radius, in dem nach Baumblöcken oder Wasser gesucht wird
+
+            for (int checkX = x - checkRadius; checkX <= x + checkRadius; checkX++) {
+                for (int checkZ = z - checkRadius; checkZ <= z + checkRadius; checkZ++) {
+                    for (int checkY = y - 5; checkY <= y + 5; checkY++) {
+                        Material blockType = world.getBlockAt(checkX, checkY, checkZ).getType();
+                        if (isWood(blockType) || blockType == Material.WATER) {
+                            unsuitableLocation = true;
+                            break;
+                        }
+                    }
+                    if (unsuitableLocation) {
+                        break;
+                    }
+                }
+                if (unsuitableLocation) {
+                    break;
+                }
+            }
+
+            if (unsuitableLocation) {
+                attempt++;
+                continue;
+            }
+
+            // Geeignete Position gefunden, Event initialisieren
+            eventLocation = new Location(world, x, y + 2, z); // Etwas oberhalb des Bodens positionieren
+            eventItemFrame = (ItemFrame) world.spawnEntity(eventLocation, EntityType.ITEM_FRAME);
+            eventItemFrame.setVisible(true);
+            eventItemFrame.setInvulnerable(true);
+            eventItemFrame.setFixed(true);
+            eventItemFrame.setItem(new ItemStack(Material.DIAMOND)); // Zeigt einen Diamanten als Hinweis
+            isEventActive = false; // Das Event wird noch nicht aktiviert
+            isEventInitialized = true;
+            isEventCompleted = false;
+            plugin.getLogger().info("Event initialized: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
+
+            // Partikeleffekt für inaktives Event (Rot)
+            world.spawnParticle(Particle.REDSTONE, eventLocation.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
+
+            break; // Geeignete Position gefunden, Schleife beenden
+        }
+    }
+
+
+
+
+
+//Freaky Raids
+    // Neue Funktionen ab hier, die das Event Raid System betreffen
+
+    private int probabilityBooster = 0;
+
+    public void checkAndStartEventBasedOnProbability() {
+        int baseEventProbability = plugin.getDiscordBot().getEventProbability();
+        int cumulativeProbability = baseEventProbability + probabilityBooster;
+
+        // Begrenzung der kumulativen Wahrscheinlichkeit auf maximal 100
+        cumulativeProbability = Math.min(cumulativeProbability, 100);
+
+        int randomValue = new Random().nextInt(100);
+
+        plugin.getLogger().info("Checking event start: Probability=" + cumulativeProbability + ", Random=" + randomValue);
+
+        if (randomValue < cumulativeProbability) {
+            initializeEvent();
+            probabilityBooster = 0; // Booster zurücksetzen
+            plugin.getLogger().info("Event started");
+        } else {
+            probabilityBooster += 14; // Booster erhöhen
+            randomValue = randomValue -16;
+            plugin.getLogger().info("Booster +14 started");
+            cumulativeProbability = baseEventProbability + probabilityBooster;
+            plugin.getLogger().info("Probability=" + cumulativeProbability + ", Random=" + randomValue + "Try again");
+            if (randomValue < cumulativeProbability) {
+                initializeEvent();
+                probabilityBooster = 0; // Booster zurücksetzen
+                plugin.getLogger().info("Event started durch Tryagain");
+            }
+        }
+    }
+
+
+    private boolean isWood(Material material) {
+        return material == Material.OAK_LOG || material == Material.BIRCH_LOG ||
+                material == Material.SPRUCE_LOG || material == Material.JUNGLE_LOG ||
+                material == Material.ACACIA_LOG || material == Material.DARK_OAK_LOG ||
+                material == Material.OAK_LEAVES || material == Material.BIRCH_LEAVES ||
+                material == Material.SPRUCE_LEAVES || material == Material.JUNGLE_LEAVES ||
+                material == Material.ACACIA_LEAVES || material == Material.DARK_OAK_LEAVES;
+    }
+
+
+
+    @EventHandler
+    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+        Player player = event.getPlayer();
+        Entity clickedEntity = event.getRightClicked();
+
+        // Prüfen, ob das angeklickte Entity ein ItemFrame ist
+        if (!(clickedEntity instanceof ItemFrame)) {
+            return;
+        }
+
+        ItemFrame clickedFrame = (ItemFrame) clickedEntity;
+
+        // Überprüfen, ob es sich um den spezifischen Rahmen handelt, der für das Event verwendet wird
+        if (!clickedFrame.equals(eventItemFrame)) {
+            return;
+        }
+
+        ItemStack itemInHand = player.getInventory().getItemInMainHand();
+
+        // Überprüfen, ob der Spieler das erforderliche Item (z. B. ein Diamant) in der Hand hat
+        if (itemInHand == null || itemInHand.getType() != Material.DIAMOND) {
+            player.sendMessage(ChatColor.RED + "Du benötigst einen Diamanten in deiner Hand, um das Event zu starten.");
+            return;
+        }
+
+        // Überprüfen, ob das Event bereits aktiv ist
+        if (isEventActive) {
+            player.sendMessage(ChatColor.RED + "Das Event ist bereits aktiv!");
+            return;
+        }
+
+        // Event starten
+        startEvent(player);
+
+        // Entferne einen Diamanten aus der Hand des Spielers
+        itemInHand.setAmount(itemInHand.getAmount() - 1);
+        player.sendMessage(ChatColor.GREEN + "Event gestartet!");
+
+        // Hier können zusätzliche Aktionen oder visuelle Effekte hinzugefügt werden
+    }
+
+
+
+    private void playStartEventEffects(Location location) {
+        World world = location.getWorld();
+
+        // Partikeleffekte
+        world.spawnParticle(Particle.SMOKE_LARGE, location, 50, 1.0, 1.0, 1.0, 0.1);
+        world.spawnParticle(Particle.FIREWORKS_SPARK, location, 30, 1.0, 1.0, 1.0, 0.1);
+        world.spawnParticle(Particle.ENCHANTMENT_TABLE, location, 100, 1.0, 1.0, 1.0, 1);
+
+        // Soundeffekte
+        world.playSound(location, Sound.BLOCK_BELL_USE, 1.0F, 1.0F);
+        world.playSound(location, Sound.ENTITY_EVOKER_CAST_SPELL, 1.0F, 1.0F);
+
+        // Zeitliche Abfolge der Effekte
+        new BukkitRunnable() {
+            int count = 0;
+
+            @Override
+            public void run() {
+                if (count > 5) {
+                    this.cancel();
+                    return;
+                }
+
+                world.spawnParticle(Particle.VILLAGER_HAPPY, location, 20, 0.5, 0.5, 0.5, 0);
+                world.playSound(location, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0F, 0.5F);
+                count++;
+            }
+        }.runTaskTimer(plugin, 20L, 20L); // Wiederholt alle 1 Sekunden
+    }
+
+
+
+    // StartEvent-Methode mit Event-Fortschrittsinfo
+    private void startEvent(Player player) {
+
+        isEventActive = true;
+        isEventInitialized = false;
+
+        plugin.getLogger().info("Event started by player " + player.getName() + ": isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized);
+
+
+        startEventVisuals(eventLocation);
+        playStartEventEffects(eventLocation);
+
+        int eventProbability = plugin.getDiscordBot().getEventProbability();
+        int numberOfWaves = eventProbability / 10;
+        player.sendMessage(ChatColor.GREEN + "Das Event hat " + numberOfWaves + " Wellen gestartet.");
+
+        new BukkitRunnable() {
+            int currentWave = 0;
+
+            @Override
+            public void run() {
+                if (currentWave >= numberOfWaves) {
+                    endEvent();
+                    this.cancel();
+                    return;
+                }
+                spawnWave(currentWave, eventLocation);
+                broadcastToPlayersNearby(eventLocation, ChatColor.YELLOW + "Welle " + (currentWave + 1) + " von " + numberOfWaves + " gestartet.");
+                currentWave++;
+            }
+        }.runTaskTimer(plugin, 0L, 20L * 60); // Jede Welle startet jede Minute
+    }
+
+    // Methode zum Senden von Nachrichten an Spieler in der Nähe
+    private void broadcastToPlayersNearby(Location location, String message) {
+        int radius = 50; // Radius, in dem Spieler die Nachricht erhalten
+        for (Player player : location.getWorld().getPlayers()) {
+            if (player.getLocation().distance(location) <= radius) {
+                player.sendMessage(message);
+            }
+        }
+    }
+
+
+    private List<ZombieConfiguration> zombieConfigurations = new ArrayList<>();
+
+    private class ZombieConfiguration {
+        private ItemStack helmet;
+        private List<PotionEffect> potionEffects;
+
+        public ZombieConfiguration(ItemStack helmet, List<PotionEffect> potionEffects) {
+            this.helmet = helmet;
+            this.potionEffects = potionEffects;
+        }
+
+        public ItemStack getHelmet() {
+            return helmet;
+        }
+
+        public List<PotionEffect> getPotionEffects() {
+            return potionEffects;
+        }
+    }
+
+    public void initializeZombieConfigurations() {
+        // Konfigurationen für verschiedene Schwierigkeitsgrade oder Event-Wahrscheinlichkeiten hinzufügen
+        zombieConfigurations.add(new ZombieConfiguration(new ItemStack(Material.IRON_HELMET),
+                Arrays.asList(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 600, 1))));
+        zombieConfigurations.add(new ZombieConfiguration(new ItemStack(Material.DIAMOND_HELMET),
+                Arrays.asList(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 600, 2),
+                        new PotionEffect(PotionEffectType.SPEED, 600, 1))));
+        // Fügen Sie weitere Konfigurationen für andere Schwierigkeitsgrade oder Event-Wahrscheinlichkeiten hinzu
+    }
+
+    private void spawnWave(int wave, Location location) {
+        World world = location.getWorld();
+        int numberOfEnemies = 5 + wave * 2; // Anzahl der Gegner pro Welle erhöhen
+
+        for (int i = 0; i < numberOfEnemies; i++) {
+            Zombie zombie = (Zombie) world.spawnEntity(location, EntityType.ZOMBIE);
+            // Zufällige Konfiguration auswählen
+            ZombieConfiguration randomConfiguration = getRandomZombieConfiguration();
+            equipZombieWithConfiguration(zombie, randomConfiguration);
+        }
+    }
+
+    private ZombieConfiguration getRandomZombieConfiguration() {
+        // Zufällige Konfiguration aus der Liste auswählen
+        Random random = new Random();
+        int randomIndex = random.nextInt(zombieConfigurations.size());
+        return zombieConfigurations.get(randomIndex);
+    }
+
+    private void equipZombieWithConfiguration(Zombie zombie, ZombieConfiguration configuration) {
+        // Ausrüstung und Effekte entsprechend der Konfiguration anwenden
+        zombie.getEquipment().setHelmet(configuration.getHelmet());
+        for (PotionEffect effect : configuration.getPotionEffects()) {
+            zombie.addPotionEffect(effect);
+        }
+    }
+
+
+    private void endEvent() {
+        isEventActive = false;
+        isEventInitialized  = false;
+        isEventCompleted = true;
+
+        plugin.getLogger().info("Event ended: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
+
+
+        probabilityBooster = 0;
+
+        endEventVisuals(eventLocation);
+
+        // Entferne den ItemFrame
+        eventItemFrame.remove();
+        // Nachricht an alle Spieler in der Nähe senden
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.getWorld().equals(eventLocation.getWorld()) && player.getLocation().distance(eventLocation) < 50) {
+                player.sendMessage(ChatColor.GREEN + "Das Event wurde erfolgreich abgeschlossen!");
+
+
+                //Visuelle Effekte (wie beginn) Zum Abschluss?
+                playStartEventEffects(eventLocation);
+            }
+        }
+        distributeRewards(eventLocation);
+        //broadcastToPlayersNearby(eventLocation, ChatColor.GREEN + "Das Event wurde erfolgreich abgeschlossen!");
+    }
+
+
+    private void distributeRewards(Location location) {
+        World world = location.getWorld();
+        Collection<Entity> nearbyEntities = world.getNearbyEntities(location, 10, 10, 10);
+        for (Entity entity : nearbyEntities) {
+            if (entity instanceof Player) {
+                Player player = (Player) entity;
+                // Belohnungen an Spieler verteilen
+                player.getInventory().addItem(new ItemStack(Material.DIAMOND, 3));
+                player.sendMessage(ChatColor.GREEN + "Du hast das Event erfolgreich abgeschlossen!");
+            }
+        }
+    }
+
+    @EventHandler
+    public void onPlayerKill(PlayerDeathEvent event) {
+        Player victim = event.getEntity();
+        Player killer = victim.getKiller();
+
+        if (killer != null && isInHCFW(killer) && isEventActive) {
+            // Zusätzliche Belohnungen für den Mörder
+            killer.getInventory().addItem(new ItemStack(Material.NETHER_STAR));
+            killer.sendMessage(ChatColor.RED + "Du hast einen Mitspieler verraten und eine extra Belohnung erhalten!");
+        }
+    }
+
+    private void startEventVisuals(Location location) {
+        World world = location.getWorld();
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (!isEventActive) {
+                    this.cancel();
+                    return;
+                }
+                // Kontinuierliche visuelle Effekte für aktives Event
+                playStartEventEffects(eventLocation);
+                //world.spawnParticle(Particle.REDSTONE, location.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.GREEN, 1));
+            }
+        }.runTaskTimer(plugin, 0L, 20L * 60); // Effekte alle 60 Sekunden wiederholen
+    }
+
+
+    private void endEventVisuals(Location location) {
+        World world = location.getWorld();
+        world.spawnParticle(Particle.FIREWORKS_SPARK, location, 200, 1, 1, 1);
+        world.playSound(location, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0F, 1.0F);
+
+        plugin.getLogger().info("Event-Visuals werden beendet!"); // Debugging-Nachricht
+
+        // Partikeleffekt für inaktives Event (Rot)
+        world.spawnParticle(Particle.REDSTONE, location.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
+    }
+
+    // Abteilung Warden
+    // ANTI STRIP MINING TOOL
+    private final HashMap<UUID, Integer> playerResourceCount = new HashMap<>();
+    private final int RESOURCE_THRESHOLD = 69; // Beispielwert
+    private final Random random = new Random();
+    //Block Break
+    @EventHandler
+    public void onBlockBreak(BlockBreakEvent event) {
+        Player player = event.getPlayer();
+
+        // Überprüfen, ob sich der Spieler in der Welt "HCFW" befindet
+        if (player.getWorld().getName().equalsIgnoreCase("hcfw")) {
+            UUID playerId = player.getUniqueId();
+            playerResourceCount.put(playerId, playerResourceCount.getOrDefault(playerId, 0) + 1);
+
+            if (playerResourceCount.get(playerId) >= RESOURCE_THRESHOLD) {
+                triggerRandomEvent(player);
+                playerResourceCount.put(playerId, 0); // Reset the count
+            }
+        }
+    }
+
+
+    private void triggerRandomEvent(Player player) {
+        int eventProbability = plugin.getDiscordBot().getEventProbability();
+        int eventType = random.nextInt(100);
+
+        // Anpassung der Event-Typen an die Event-Wahrscheinlichkeit
+        if (eventType < eventProbability / 4) {
+            triggerScareEvent(player, "klein");
+        } else if (eventType < eventProbability / 2) {
+            triggerScareEvent(player, "mittel");
+        } else if (eventType < eventProbability * 3 / 4) {
+            triggerScareEvent(player, "groß");
+        } else {
+            triggerCombatEvent(player, eventProbability);
+        }
+    }
+
+    private void triggerScareEvent(Player player, String scareSize) {
+        switch (scareSize) {
+            case "klein":
+                // Klein: Plötzliches Geräusch
+                player.playSound(player.getLocation(), Sound.ENTITY_CAT_HISS, 1.0F, 1.0F);
+                break;
+            case "mittel":
+                // Mittel: Harmlose Kreaturen erscheinen plötzlich
+                spawnBatsAroundPlayer(player, 5); // 5 Fledermäuse erscheinen
+                break;
+            case "groß":
+                // Groß: Illusionen von gefährlichen Kreaturen
+                spawnIllusionaryMobs(player, EntityType.ZOMBIE, 2); // 2 illusionäre Zombies erscheinen
+                break;
+            default:
+                // Extrem: Kombination aus visuellen und Sound-Effekten
+                createLightningEffect(player);
+                break;
+        }
+    }
+
+    private void spawnBatsAroundPlayer(Player player, int count) {
+        for (int i = 0; i < count; i++) {
+            Bat bat = (Bat) player.getWorld().spawnEntity(player.getLocation(), EntityType.BAT);
+            scheduleBatAttack(bat, player);
+        }
+    }
+    private void scheduleBatAttack(Bat bat, Player player) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (bat.isDead() || !player.isOnline()) {
+                    this.cancel();
+                    return;
+                }
+
+                // Fledermaus greift Spieler an
+                if (bat.getLocation().distance(player.getLocation()) < 2) {
+                    player.damage(1.0); // Geringer Schaden
+                    bat.remove();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Überprüft jede Sekunde
+    }
+
+    private void spawnIllusionaryMobs(Player player, EntityType type, int count) {
+        World world = player.getWorld();
+        Location playerLocation = player.getLocation();
+
+        for (int i = 0; i < count; i++) {
+            Location spawnLocation = playerLocation.clone().add(
+                    random.nextInt(5) - 2,  // Zufällige X Koordinate
+                    0,                      // Etwas über dem Boden
+                    random.nextInt(5) - 2   // Zufällige Z Koordinate
+            );
+
+            LivingEntity mob = (LivingEntity) world.spawnEntity(spawnLocation, type);
+
+            // Setzen Sie benutzerdefinierte Eigenschaften für den Mob
+            mob.setSilent(true); // Keine Geräusche
+            mob.setAI(false); // Keine künstliche Intelligenz
+            mob.setInvulnerable(true); // Unverwundbar
+            mob.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 60, 0, false, false)); // Kurzzeitig unsichtbar
+
+            // Erstellen Sie einen Task, um den Mob nach einer gewissen Zeit zu entfernen
+            new BukkitRunnable() {
+                @Override
+                public void run() {
+                    mob.remove();
+                }
+            }.runTaskLater(plugin, 20 * 10); // 10 Sekunden später
+        }
+    }
+
+
+    private void createLightningEffect(Player player) {
+        Location location = player.getLocation();
+        player.getWorld().strikeLightningEffect(location);
+        player.playSound(location, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0F, 0.5F);
+        spawnIllusionaryMobs(player, EntityType.ZOMBIE, 2);
+        spawnBatsAroundPlayer(player, 5);
+    }
+
+
+    private void triggerCombatEvent(Player player, int eventProbability) {
+        if (eventProbability < 30) {
+            spawnHostileAnimal(player, "Schaf");
+        } else if (eventProbability < 62) {
+            spawnHostileAnimal(player, "Schwein");
+        } else if (eventProbability < 76) {
+            spawnSwarmOfEnemies(player);
+
+        } else {
+            spawnWeakenedWarden(player);
+        }
+    }
+
+    private void spawnHostileAnimal(Player player, String animalType) {
+        World world = player.getWorld();
+        Location location = player.getLocation();
+        Entity entity;
+
+        switch (animalType) {
+            case "Schaf":
+                entity = world.spawnEntity(location, EntityType.SHEEP);
+                break;
+            case "Schwein":
+                entity = world.spawnEntity(location, EntityType.PIG);
+                break;
+            default:
+                return;
+        }
+        int eventProbability = plugin.getDiscordBot().getEventProbability();
+        LivingEntity livingEntity = (LivingEntity) entity;
+        livingEntity.setCustomName(ChatColor.RED + "Freaky " + animalType);
+        livingEntity.setCustomNameVisible(true);
+
+        // Neue Logik: Das Tier explodiert nach einer Weile
+        scheduleExplosion(livingEntity, player, eventProbability);
+        followPlayer(livingEntity, player);
+    }
+
+    private void followPlayer(LivingEntity entity, Player player) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (entity.isDead() || !player.isOnline()) {
+                    this.cancel();
+                    return;
+                }
+
+                // Einfache Logik, um das Entity in Richtung des Spielers zu bewegen
+                Location entityLocation = entity.getLocation();
+                Location playerLocation = player.getLocation();
+                Vector toPlayer = playerLocation.toVector().subtract(entityLocation.toVector()).normalize();
+
+                entityLocation.setDirection(toPlayer);
+                Vector offset = toPlayer.multiply(0.3);
+                if (!Double.isFinite(offset.getX()) || !Double.isFinite(offset.getY()) || !Double.isFinite(offset.getZ())) {
+                    // Logik für den Fall, dass die Koordinaten ungültig sind
+                    return;
+                }
+                entity.teleport(entityLocation.add(offset));
+                // Bewegt das Entity in Richtung des Spielers
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Aktualisiert alle Sekunden
+    }
+    private void scheduleExplosion(LivingEntity entity, Player player, int probability) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (entity.isDead() || !player.isOnline()) {
+                    this.cancel();
+                    return;
+                }
+
+                // Explosionseffekt erzeugen
+                Location loc = entity.getLocation();
+                entity.getWorld().createExplosion(loc, 2.0F, true, false); // Explosion mit Feuer und ohne Blockschaden
+                entity.remove();
+            }
+        }.runTaskLater(plugin, 20 * 6); // 6 Sekunden später
+    }
+
+    private void spawnWeakenedWarden(Player player) {
+        World world = player.getWorld();
+        Location location = player.getLocation();
+
+        // Erzeugen einer kontrollierten Explosion, um Platz zu schaffen
+        createClearanceExplosion(location);
+
+        // Verzögerung vor dem Spawnen des Wardens
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                Warden warden = (Warden) world.spawnEntity(location, EntityType.WARDEN);
+                warden.setHealth(20); // Reduzierte Gesundheit
+                warden.setCustomName(ChatColor.RED + "Freaky Warden");
+                warden.setCustomNameVisible(true);
+                warden.setTarget(player);
+            }
+        }.runTaskLater(plugin, 20L * 2); // 2 Sekunden später
+    }
+
+    private void createClearanceExplosion(Location location) {
+        World world = location.getWorld();
+
+        // Spieler in der Nähe der Explosion kurzzeitig unverwundbar machen
+        makeNearbyPlayersInvulnerable(location, world, 15.0, 20L * 2); // 2 Sekunden Unverwundbarkeit
+
+        // Erzeugen einer Explosion, die Blöcke zerstört, aber keinen Schaden an Spielern verursacht
+        world.createExplosion(location, 4.0F, false, true); // Explosion ohne Feuer
+
+    }
+
+    private void makeNearbyPlayersInvulnerable(Location location, World world, double radius, long durationTicks) {
+        List<Player> affectedPlayers = world.getNearbyEntities(location, radius, radius, radius)
+                .stream()
+                .filter(entity -> entity instanceof Player)
+                .map(entity -> (Player) entity)
+                .collect(Collectors.toList());
+
+        for (Player player : affectedPlayers) {
+            player.setInvulnerable(true);
+        }
+
+        // Rückgängigmachen der Unverwundbarkeit nach der festgelegten Dauer
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                for (Player player : affectedPlayers) {
+                    player.setInvulnerable(false);
+                }
+            }
+        }.runTaskLater(plugin, durationTicks);
+    }
+
+
+
+
+    private void spawnSwarmOfEnemies(Player player) {
+        World world = player.getWorld();
+        Location location = player.getLocation();
+
+        for (int i = 0; i < 5; i++) {
+            Zombie zombie = (Zombie) world.spawnEntity(location, EntityType.ZOMBIE);
+            zombie.setBaby(random.nextBoolean()); // Zufällig ein Baby-Zombie
+            zombie.getEquipment().setItemInMainHand(new ItemStack(Material.IRON_SWORD));
+            zombie.setTarget(player);
+        }
+    }
+
+
+    //FreakyBed
+
+    @EventHandler
+    public void onPlayerInteract(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        Action action = event.getAction();
+
+        // Überprüfen, ob der Spieler sich in der Welt "HCFW" befindet und ob die Aktion ein Rechtsklick ist
+        if (player.getWorld().getName().equalsIgnoreCase("hcfw") && action == Action.RIGHT_CLICK_BLOCK) {
+            // Überprüfen, ob der geklickte Block ein Bett ist
+            Block clickedBlock = event.getClickedBlock();
+            if (clickedBlock != null && isBed(clickedBlock.getType())) {
+                // Verhindern, dass der Spieler mit dem Bett interagiert
+                event.setCancelled(true);
+
+                // Erzeugen einer Explosion am Standort des Bettes
+                clickedBlock.getWorld().createExplosion(clickedBlock.getLocation(), 4.0F, false, false);
+            }
+        }
+    }
+
+    private boolean isBed(Material material) {
+        // Überprüfen Sie alle Bettvarianten, da es in Minecraft verschiedene Betten gibt
+        return material.name().endsWith("_BED");
+    }
+
+    //Zombie Event Message Info
+    private Map<UUID, Integer> playerZombieKillCount = new HashMap<>();
+
+    @EventHandler
+    public void onZombieDeath(EntityDeathEvent event) {
+        if (!(event.getEntity() instanceof Zombie)) return;
+        Zombie zombie = (Zombie) event.getEntity();
+        if (!zombie.getWorld().getName().equalsIgnoreCase("hcfw")) return;
+
+        Player killer = zombie.getKiller();
+        if (killer != null) {
+            UUID playerID = killer.getUniqueId();
+            int kills = playerZombieKillCount.getOrDefault(playerID, 0);
+            kills++;
+            playerZombieKillCount.put(playerID, kills);
+
+            plugin.getLogger().info("Zombie killed: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
+
+            int requiredKillsForEventInfo = 125; // Anzahl der Kills, die erforderlich sind, um Event-Informationen zu erhalten
+
+            if (kills >= requiredKillsForEventInfo) {
+                if (isEventCompleted) {
+                    killer.sendMessage(ChatColor.GOLD + "Die Schatten flüstern von deinem Sieg, doch die Echos der Schlacht sind längst verklungen. Das große Ereignis ist vorüber, und du stehst allein mit deiner Tapferkeit.");
+                } else if (isEventInitialized && !isEventActive) {
+                    killer.sendMessage(ChatColor.GOLD + "Dein Schwert singt Lieder des Todes, und die Untoten weichen zurück. Eine neue Herausforderung ruft! Finde das Herz des Aufruhrs bei den Koordinaten: [X: " + eventLocation.getBlockX() + ", Y: " + eventLocation.getBlockY() + ", Z: " + eventLocation.getBlockZ() + "]. Dein Schicksal wartet.");
+                } else {
+                    killer.sendMessage(ChatColor.GOLD + "Deine Klinge durchschneidet die Stille der Untoten, doch keine Legende erwacht heute aus ihrem Schlaf. Die Welt von FreakyWorld bleibt vorerst ruhig, ohne das Rufen eines neuen Abenteuers.");
+                }
+                playerZombieKillCount.put(playerID, 0); // Zähler zurücksetzen
+            }
+        }
+    }
 
 }
 

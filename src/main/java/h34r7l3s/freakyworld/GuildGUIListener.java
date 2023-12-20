@@ -596,7 +596,7 @@ public class GuildGUIListener implements Listener {
     }
     private Villager guildVillager;
     public void spawnGuildMasterVillager() {
-        Location location = new Location(Bukkit.getWorld("world"), 0, 80, 5);
+        Location location = new Location(Bukkit.getWorld("world"), 0, 380, 5);
         Villager villager = (Villager) Bukkit.getWorld("world").spawnEntity(location, EntityType.VILLAGER);
         villager.setCustomName("Gildenmeister");
         villager.setAI(false);

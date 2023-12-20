@@ -4,6 +4,7 @@ package h34r7l3s.freakyworld;
 import net.dv8tion.jda.api.entities.channel.attribute.IGuildChannelContainer;
 import net.dv8tion.jda.api.entities.channel.concrete.TextChannel;
 import org.bukkit.*;
+import org.bukkit.enchantments.Enchantment;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -21,7 +22,10 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
+import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionData;
+import org.bukkit.potion.PotionType;
 
 import java.util.*;
 
@@ -38,16 +42,18 @@ public class QuestVillager implements Listener {
         // Additional setup...
     }
     private final Set<Material> validMaterials = new HashSet<>(Arrays.asList(
-            Material.BREAD, Material.COBBLESTONE, Material.OBSIDIAN,
-            Material.POTATO, Material.CARROT, Material.FLINT_AND_STEEL,
-            Material.RAW_IRON, Material.IRON_INGOT
+            Material.CRYING_OBSIDIAN,
+            Material.DIAMOND_SWORD, // Schwert (muss verzaubert werden)
+            Material.IRON_HELMET, Material.IRON_CHESTPLATE, Material.IRON_LEGGINGS, Material.IRON_BOOTS, // Eisen-Rüstungsset
+            Material.ENCHANTED_GOLDEN_APPLE, Material.GOLDEN_APPLE,
+            Material.POTION // Generischer Trank
     ));
 
 
 
     public void spawnVillager() {
         questVillager = (Villager) Bukkit.getWorld("World").spawnEntity(villagerLocation, EntityType.VILLAGER);
-        questVillager.setCustomName("Quest Master");
+        questVillager.setCustomName("Hugo Heissluft");
         questVillager.setAI(false);
         questVillager.setInvulnerable(true);
 
@@ -61,57 +67,58 @@ public class QuestVillager implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onPlayerInteract(PlayerInteractAtEntityEvent event) {
         Entity entity = event.getRightClicked();
-        if (entity instanceof Villager && entity.getCustomName().equals("Quest Master")) {
-            openQuestGUI(event.getPlayer());
+        if (entity instanceof Villager) {
+            String customName = entity.getCustomName();
+            if (customName != null && customName.equals("Hugo Heissluft")) {
+                openQuestGUI(event.getPlayer());
+            }
         }
     }
 
     // Diese Methode überprüft, ob ein Item in das Abgabeinventar gelegt werden darf.
+    private Map<UUID, Material> playerSelectedMaterial = new HashMap<>();
+    private Map<UUID, Integer> playerSelectedAmount = new HashMap<>();
+
+    private Map<UUID, Integer> playerSelectedItemSlot = new HashMap<>();
+
+    private enum PlayerMode {
+        QUEST_ITEM, ITEM_SUBMISSION
+    }
+
+    private Map<UUID, PlayerMode> playerModes = new HashMap<>();
+
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
         Inventory clickedInventory = event.getClickedInventory();
         ItemStack clickedItem = event.getCurrentItem();
-
-        if (clickedItem == null) return;
-
         String inventoryTitle = event.getView().getTitle();
 
-        // Überprüfung für das "Quest Items" Menü
-        if (inventoryTitle.equals("Quest Items")) {
-            // Verhindern, dass Items aus dem Inventar genommen werden
-            event.setCancelled(true);
+        // Prüfen, ob das geklickte Inventar oder das Item null ist
+        if (clickedInventory == null || clickedItem == null) return;
 
-            if (validMaterials.contains(clickedItem.getType())) {
-                // Öffne das Abgabe Menü
-                openTradingInterface(player);
-            } else if (clickedItem.getType() == Material.WRITTEN_BOOK) {
-                // Öffnen des Questbuchs
-                openQuestBook(player);
-            }
-            return;
-        }
-        // Logik für das "Geben Sie Ihre Items ab" Menü
+        // Behandeln von Klicks im "Geben Sie Ihre Items ab" Inventar
         if (inventoryTitle.equals("Geben Sie Ihre Items ab")) {
-            if (event.getRawSlot() == 8 && clickedItem.getType() == Material.GREEN_WOOL) {
-                // Abgabe bestätigen und Items verarbeiten
+            event.setCancelled(true); // Verhindern, dass Items herausgenommen werden können
 
-                handleItemSubmission(player);
-                event.setCancelled(true);
-            } else {
-                // Erlaube das Verschieben von gültigen Materialien in das Abgabeinventar
-                if (!validMaterials.contains(clickedItem.getType())) {
-                    event.setCancelled(true);
-                }
+            // Prüfen, ob der grüne Wollblock geklickt wurde
+            if (event.getRawSlot() == 8 && clickedItem.getType() == Material.GREEN_WOOL) {
+                handleItemSubmission(player, true, -1); // Alle Items des ausgewählten Typs entfernen
             }
-        } else {
-            // Verhindere die direkte Abgabe von Items aus dem Spielerinventar
-            //event.setCancelled(true);
-            //Ich denke hier ist die Vanilla Inventar Logik?
+            // Prüfen, ob ein gültiges Material geklickt wurde
+            else if (validMaterials.contains(clickedItem.getType())) {
+                handleItemSubmission(player, false, event.getRawSlot()); // Nur den ausgewählten Item-Stack entfernen
+            }
+        }
+
+        // Logik für das "Quest Items" Inventar und andere Fälle
+        else if (inventoryTitle.equals("Quest Items")) {
+            if (validMaterials.contains(clickedItem.getType())) {
+                playerSelectedMaterial.put(player.getUniqueId(), clickedItem.getType());
+                openTradingInterface(player);
+            }
         }
     }
-
-
 
 
 
@@ -140,7 +147,7 @@ public class QuestVillager implements Listener {
         ItemStack item = new ItemStack(Material.GREEN_WOOL, 1);
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(ChatColor.GREEN + "Nimm dir alles was du finden kannst");
+            meta.setDisplayName(ChatColor.GREEN + "Alles für mich? Her damit!!");
             item.setItemMeta(meta);
         }
         return item;
@@ -149,53 +156,86 @@ public class QuestVillager implements Listener {
 
     // Diese Methode handhabt die Abgabe von Items.
     // In QuestVillager Klasse
-    private void handleItemSubmission(Player player) {
-        System.out.println("handleItemSubmission aufgerufen für Spieler " + player.getName());
+    private void handleItemSubmission(Player player, boolean isWoolBlockClicked, int clickedSlot) {
+        UUID playerId = player.getUniqueId();
+        if (!playerSelectedMaterial.containsKey(playerId)) return;
 
+        Material selectedMaterial = playerSelectedMaterial.get(playerId);
         Inventory playerInv = player.getInventory();
-        Map<Material, Integer> itemCounts = new HashMap<>();
 
-        for (ItemStack item : playerInv.getContents()) {
-            if (item != null && validMaterials.contains(item.getType())) {
-                // Ignoriere den grünen Wollblock bei der Abgabe
-                if (item.getType() == Material.GREEN_WOOL) {
-                    continue;
-                }
+        if (isWoolBlockClicked) {
+            // Wenn der Wollblock geklickt wurde, entfernen Sie bis zu 64 Items des ausgewählten Typs
+            int amountRemoved = removeItemsFromPlayer(player, selectedMaterial, 64, isWoolBlockClicked);
 
-                int count = itemCounts.getOrDefault(item.getType(), 0);
-                itemCounts.put(item.getType(), count + item.getAmount());
-                System.out.println("Spieler " + player.getName() + " hat " + item.getAmount() + "x " + item.getType() + " abgegeben");
-
-                removeItemsFromPlayer(player, item.getType(), item.getAmount());
+            sendTradeConfirmationToDiscord(player, new ItemStack(selectedMaterial, amountRemoved), amountRemoved);
+            player.sendMessage(ChatColor.GREEN + "Du hast " + amountRemoved + "x " + selectedMaterial.toString() + " abgegeben!");
+            player.updateInventory();
+        } else {
+            // Wenn ein einzelnes Item geklickt wurde, entfernen Sie nur diesen Item-Stack
+            ItemStack itemInSlot = playerInv.getItem(clickedSlot);
+            if (itemInSlot != null && itemInSlot.getType() == selectedMaterial) {
+                int amountToRemove = itemInSlot.getAmount();
+                itemInSlot.setAmount(0);
+                sendTradeConfirmationToDiscord(player, new ItemStack(selectedMaterial, amountToRemove), amountToRemove);
+                player.sendMessage(ChatColor.GREEN + "Du hast " + amountToRemove + "x " + selectedMaterial.toString() + " abgegeben!");
+                player.updateInventory();
             }
         }
+        // Aktualisieren oder Zurücksetzen von playerSelectedMaterial
+        playerSelectedMaterial.remove(playerId);
 
-        // Sende Discord Nachrichten für jedes abgegebene Item
-        itemCounts.forEach((material, count) -> {
-            ItemStack itemStack = new ItemStack(material, count);
-            sendTradeConfirmationToDiscord(player, itemStack, count);
-        });
+        // Aktualisieren des Spielerinventars, falls notwendig
+        player.updateInventory();
     }
 
 
 
-    private void removeItemsFromPlayer(Player player, Material material, int amountToRemove) {
+
+    private int countMaterial(Inventory inventory, Material material) {
+        int count = 0;
+        for (ItemStack item : inventory.getContents()) {
+            if (item != null && item.getType() == material) {
+                count += item.getAmount();
+            }
+        }
+        return count;
+    }
+
+
+
+    private int removeItemsFromPlayer(Player player, Material material, int amountToRemove, boolean isWoolBlockClicked) {
         Inventory playerInv = player.getInventory();
-        for (ItemStack item : playerInv.getContents()) {
+        int totalRemoved = 0;
+
+        for (int i = 0; i < playerInv.getSize(); i++) {
+            ItemStack item = playerInv.getItem(i);
             if (item != null && item.getType() == material) {
                 int amountInStack = item.getAmount();
 
-                if (amountInStack > amountToRemove) {
-                    item.setAmount(amountInStack - amountToRemove);
-                    return; // Genügend Items entfernt
+                if (isWoolBlockClicked) {
+                    // Entfernen Sie alle Items des Typs, wenn der Wollblock angeklickt wurde
+                    totalRemoved += amountInStack;
+                    playerInv.clear(i);
                 } else {
-                    playerInv.remove(item);
-                    amountToRemove -= amountInStack;
-                    if (amountToRemove == 0) return; // Alle benötigten Items entfernt
+                    // Entfernen Sie Items bis zur festgelegten Grenze, wenn ein einzelnes Item geklickt wurde
+                    if (amountInStack > amountToRemove - totalRemoved) {
+                        item.setAmount(amountInStack - (amountToRemove - totalRemoved));
+                        totalRemoved = amountToRemove;
+                        break;
+                    } else {
+                        playerInv.clear(i);
+                        totalRemoved += amountInStack;
+
+                        if (totalRemoved >= amountToRemove) break;
+                    }
                 }
             }
         }
+
+        return totalRemoved;
     }
+
+
 
 
 
@@ -219,17 +259,39 @@ public class QuestVillager implements Listener {
     private ItemStack createNamedItem(Material material, String name) {
         ItemStack item = new ItemStack(material, 1);
         ItemMeta meta = item.getItemMeta();
+
         if (meta != null) {
             meta.setDisplayName(name);
+
+            // Verzauberungen für Schwert und Rüstung hinzufügen
+            if (material == Material.DIAMOND_SWORD) {
+                meta.addEnchant(Enchantment.DAMAGE_ALL, 1, true); // Schärfe 1
+            } else if (material == Material.IRON_HELMET || material == Material.IRON_CHESTPLATE ||
+                    material == Material.IRON_LEGGINGS || material == Material.IRON_BOOTS) {
+                // Beispiel für eine zufällige Verzauberung
+                meta.addEnchant(Enchantment.PROTECTION_ENVIRONMENTAL, 1, true);
+            }
+
             item.setItemMeta(meta);
         }
+
+        // Zusätzliche Eigenschaften für Tränke
+        if (material == Material.POTION) {
+            PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
+            if (potionMeta != null) {
+                // Beispiel: Erstellen eines Heiltranks
+                potionMeta.setBasePotionData(new PotionData(PotionType.INSTANT_HEAL));
+                item.setItemMeta(potionMeta);
+            }
+        }
+
         return item;
     }
 
 
 
 
-        // Dieses Event tritt ein, wenn der Spieler das Handelsinventar benutzt
+    // Dieses Event tritt ein, wenn der Spieler das Handelsinventar benutzt
         @EventHandler
         public void onTrade(InventoryClickEvent event) {
             Inventory inv = event.getInventory();
@@ -241,23 +303,21 @@ public class QuestVillager implements Listener {
 
                 // Überprüfen, ob der grüne Wollblock angeklickt wurde
                 if (clickedItem != null && clickedItem.getType() == Material.GREEN_WOOL) {
-                    handleItemSubmission(player);
-                    player.closeInventory();
+                    // Grüner Wollblock geklickt: Verarbeiten Sie die Abgabe aller Items des ausgewählten Typs
+                    handleItemSubmission(player, true, -1);
+                    player.updateInventory();
+                } else if (clickedItem != null && validMaterials.contains(clickedItem.getType())) {
+                    // Ein spezifisches Item geklickt: Verarbeiten Sie die Abgabe des angeklickten Item-Stacks
+                    handleItemSubmission(player, false, event.getRawSlot());
+                    player.updateInventory();
                 } else {
-                    // Wenn nicht der grüne Wollblock angeklickt wurde, führe die übliche Logik aus
-                    if (clickedItem != null && validMaterials.contains(clickedItem.getType())) {
-                        int amountToTrade = clickedItem.getAmount();
-                        removeItemsFromPlayer(player, clickedItem.getType(), amountToTrade);
-                        player.closeInventory();
-                        player.sendMessage(ChatColor.GREEN + "Sie haben " + amountToTrade + "x " + clickedItem.getType().toString() + " abgegeben!");
-                        sendTradeConfirmationToDiscord(player, clickedItem, amountToTrade);
-                    } else {
-                        // Nachricht an den Spieler, wenn auf einen ungültigen oder leeren Slot geklickt wurde
-                        player.sendMessage(ChatColor.RED + "Ungültiges Item angeklickt.");
-                    }
+                    // Nachricht an den Spieler, wenn auf einen ungültigen oder leeren Slot geklickt wurde
+                    player.sendMessage(ChatColor.RED + "Ungültiges Item angeklickt.");
+                    player.updateInventory();
                 }
             }
         }
+
 
 
 
@@ -269,14 +329,15 @@ public class QuestVillager implements Listener {
         Inventory questInventory = Bukkit.createInventory(null, 9, "Quest Items");
 
         // Füge die benannten Items zum Inventar hinzu
-        questInventory.setItem(0, createNamedItem(Material.BREAD, "Wir alle sind hungrig, Essen sollten wir also genug da haben!"));
-        questInventory.setItem(1, createNamedItem(Material.COBBLESTONE, "Steine! Wer weiss welche Bauwerke wir errichten muessen."));
-        questInventory.setItem(2, createNamedItem(Material.OBSIDIAN, "Mystische Steine? Wir haben keine Ahnung, was diese Welt fuer uns bereit haelt.."));
-        questInventory.setItem(3, createNamedItem(Material.POTATO, "Kartoffeln! Alle lieben Kartoffeln!"));
-        questInventory.setItem(4, createNamedItem(Material.CARROT, "Karotten, wichtig! Ansonsten haben wir vielleicht ein Problem.."));
-        questInventory.setItem(5, createNamedItem(Material.FLINT_AND_STEEL, "Feuer! Wir wollens warm!"));
-        questInventory.setItem(6, createNamedItem(Material.RAW_IRON, "Roheisenerz! Der Schmied verlangt danach!"));
-        questInventory.setItem(7, createNamedItem(Material.IRON_INGOT, "Eisen! Der Schmied verlangt danach!"));
+        questInventory.setItem(0, createNamedItem(Material.CRYING_OBSIDIAN, "Geheimnisvoller Obsidian"));
+        questInventory.setItem(1, createNamedItem(Material.DIAMOND_SWORD, "Legendäres Schwert (VZ)"));
+        questInventory.setItem(2, createNamedItem(Material.IRON_HELMET, "Robuster Eisenhelm (VZ)"));
+        questInventory.setItem(3, createNamedItem(Material.IRON_CHESTPLATE, "Starke Eisenbrustplatte (VZ)"));
+        questInventory.setItem(4, createNamedItem(Material.IRON_LEGGINGS, "Feste Eisenbeinpanzer(VZ)"));
+        questInventory.setItem(5, createNamedItem(Material.IRON_BOOTS, "Solide Eisenstiefel(VZ)"));
+        questInventory.setItem(6, createNamedItem(Material.ENCHANTED_GOLDEN_APPLE, "Magischer Goldapfel"));
+        questInventory.setItem(7, createNamedItem(Material.POTION, "Mystischer Trank - Das beste vom besten!")); // Dies wird später spezifiziert
+
         questInventory.setItem(8, createQuestBook());
 
         // Öffne das Inventar für den Spieler
@@ -325,8 +386,8 @@ public class QuestVillager implements Listener {
             // Erstellen der Kapitelbeschreibungen in der Lore
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.RESET + "" + ChatColor.LIGHT_PURPLE + "Freaky" + ChatColor.LIGHT_PURPLE + "World" + ChatColor.DARK_PURPLE + " Season" + ChatColor.GOLD + " 3");
-            lore.add(ChatColor.RESET + "" + ChatColor.RED + "Kapitel 1: " + ChatColor.GREEN + "" + ChatColor.UNDERLINE + "Portal des Schreckens");
-            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 2: " + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Der Schatten der dunkelheit");
+            lore.add(ChatColor.RESET + "" + ChatColor.GREEN + "Kapitel 1: " + ChatColor.GREEN + "" + ChatColor.UNDERLINE + "Portal des Schreckens");
+            lore.add(ChatColor.RESET + "" + ChatColor.DARK_RED + "" + "Kapitel 2: " + ChatColor.YELLOW + "Der Schatten der dunkelheit");
             lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 3: " + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Geheimnisse in FreakyWorld");
 
 
@@ -335,16 +396,18 @@ public class QuestVillager implements Listener {
 
 
             List<String> pages = new ArrayList<>();
-            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 3 - NEW ERA\n\n" + ChatColor.RESET +
-                    ChatColor.DARK_GRAY + "Deine Reise beginnt, als unser Luftschiff in dieser mysterioesen Welt ankommt. Hier erwartet dich eine wichtige Aufgabe, und die Zukunft dieser Welt liegt in deinen Haenden.");
-            pages.add(ChatColor.BLUE + "Eure Aufgabe\n" + ChatColor.DARK_GRAY +
-                    "\n\n" +
-                    ChatColor.RED + "- ein Quartier unterhalb des Luftschiffs errichten\n" + ChatColor.GOLD + "- den ankommenden Dorfbewohnern Schutz bieten.\n" + ChatColor.DARK_PURPLE + "- schafft euch eine eigene sichere Unterkunft ausserhalb des Hauptquartiers!\n" + ChatColor.DARK_GRAY + "... und noch so viel mehr...");
-            pages.add(ChatColor.LIGHT_PURPLE + "Doch Vorsicht!\n\n" + ChatColor.DARK_GRAY +
-                    "In der Wildnis seid ihr auf euch allein gestellt. Ausserhalb des Hauptlagers herrscht Unsicherheit, und ihr muesst selbst entscheiden, wem ihr vertraut.");
-            pages.add(ChatColor.DARK_BLUE + "Das Abenteuer wartet!\n\n" + ChatColor.DARK_GRAY +
-                    "Sei mutig, Abenteurer. Viel Glueck auf deiner Reise ins Unbekannte. Wenn wir genug von den Items haben und das Hauptquartier steht, werden wir die naechste Welt aufsuchen. Weisst du hier vielleicht schon mehr und kannst uns helfen?");
-
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 3 - NEW ERA\n" + ChatColor.RESET +
+                    ChatColor.DARK_GRAY + "Solangsam bereiten wir den Landenanflug vor. Das Hauptquartier sollte also entsprechend vorbereitet sein, sodass sich dort alle Dorfbewohner wohlfuehlen werden");
+            pages.add(ChatColor.GOLD + "Neue Welten entdeckt:\n" + ChatColor.DARK_GRAY +
+                    ChatColor.RED + "- Wo bleibt unser Gildenmeister?\n" + ChatColor.GOLD + "- Unsere Forscher konnten ein unbekanntes Portal oeffnen.\n" + ChatColor.DARK_GREEN + "- Traut ihr euch hinein? \n");
+            pages.add(ChatColor.RED + "Aktuelle Lage!\n\n" + ChatColor.DARK_PURPLE +
+                    "Das Quartier sieht soweit gut aus! Gibt es bereits ein Rathaus?");
+            pages.add(ChatColor.DARK_BLUE + "Das Abenteuer wartet!\n" + ChatColor.DARK_GREEN +
+                    "Der Landeanflug ist im vollen Gange. Was erwartet uns in den neuen Welten?");
+            pages.add(ChatColor.DARK_BLUE + "Was nun?\n" + ChatColor.DARK_GRAY +
+                    ChatColor.RED + "- Erkundet die neue Welten\n" + ChatColor.GOLD + "- Wir brauchen Ausruestung!\n" + ChatColor.DARK_GREEN + "- Bleibt wachsam. \n");
+            pages.add(ChatColor.RED + "Eine Armee wird vorbereitet");
+            pages.add(ChatColor.DARK_RED + "Sammelt die neuen Items und ruestet euch fuer eine gigantische Schlacht!\n\n");
             bookMeta.setPages(pages);
             bookMeta.setLore(lore);
             book.setItemMeta(bookMeta);

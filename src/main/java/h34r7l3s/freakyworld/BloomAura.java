@@ -63,10 +63,11 @@ public class BloomAura implements Listener {
                             for (double y = -BOOST_RADIUS; y <= BOOST_RADIUS; y++) {
                                 for (double z = -BOOST_RADIUS; z <= BOOST_RADIUS; z++) {
                                     if (isNearWater) {
-                                        loc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc.clone().add(x, y + 1, z), 5, 0.5, 0.5, 0.5);
+                                        loc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc.clone().add(x, y + 1, z), 1, 0.5, 0.5, 0.5);
+
                                     } else {
                                         Particle.DustOptions dustOptions = new Particle.DustOptions(Color.RED, 1);
-                                        loc.getWorld().spawnParticle(Particle.REDSTONE, loc.clone().add(x, y + 1, z), 5, 0.5, 0.5, 0.5, dustOptions);
+                                        loc.getWorld().spawnParticle(Particle.REDSTONE, loc.clone().add(x, y + 1, z), 2, 0.5, 0.5, 0.5, dustOptions);
                                     }
                                 }
                             }

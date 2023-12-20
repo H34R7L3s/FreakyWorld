@@ -1,9 +1,14 @@
 package h34r7l3s.freakyworld;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
+import org.bukkit.block.Barrel;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import io.th0rgal.oraxen.api.OraxenItems;
@@ -36,6 +41,8 @@ public final class FreakyWorld extends JavaPlugin {
     private QuestVillager questVillager;
     private JavaPlugin plugin;
     private GuildGUIListener guildListener;
+    private CustomBookManager customBookManager;
+
     Logger logger = this.getLogger();
     @Override
     public void onEnable() {
@@ -62,7 +69,33 @@ public final class FreakyWorld extends JavaPlugin {
         ElytraDoubleJumpEffect elytraDoubleJumpEffectListener = new ElytraDoubleJumpEffect(this);
         getServer().getPluginManager().registerEvents(elytraDoubleJumpEffectListener, this);
         logger.info("Registered ElytraDoubleJumpEffect event listener");
+        logger.info("TestBuch");
 
+        // Überprüfen, ob das Buch im Fass ist, und falls nicht, es hinzufügen
+        Location barrelLocation = new Location(Bukkit.getWorld("world"), 0, 211, -34);
+        Barrel barrel = (Barrel) barrelLocation.getBlock().getState();
+
+        boolean bookFound = false;
+        for (ItemStack itemStack : barrel.getInventory().getContents()) {
+            if (CustomBookManager.isCustomBook(itemStack)) {
+                bookFound = true;
+                break;
+            }
+        }
+
+        if (!bookFound) {
+            // Das Buch ist nicht im Fass, fügen Sie es hinzu
+            CustomBookManager.initialize(this); // Initialisieren Sie CustomBookManager zuerst
+            ItemStack customBook = CustomBookManager.loadBookContent(); // Lade das Buch mit gespeichertem Inhalt
+            if (customBook != null) {
+                barrel.getInventory().addItem(customBook);
+                logger.info("Buch zum Fass hinzugefügt");
+            } else {
+                logger.warning("Fehler beim Laden des Buchinhalts.");
+            }
+        } else {
+            logger.info("Buch im Fass gefunden");
+        }
 
         //getServer().getPluginManager().registerEvents(new ArmorEnhancements(this), this);
         this.saveDefaultConfig();
@@ -88,6 +121,12 @@ public final class FreakyWorld extends JavaPlugin {
         logger.info("Loaded items");
         logger.info("HCFW ");
         hcfw = new HCFW(this);
+
+        // Planen Sie eine regelmäßige Überprüfung
+        Bukkit.getScheduler().runTaskTimer(this, () -> {
+            hcfw.checkAndStartEventBasedOnProbability();
+        }, 0L, 20L * 60 * 60); // z.B. alle Stunde
+        //hcfw.initializeEvent();
         logger.info("Loaded HCFW");
 
         // Register the ArmorEnhancements event listener
@@ -182,6 +221,10 @@ public final class FreakyWorld extends JavaPlugin {
             } catch (Exception e) {
                 e.printStackTrace();
             }
+        }
+
+        if (hcfw != null) {
+            hcfw.cleanupEvents();
         }
         // Plugin shutdown logic
     }
@@ -286,8 +329,6 @@ public final class FreakyWorld extends JavaPlugin {
             e.printStackTrace();
         }
     }
-
-
 
 
 

@@ -17,11 +17,11 @@ public class LightningArrowMechanicsManager implements Listener {
 
     private final JavaPlugin plugin;
     private static Location lastShotLocation = null;
-    private static final double MAX_SHOT_DISTANCE = 100.0;
+    private static final double MAX_SHOT_DISTANCE = 200.0;
 
     public LightningArrowMechanicsManager(JavaPlugin plugin, LightningArrowMechanicFactory factory) {
         this.plugin = plugin;
-        System.out.println("[DEBUG] New instance of LightningArrowMechanicsManager created!");
+        //System.out.println("[DEBUG] New instance of LightningArrowMechanicsManager created!");
     }
 
     @EventHandler
@@ -62,7 +62,7 @@ public class LightningArrowMechanicsManager implements Listener {
                 System.out.println("Arrow has ThorArrow metadata. This is our custom arrow!");
                 processArrowLanding(arrow);
             } else {
-                System.out.println("This arrow doesn't have the custom metadata. Ignoring...");
+                //System.out.println("This arrow doesn't have the custom metadata. Ignoring...");
             }
         }
     }

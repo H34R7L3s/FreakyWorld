@@ -50,10 +50,8 @@ public class MyVillager implements Listener {
 
                     // Definiere die Sätze, die der Villager sagen soll
                     List<String> sentences = Arrays.asList(
-                            "Verrueckt was hier abgeht, oder?!",
-                            "Einfach Freaky. Wie diese Aufagben hier...",
-                            "Der Battlepass wird dein Leben bereichern, glaub mir!",
-                            "Hier:"
+                            "Verrueckt was hier abgeht, oder?!"
+
                     );
 
                     // Starte eine verzögerte Aufgabe für jeden Satz
