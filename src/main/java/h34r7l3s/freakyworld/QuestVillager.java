@@ -31,7 +31,7 @@ import java.util.*;
 
 public class QuestVillager implements Listener {
     private FreakyWorld plugin;
-    private Location villagerLocation = new Location(Bukkit.getWorld("World"), 0, 213, -16);
+    private Location villagerLocation = new Location(Bukkit.getWorld("World"), -39, 69, 52);
     private Villager questVillager;
     private DiscordBot discordBot;
     private Set<UUID> hasInteracted = new HashSet<>();
@@ -388,7 +388,8 @@ public class QuestVillager implements Listener {
             lore.add(ChatColor.RESET + "" + ChatColor.LIGHT_PURPLE + "Freaky" + ChatColor.LIGHT_PURPLE + "World" + ChatColor.DARK_PURPLE + " Season" + ChatColor.GOLD + " 3");
             lore.add(ChatColor.RESET + "" + ChatColor.GREEN + "Kapitel 1: " + ChatColor.GREEN + "" + ChatColor.UNDERLINE + "Portal des Schreckens");
             lore.add(ChatColor.RESET + "" + ChatColor.DARK_RED + "" + "Kapitel 2: " + ChatColor.YELLOW + "Der Schatten der dunkelheit");
-            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 3: " + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Geheimnisse in FreakyWorld");
+            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 3: " + ChatColor.YELLOW + "" + ChatColor.STRIKETHROUGH + "Flucht in eine neue Welt");
+            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 4: " + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Geheimnisse in FreakyWorld");
 
 
 
@@ -397,17 +398,17 @@ public class QuestVillager implements Listener {
 
             List<String> pages = new ArrayList<>();
             pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 3 - NEW ERA\n" + ChatColor.RESET +
-                    ChatColor.DARK_GRAY + "Solangsam bereiten wir den Landenanflug vor. Das Hauptquartier sollte also entsprechend vorbereitet sein, sodass sich dort alle Dorfbewohner wohlfuehlen werden");
-            pages.add(ChatColor.GOLD + "Neue Welten entdeckt:\n" + ChatColor.DARK_GRAY +
-                    ChatColor.RED + "- Wo bleibt unser Gildenmeister?\n" + ChatColor.GOLD + "- Unsere Forscher konnten ein unbekanntes Portal oeffnen.\n" + ChatColor.DARK_GREEN + "- Traut ihr euch hinein? \n");
+                    ChatColor.DARK_GRAY + "Eine neue Welt? Das wurde ganz schoen hektisch da drueben...");
+            pages.add(ChatColor.GOLD + "Was nun???\n" + ChatColor.DARK_GRAY +
+                    ChatColor.RED + "- Sucht euch Unterschlupf!\n" + ChatColor.GOLD + "- Rettet unseren Spawn in der alten Welt!\n" + ChatColor.DARK_GREEN + "- Lasst uns erneut landen! \n");
             pages.add(ChatColor.RED + "Aktuelle Lage!\n\n" + ChatColor.DARK_PURPLE +
-                    "Das Quartier sieht soweit gut aus! Gibt es bereits ein Rathaus?");
-            pages.add(ChatColor.DARK_BLUE + "Das Abenteuer wartet!\n" + ChatColor.DARK_GREEN +
-                    "Der Landeanflug ist im vollen Gange. Was erwartet uns in den neuen Welten?");
-            pages.add(ChatColor.DARK_BLUE + "Was nun?\n" + ChatColor.DARK_GRAY +
-                    ChatColor.RED + "- Erkundet die neue Welten\n" + ChatColor.GOLD + "- Wir brauchen Ausruestung!\n" + ChatColor.DARK_GREEN + "- Bleibt wachsam. \n");
-            pages.add(ChatColor.RED + "Eine Armee wird vorbereitet");
-            pages.add(ChatColor.DARK_RED + "Sammelt die neuen Items und ruestet euch fuer eine gigantische Schlacht!\n\n");
+                    "Ihr solltet euch ein neues Eigenheim suchen! Wir hoffen, dass diese Welt sicherer ist...");
+            pages.add(ChatColor.DARK_BLUE + "Die Alte Welt\n" + ChatColor.DARK_GREEN +
+                    "Die alte Welt kann noch gerettet werden. Sichert unseren geliebten Spawn und macht ihn zu einem besonderen Ort!");
+            pages.add(ChatColor.DARK_BLUE + "Wir Landen! Erneut...\n" + ChatColor.DARK_GRAY +
+                    ChatColor.RED + "- Haltet euch am Schwarzen Brett auf dem Laufenden!\n" + ChatColor.GOLD + "- Wir brauchen weiterhin Ausruestung.\n" + ChatColor.DARK_GREEN + "- Bleibt wachsam. \n");
+            pages.add(ChatColor.RED + "Wir versuchen unsere Alte Welt zurueckzuerlangen. ");
+            pages.add(ChatColor.DARK_RED + "Aber nun ist jeder erneut auf sich alleingestellt.\n\n");
             bookMeta.setPages(pages);
             bookMeta.setLore(lore);
             book.setItemMeta(bookMeta);

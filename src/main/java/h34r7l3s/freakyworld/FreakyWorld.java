@@ -69,33 +69,6 @@ public final class FreakyWorld extends JavaPlugin {
         ElytraDoubleJumpEffect elytraDoubleJumpEffectListener = new ElytraDoubleJumpEffect(this);
         getServer().getPluginManager().registerEvents(elytraDoubleJumpEffectListener, this);
         logger.info("Registered ElytraDoubleJumpEffect event listener");
-        logger.info("TestBuch");
-
-        // Überprüfen, ob das Buch im Fass ist, und falls nicht, es hinzufügen
-        Location barrelLocation = new Location(Bukkit.getWorld("world"), 0, 211, -34);
-        Barrel barrel = (Barrel) barrelLocation.getBlock().getState();
-
-        boolean bookFound = false;
-        for (ItemStack itemStack : barrel.getInventory().getContents()) {
-            if (CustomBookManager.isCustomBook(itemStack)) {
-                bookFound = true;
-                break;
-            }
-        }
-
-        if (!bookFound) {
-            // Das Buch ist nicht im Fass, fügen Sie es hinzu
-            CustomBookManager.initialize(this); // Initialisieren Sie CustomBookManager zuerst
-            ItemStack customBook = CustomBookManager.loadBookContent(); // Lade das Buch mit gespeichertem Inhalt
-            if (customBook != null) {
-                barrel.getInventory().addItem(customBook);
-                logger.info("Buch zum Fass hinzugefügt");
-            } else {
-                logger.warning("Fehler beim Laden des Buchinhalts.");
-            }
-        } else {
-            logger.info("Buch im Fass gefunden");
-        }
 
         //getServer().getPluginManager().registerEvents(new ArmorEnhancements(this), this);
         this.saveDefaultConfig();
@@ -175,19 +148,23 @@ public final class FreakyWorld extends JavaPlugin {
 
         //ab hier Testing
 
-        nitradoAPIKey = secretsConfig.getString("nitradoAPIKey");
-        serverID = secretsConfig.getString("serverID");
+        //nitradoAPIKey = secretsConfig.getString("nitradoAPIKey");
+        //serverID = secretsConfig.getString("serverID");
 
 
 
 
         restartInfos = new ArrayList<>();
-        restartInfos.add(new RestartInfo(LocalTime.of(23, 0), "Oha - noch wach? Freaky!"));
-        restartInfos.add(new RestartInfo(LocalTime.of(5, 0), "Hört ihr Sie schon zwitschern..."));
-        restartInfos.add(new RestartInfo(LocalTime.of(11, 0), "HappaHappa"));
-        restartInfos.add(new RestartInfo(LocalTime.of(15, 0), "Lets get Freaky!!"));
-        restartInfos.add(new RestartInfo(LocalTime.of(19, 0), "PowerNap"));
+        restartInfos.add(new RestartInfo(LocalTime.of(0, 0), "Oha - noch wach? Freaky! Na los, ab mit dir!!"));
+        restartInfos.add(new RestartInfo(LocalTime.of(6, 0), "Hört ihr Sie schon zwitschern... Na los, ab mit dir!!"));
+        restartInfos.add(new RestartInfo(LocalTime.of(12, 0), "HappaHappa :3 Na los, ab mit dir!!"));
+        restartInfos.add(new RestartInfo(LocalTime.of(16, 0), "Lets get Freaky!! Na los, ab mit dir!!"));
+        restartInfos.add(new RestartInfo(LocalTime.of(20, 0), "PowerNap >.< Na los, ab mit dir!!"));
         scheduleDailyRestarts();
+
+        logger.info("FreakyWorld Loading Complete");
+        logger.info("Keine Fehler gefunden - Features gestartet");
+
         //
     }
 
@@ -255,27 +232,31 @@ public final class FreakyWorld extends JavaPlugin {
     }
 
     private void scheduleRestartsForToday() {
-        for (RestartInfo info : restartInfos) {
-            LocalTime now = LocalTime.now();
-            long delay = Duration.between(now, info.getRestartTime()).toMinutes();
+        LocalTime now = LocalTime.now();
 
-            if (delay <= 0) {
-                delay += 24 * 60;  // Add 24 hours if the delay is negative or zero
+        for (RestartInfo info : restartInfos) {
+            long delay = Duration.between(now, info.getRestartTime()).toSeconds();
+
+            // Überprüfe, ob die geplante Zeit heute bereits vorbei ist
+            if (delay < 0) {
+                continue; // Überspringe diesen Neustart, da er bereits vorbei ist
             }
 
+            long delayInTicks = delay * 20; // Umrechnung von Sekunden in Minecraft-Ticks
+
             // Warnung 5 Minuten vor Neustart
-            if (delay > 5) {
-                Bukkit.getScheduler().runTaskLater(this, () -> warnPlayersBeforeRestart(5), 20 * 60 * (delay - 5));
+            if (delay > 300) {
+                Bukkit.getScheduler().runTaskLater(this, () -> warnPlayersBeforeRestart(5), delayInTicks - 6000);
             }
 
             // Warnung 3 Minuten vor Neustart
-            if (delay > 3) {
-                Bukkit.getScheduler().runTaskLater(this, () -> warnPlayersBeforeRestart(3), 20 * 60 * (delay - 3));
+            if (delay > 180) {
+                Bukkit.getScheduler().runTaskLater(this, () -> warnPlayersBeforeRestart(3), delayInTicks - 3600);
             }
 
             // Warnung 1 Minute vor Neustart
-            if (delay > 1) {
-                Bukkit.getScheduler().runTaskLater(this, () -> warnPlayersBeforeRestart(1), 20 * 60 * (delay - 1));
+            if (delay > 60) {
+                Bukkit.getScheduler().runTaskLater(this, () -> warnPlayersBeforeRestart(1), delayInTicks - 1200);
             }
 
             // Tatsächlicher Neustart und Benachrichtigung
@@ -283,8 +264,8 @@ public final class FreakyWorld extends JavaPlugin {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     player.sendMessage(ChatColor.RED + info.getMessage());
                 }
-                sendNitradoRestartRequest();
-            }, 20 * 60 * delay);
+
+            }, delayInTicks);
         }
     }
 

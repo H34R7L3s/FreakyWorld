@@ -879,17 +879,29 @@ public class HCFW implements Listener {
     // Abteilung Warden
     // ANTI STRIP MINING TOOL
     private final HashMap<UUID, Integer> playerResourceCount = new HashMap<>();
-    private final int RESOURCE_THRESHOLD = 69; // Beispielwert
+    private final int RESOURCE_THRESHOLD = 36; // Beispielwert
     private final Random random = new Random();
+
+
     //Block Break
+    //Incl. Or Generation + Event Trigger
+
+
     @EventHandler
     public void onBlockBreak(BlockBreakEvent event) {
         Player player = event.getPlayer();
+        Block block = event.getBlock();
+        World world = block.getWorld();
 
         // Überprüfen, ob sich der Spieler in der Welt "HCFW" befindet
         if (player.getWorld().getName().equalsIgnoreCase("hcfw")) {
             UUID playerId = player.getUniqueId();
             playerResourceCount.put(playerId, playerResourceCount.getOrDefault(playerId, 0) + 1);
+
+            // Überprüfen, ob der Blocktyp eine Steinvariante ist
+            if (isStoneVariant(block.getType())) {
+                generateOresAroundBlock(block, world);
+            }
 
             if (playerResourceCount.get(playerId) >= RESOURCE_THRESHOLD) {
                 triggerRandomEvent(player);
@@ -898,7 +910,45 @@ public class HCFW implements Listener {
         }
     }
 
+    private boolean isStoneVariant(Material material) {
+        // Liste der Steinvarianten
+        Set<Material> stoneVariants = EnumSet.of(
+                Material.STONE, Material.COBBLESTONE, Material.ANDESITE, Material.DIORITE,
+                Material.GRANITE, Material.DEEPSLATE, Material.STONE_BRICKS, Material.MOSSY_COBBLESTONE,
+                Material.MOSSY_STONE_BRICKS, Material.MUD, Material.DRIPSTONE_BLOCK
+        );
+        return stoneVariants.contains(material);
+    }
 
+    //BlockBreakOre-Core
+    private void generateOresAroundBlock(Block block, World world) {
+        int radius = 3; // Radius um den zerstörten Block
+        for (int x = -radius; x <= radius; x++) {
+            for (int y = -radius; y <= radius; y++) {
+                for (int z = -radius; z <= radius; z++) {
+                    if (Math.random() < 0.5) { // 20% Chance für jeden Block im Radius
+                        Location newLocation = block.getLocation().add(x, y, z);
+                        Block newBlock = world.getBlockAt(newLocation);
+                        // Überprüfen, ob der Block eine Steinvariante ist
+                        if (isStoneVariant(newBlock.getType())) {
+                            newBlock.setType(getRandomOreType()); // Zufälliger Erztyp
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private Material getRandomOreType() {
+        // Hier kannst du eine zufällige Auswahl von Erztypen implementieren
+        Material[] ores = {Material.COAL_ORE, Material.IRON_ORE, Material.REDSTONE_ORE, Material.GOLD_ORE, Material.DIAMOND_ORE, Material.LAPIS_ORE};
+        return ores[new Random().nextInt(ores.length)];
+    }
+
+
+    //BlockBreakOre-Core END
+
+    //Event Trigger VarManager
     private void triggerRandomEvent(Player player) {
         int eventProbability = plugin.getDiscordBot().getEventProbability();
         int eventType = random.nextInt(100);
@@ -977,7 +1027,7 @@ public class HCFW implements Listener {
             mob.setSilent(true); // Keine Geräusche
             mob.setAI(false); // Keine künstliche Intelligenz
             mob.setInvulnerable(true); // Unverwundbar
-            mob.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 60, 0, false, false)); // Kurzzeitig unsichtbar
+            mob.addPotionEffect(new PotionEffect(PotionEffectType.INVISIBILITY, 30, 0, false, false)); // Kurzzeitig unsichtbar
 
             // Erstellen Sie einen Task, um den Mob nach einer gewissen Zeit zu entfernen
             new BukkitRunnable() {
@@ -1003,9 +1053,10 @@ public class HCFW implements Listener {
         if (eventProbability < 30) {
             spawnHostileAnimal(player, "Schaf");
         } else if (eventProbability < 62) {
-            spawnHostileAnimal(player, "Schwein");
+            spawnSwarmOfEnemies(player);
         } else if (eventProbability < 76) {
             spawnSwarmOfEnemies(player);
+            spawnHostileAnimal(player, "Schwein");
 
         } else {
             spawnWeakenedWarden(player);
@@ -1052,7 +1103,7 @@ public class HCFW implements Listener {
                 Vector toPlayer = playerLocation.toVector().subtract(entityLocation.toVector()).normalize();
 
                 entityLocation.setDirection(toPlayer);
-                Vector offset = toPlayer.multiply(0.3);
+                Vector offset = toPlayer.multiply(0.1);
                 if (!Double.isFinite(offset.getX()) || !Double.isFinite(offset.getY()) || !Double.isFinite(offset.getZ())) {
                     // Logik für den Fall, dass die Koordinaten ungültig sind
                     return;
@@ -1091,7 +1142,7 @@ public class HCFW implements Listener {
             @Override
             public void run() {
                 Warden warden = (Warden) world.spawnEntity(location, EntityType.WARDEN);
-                warden.setHealth(20); // Reduzierte Gesundheit
+                warden.setHealth(30); // Reduzierte Gesundheit
                 warden.setCustomName(ChatColor.RED + "Freaky Warden");
                 warden.setCustomNameVisible(true);
                 warden.setTarget(player);
@@ -1190,7 +1241,7 @@ public class HCFW implements Listener {
             kills++;
             playerZombieKillCount.put(playerID, kills);
 
-            plugin.getLogger().info("Zombie killed: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
+            //plugin.getLogger().info("Zombie killed: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
 
             int requiredKillsForEventInfo = 125; // Anzahl der Kills, die erforderlich sind, um Event-Informationen zu erhalten
 
