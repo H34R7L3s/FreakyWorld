@@ -38,6 +38,8 @@ public final class FreakyWorld extends JavaPlugin {
     private DiscordBot discordBot;
     private Connection dbConnection;
     private HCFW hcfw;
+    private WeaponAttributeManager weaponAttributeManager;
+
     private boolean isRestartScheduled = false;  // Hilft dabei, Mehrfachwarnungen zu verhindern
     private String nitradoAPIKey;  // Deklaration hier
     private String serverID;
@@ -173,7 +175,19 @@ public final class FreakyWorld extends JavaPlugin {
         vampirZepterListener.startVampirZepterEffectLoop(this);
 
         getServer().getPluginManager().registerEvents(new LegendaryAxe(), this);
-
+        try {
+            String jdbcUrl = "jdbc:mysql://localhost:3306/FreakyWorld"; // Ändern Sie die URL entsprechend
+            String dbUser = "mysql";
+            String dbPassword = "Admin";
+            dbConnection = DriverManager.getConnection(jdbcUrl, dbUser, dbPassword);
+            this.weaponAttributeManager = new WeaponAttributeManager(this, dbConnection);
+            getLogger().info("WeaponAttributeManager initialisiert.");
+        } catch (SQLException e) {
+            getLogger().severe("Fehler beim Herstellen der Datenbankverbindung: " + e.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        logger.info("FreakyWorld Weapon Complete");
 
         //ab hier Testing
 

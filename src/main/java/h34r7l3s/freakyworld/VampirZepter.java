@@ -506,19 +506,23 @@ public class VampirZepter implements Listener {
 
 
     private boolean hasExperienceOrbInInventory(Player player) {
-        for (ItemStack item : player.getInventory()) {
-            if (item != null && OraxenItems.getIdByItem(item).equals("experience_orb")) {
-                return true;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null) {
+                String itemId = OraxenItems.getIdByItem(item);
+                if (itemId != null && itemId.equals("experience_orb")) {
+                    return true;
+                }
             }
         }
         return false;
     }
 
+
 }
 
 
 /*
-Ende
+Ende !
 
 
  */
