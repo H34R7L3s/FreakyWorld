@@ -518,7 +518,7 @@ public class VampirZepter implements Listener {
 
 
 /*
-Durchschnitt: 5-7 normaler Zombie
+Ende
 
 
  */
