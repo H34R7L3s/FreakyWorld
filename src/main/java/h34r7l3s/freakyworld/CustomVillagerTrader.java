@@ -45,7 +45,7 @@ public class CustomVillagerTrader implements Listener {
 
             if (villager.equals(weaponsVillager) || villager.equals(combatVillager) || villager.equals(armorVillager) || villager.equals(specialVillager)) {
                 // Überprüfen, ob der Spieler das erforderliche Item im Inventar hat
-                if (!hasOraxenItem(event.getPlayer(), "silber") && !hasOraxenItem(event.getPlayer(), "gold")) {
+                if (!hasOraxenItem(event.getPlayer(), "silber") && !hasOraxenItem(event.getPlayer(), "gold") && !hasOraxenItem(event.getPlayer(), "eggmac")) {
                     event.getPlayer().sendMessage(ChatColor.RED + "Du bist uns unbekannt! Du " + ChatColor.DARK_PURPLE + "Freak" + ChatColor.RED + "! " + ChatColor.GOLD + "Nichts hast du an dir, was mich interessieren könnte!" + ChatColor.RED + " Also lasset uns ins Ruhe, " + ChatColor.DARK_PURPLE + "Freak" + ChatColor.RED + ".");
                     event.setCancelled(true);
                     return;
@@ -83,14 +83,14 @@ public class CustomVillagerTrader implements Listener {
 
     private void setupWeaponsVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, 0, 217, 7);
+        Location loc = new Location(world, -88, 86, 34);
         weaponsVillager = spawnVillager(loc, "Tools Trader");
         setupWeaponsTrades(weaponsVillager);
     }
 
     private void setupCombatVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, 0, 217, 3);
+        Location loc = new Location(world, -92, 86, 34);
         combatVillager = spawnVillager(loc, "Mystery Trader");
         setupCombatTrades(combatVillager);
         // Drehen des Combat Villagers um 180 Grad
@@ -99,14 +99,14 @@ public class CustomVillagerTrader implements Listener {
 
     private void setupArmorVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, 0, 217, -5);
+        Location loc = new Location(world, -100, 86, 34);
         armorVillager = spawnVillager(loc, "Armor Trader");
         setupArmorTrades(armorVillager);
     }
 
     private void setupSpecialVillager() {
         World world = plugin.getServer().getWorlds().get(0);
-        Location loc = new Location(world, 0, 217, -9);
+        Location loc = new Location(world, -104, 86, 34);
         specialVillager = spawnVillager(loc, "Special Trader");
         setupSpecialTrades(specialVillager);
         // Drehen des Combat Villagers um 180 Grad
@@ -150,7 +150,7 @@ public class CustomVillagerTrader implements Listener {
     }
     private void setupWeaponsTrades(Villager villager) {
         ArrayList<MerchantRecipe> trades = new ArrayList<>();
-        trades.add(createTrade(createSilverStack(10), OraxenItems.getItemById("silkspawn_pickaxe").build(), 1, 5));
+        trades.add(createTrade(createSilverStack(1), OraxenItems.getItemById("silkspawn_pickaxe").build(), 1, 10));
         trades.add(createTrade(createSilverStack(15), OraxenItems.getItemById("legendary_sword").build(), 1, 5));
         trades.add(createTrade(createSilverStack(15), OraxenItems.getItemById("vampir").build(), 1, 5));
         trades.add(createTrade(createSilverStack(12), OraxenItems.getItemById("legendary_hoe").build(), 1, 5));
@@ -163,6 +163,9 @@ public class CustomVillagerTrader implements Listener {
     private void setupCombatTrades(Villager villager) {
         ArrayList<MerchantRecipe> trades = new ArrayList<>();
         trades.add(createTrade(createGoldStack(2), OraxenItems.getItemById("lightning_arrow").build(), 1, 5));
+        trades.add(createTrade(createGoldStack(1), createSilverStack(10), 1, 5)); // Gold in Silber tauschen
+        trades.add(createTrade(createSilverStack(5), createEggMacStack(1), 1, 5)); // Silber in Eggmaccs tauschen
+
         villager.setRecipes(trades);
     }
 
@@ -190,6 +193,36 @@ public class CustomVillagerTrader implements Listener {
     private void setupSpecialTrades(Villager villager) {
         ArrayList<MerchantRecipe> trades = new ArrayList<>();
         trades.add(createTrade(createGoldStack(5), OraxenItems.getItemById("aura_of_bloom").build(), 1, 5));
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.COW_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.CHICKEN_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.PIG_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.RABBIT_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.GLOW_SQUID_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.HORSE_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.PANDA_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.PARROT_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.TURTLE_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.CREEPER_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.ZOMBIE_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.HUSK_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.WITCH_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.SPIDER_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.HOGLIN_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.PILLAGER_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.SLIME_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.VEX_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(3), new ItemStack(Material.ZOGLIN_SPAWN_EGG), 1, 20));
+
+        trades.add(createTrade(createEggMacStack(7), new ItemStack(Material.MOOSHROOM_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(7), new ItemStack(Material.ENDERMAN_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(7), new ItemStack(Material.GHAST_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(7), new ItemStack(Material.WITHER_SKELETON_SPAWN_EGG), 1, 20));
+        trades.add(createTrade(createEggMacStack(7), new ItemStack(Material.SHULKER_SPAWN_EGG), 1, 20));
+
+
+
+
         villager.setRecipes(trades);
     }
 
@@ -206,7 +239,11 @@ public class CustomVillagerTrader implements Listener {
         silverStack.setAmount(amount);
         return silverStack;
     }
-
+    private ItemStack createEggMacStack(int amount) {
+        ItemStack eggMacStack = OraxenItems.getItemById("eggmac").build(); // Annahme, dass "eggmac" die ID im Oraxen-Plugin ist
+        eggMacStack.setAmount(amount);
+        return eggMacStack;
+    }
     private ItemStack createGoldStack(int amount) {
         ItemStack goldStack = OraxenItems.getItemById("gold").build();
         goldStack.setAmount(amount);

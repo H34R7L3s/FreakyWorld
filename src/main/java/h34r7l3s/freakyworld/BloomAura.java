@@ -191,6 +191,7 @@ public class BloomAura implements Listener {
                             block.getRelative(0, 1, 0).setType(block.getType());
                         }
                     }
+                    // FAHRE HIER FORT!!!
                 }
             }
         }

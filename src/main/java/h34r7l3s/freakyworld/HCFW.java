@@ -71,7 +71,19 @@ public class HCFW implements Listener {
             }
         }.runTaskTimer(plugin, 0L, 20L);// Alle 20 Ticks überprüfen
 
-        //initializeEvent();
+
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                applyDarknessEffectToPlayers(); // Füge die Methode hier hinzu
+                checkPlayerLocks();
+                checkAndTeleportPlayers();
+            }
+        }.runTaskTimer(plugin, 0L, 20L);// Alle 20 Ticks überprüfen
+
+
+
     }
 
     public void cleanupEvents() {
@@ -376,39 +388,50 @@ public class HCFW implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
+                World world = plugin.getServer().getWorld("hcfw");
+                if (world == null || world.getPlayers().isEmpty()) {
+                    removeAllZombies(world); // Entferne alle Zombies, wenn keine Spieler da sind
+                    return;
+                }
                 spawnZombiesBasedOnProbability();
             }
-        }.runTaskTimer(plugin, 0L, 1200L); // 1200 Ticks = 1 Minute
+        }.runTaskTimer(plugin, 0L, 320L); // 120 Ticks = 16 Sekunden
     }
 
     // Methode zum Spawnen von Zombies basierend auf der Event-Wahrscheinlichkeit
     private void spawnZombiesBasedOnProbability() {
-        int difficultyLevel = plugin.getDiscordBot().getEventProbability();
-        int maxZombiesToSpawn = difficultyLevel; // Beispielsweise gleich der Schwierigkeitsstufe
         World world = plugin.getServer().getWorld("hcfw");
+        if (world == null || world.getPlayers().isEmpty()) {
+            //System.out.println("Keine Spieler in 'hcfw' oder Welt existiert nicht.");
+            return;
+        }
+
+        int difficultyLevel = plugin.getDiscordBot().getEventProbability();
+        int maxZombiesToSpawn = calculateMaxZombies(difficultyLevel);
 
         for (int i = 0; i < maxZombiesToSpawn; i++) {
-            // Wähle eine zufällige Spawn-Position (Beispiel, anpassen nach Bedarf)
+            // Überprüfung, ob die maximale Anzahl an Zombies erreicht ist
+            if (countCurrentZombies(world) >= maxZombiesToSpawn) {
+                break;
+            }
+
+            // Zufällige Spawn-Position
             int x = new Random().nextInt(world.getMaxHeight());
             int z = new Random().nextInt(world.getMaxHeight());
             int y = world.getHighestBlockYAt(x, z);
-
             Location spawnLocation = new Location(world, x, y, z);
-
-            // Überprüfe, ob die maximale Anzahl an Zombies erreicht ist
-            if (countCurrentZombies(world) >= calculateMaxZombies(difficultyLevel)) {
-                break; // Stoppe das Spawnen, wenn das Maximum erreicht ist
-            }
 
             // Spawn einen Zombie
             Zombie zombie = (Zombie) world.spawnEntity(spawnLocation, EntityType.ZOMBIE);
 
-            // Konfiguriere den Zombie wie in der onZombieSpawn-Methode
+            // Konfiguration des Zombies
             setupBasicZombieAttributes(zombie, difficultyLevel);
             enhanceZombieAttributes(zombie, difficultyLevel);
             giveZombieSpecialAbilities(zombie, difficultyLevel);
             applyVisualEffects(zombie, difficultyLevel);
             zombie.setCanPickupItems(false);
+
+            // Sonderfall für Zombies im Wasser
             if (spawnLocation.getBlock().getType() == Material.WATER) {
                 zombie.getEquipment().setItemInMainHand(new ItemStack(Material.TRIDENT));
             }
@@ -416,20 +439,46 @@ public class HCFW implements Listener {
     }
     // Beispielmethoden
     private int calculateMaxZombies(int difficultyLevel) {
-        // Berechne die maximale Anzahl an Zombies basierend auf dem Schwierigkeitsgrad
-        return difficultyLevel * 10; // Beispielrechnung
+        int baseMax = difficultyLevel * 10; // Erhöhe diesen Wert für mehr Zombies
+        int absoluteMax = 1220;
+        return Math.min(baseMax, absoluteMax);
+    }
+
+    private void removeAllZombies(World world) {
+        for (Entity entity : world.getEntities()) {
+            if (entity instanceof Zombie) {
+                entity.remove(); // Entferne den Zombie
+            }
+        }
     }
 
     private int countCurrentZombies(World world) {
-        // Zähle die aktuellen Zombies in der Welt
+        // Zähle die aktuellen lebenden Zombies in der Welt "HCFW"
         int count = 0;
         for (Entity entity : world.getEntities()) {
-            if (entity instanceof Zombie) {
-                count++;
+            if (entity instanceof Zombie && entity.getWorld().getName().equals("HCFW")) {
+                boolean isAlive = checkIfZombieIsAlive(entity); // Implementiere diese Methode entsprechend deiner Logik
+
+                if (isAlive) {
+                    count++;
+                }
             }
         }
+
         return count;
     }
+
+
+    private boolean checkIfZombieIsAlive(Entity zombie) {
+        if (zombie instanceof LivingEntity) {
+            LivingEntity livingZombie = (LivingEntity) zombie;
+            return !livingZombie.isDead();
+        }
+        return false;
+    }
+
+
+
 
 
 
@@ -479,7 +528,7 @@ public class HCFW implements Listener {
         if (difficultyLevel >= 60) {
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.FIRE_RESISTANCE, Integer.MAX_VALUE, 0));
         }
-        if (difficultyLevel >= 90) {
+        if (difficultyLevel >= 70) {
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, 3));
         }
     }
@@ -506,7 +555,7 @@ public class HCFW implements Listener {
     public void initializeEvent() {
         World world = plugin.getServer().getWorld("hcfw");
         plugin.getLogger().info("Event initialized erreicht");
-        int maxAttempts = 5000000; // Maximale Anzahl von Versuchen, einen geeigneten Ort zu finden
+        int maxAttempts = 500; // Maximale Anzahl von Versuchen, einen geeigneten Ort zu finden
         int attempt = 0;
 
         while (attempt < maxAttempts) {
@@ -523,7 +572,7 @@ public class HCFW implements Listener {
             }
 
             boolean unsuitableLocation = false;
-            int checkRadius = 10; // Radius, in dem nach Baumblöcken oder Wasser gesucht wird
+            int checkRadius = 5; // Radius, in dem nach Baumblöcken oder Wasser gesucht wird
 
             for (int checkX = x - checkRadius; checkX <= x + checkRadius; checkX++) {
                 for (int checkZ = z - checkRadius; checkZ <= z + checkRadius; checkZ++) {
@@ -811,7 +860,7 @@ public class HCFW implements Listener {
         // Nachricht an alle Spieler in der Nähe senden
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.getWorld().equals(eventLocation.getWorld()) && player.getLocation().distance(eventLocation) < 50) {
-                player.sendMessage(ChatColor.GREEN + "Das Event wurde erfolgreich abgeschlossen!");
+                player.sendMessage(ChatColor.GREEN + "Es kommen keine weiteren Wellen! Bleibt in der nähe für Belohnungen.");
 
 
                 //Visuelle Effekte (wie beginn) Zum Abschluss?
@@ -829,12 +878,24 @@ public class HCFW implements Listener {
         for (Entity entity : nearbyEntities) {
             if (entity instanceof Player) {
                 Player player = (Player) entity;
+
+                // Erstelle eine zufällige Menge an Silber zwischen 3 und 9
+                int randomSilverAmount = new Random().nextInt(7) + 3; // Gibt eine zufällige Zahl zwischen 3 und 9
+                ItemStack silverStack = createSilverStack(randomSilverAmount);
+
                 // Belohnungen an Spieler verteilen
-                player.getInventory().addItem(new ItemStack(Material.DIAMOND, 3));
-                player.sendMessage(ChatColor.GREEN + "Du hast das Event erfolgreich abgeschlossen!");
+                player.getInventory().addItem(silverStack);
+                player.sendMessage(ChatColor.GREEN + "Du hast " + randomSilverAmount + " Silber als Belohnung erhalten!");
             }
         }
     }
+
+    private ItemStack createSilverStack(int amount) {
+        ItemStack silverStack = OraxenItems.getItemById("silber").build();
+        silverStack.setAmount(amount);
+        return silverStack;
+    }
+
 
     @EventHandler
     public void onPlayerKill(PlayerDeathEvent event) {
@@ -879,7 +940,7 @@ public class HCFW implements Listener {
     // Abteilung Warden
     // ANTI STRIP MINING TOOL
     private final HashMap<UUID, Integer> playerResourceCount = new HashMap<>();
-    private final int RESOURCE_THRESHOLD = 36; // Beispielwert
+    private final int RESOURCE_THRESHOLD = 6; // Beispielwert
     private final Random random = new Random();
 
 
@@ -926,7 +987,7 @@ public class HCFW implements Listener {
         for (int x = -radius; x <= radius; x++) {
             for (int y = -radius; y <= radius; y++) {
                 for (int z = -radius; z <= radius; z++) {
-                    if (Math.random() < 0.5) { // 20% Chance für jeden Block im Radius
+                    if (Math.random() < 0.006) { //  Chance für jeden Block im Radius
                         Location newLocation = block.getLocation().add(x, y, z);
                         Block newBlock = world.getBlockAt(newLocation);
                         // Überprüfen, ob der Block eine Steinvariante ist
@@ -951,19 +1012,35 @@ public class HCFW implements Listener {
     //Event Trigger VarManager
     private void triggerRandomEvent(Player player) {
         int eventProbability = plugin.getDiscordBot().getEventProbability();
-        int eventType = random.nextInt(100);
+        List<Runnable> possibleEvents = new ArrayList<>();
 
-        // Anpassung der Event-Typen an die Event-Wahrscheinlichkeit
-        if (eventType < eventProbability / 4) {
-            triggerScareEvent(player, "klein");
-        } else if (eventType < eventProbability / 2) {
-            triggerScareEvent(player, "mittel");
-        } else if (eventType < eventProbability * 3 / 4) {
-            triggerScareEvent(player, "groß");
-        } else {
-            triggerCombatEvent(player, eventProbability);
+        // Basisereignisse, die immer möglich sind
+        possibleEvents.add(() -> triggerScareEvent(player, "klein"));
+
+        // Ereignisse, die mit steigender Wahrscheinlichkeit hinzugefügt werden
+        if (eventProbability >= 25) {
+            possibleEvents.add(() -> triggerScareEvent(player, "mittel"));
+            possibleEvents.add(() -> spawnHostileAnimal(player, "Schaf"));
         }
+        if (eventProbability >= 50) {
+            possibleEvents.add(() -> triggerScareEvent(player, "groß"));
+            possibleEvents.add(() -> spawnSwarmOfEnemies(player));
+        }
+        if (eventProbability >= 55) {
+            possibleEvents.add(() -> spawnHostileAnimal(player, "Schwein"));
+
+        }
+        if (eventProbability >= 65) {
+
+            possibleEvents.add(() -> spawnWeakenedWarden(player));
+        }
+
+
+        // Wähle zufällig ein Ereignis aus der Liste
+        int randomEventIndex = new Random().nextInt(possibleEvents.size());
+        possibleEvents.get(randomEventIndex).run();
     }
+
 
     private void triggerScareEvent(Player player, String scareSize) {
         switch (scareSize) {
@@ -1049,19 +1126,7 @@ public class HCFW implements Listener {
     }
 
 
-    private void triggerCombatEvent(Player player, int eventProbability) {
-        if (eventProbability < 30) {
-            spawnHostileAnimal(player, "Schaf");
-        } else if (eventProbability < 62) {
-            spawnSwarmOfEnemies(player);
-        } else if (eventProbability < 76) {
-            spawnSwarmOfEnemies(player);
-            spawnHostileAnimal(player, "Schwein");
 
-        } else {
-            spawnWeakenedWarden(player);
-        }
-    }
 
     private void spawnHostileAnimal(Player player, String animalType) {
         World world = player.getWorld();
@@ -1092,7 +1157,7 @@ public class HCFW implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                if (entity.isDead() || !player.isOnline()) {
+                if (entity.isDead() || !player.isOnline() || entity.getLocation().distance(player.getLocation()) > MAX_FOLLOW_DISTANCE) {
                     this.cancel();
                     return;
                 }
@@ -1102,17 +1167,20 @@ public class HCFW implements Listener {
                 Location playerLocation = player.getLocation();
                 Vector toPlayer = playerLocation.toVector().subtract(entityLocation.toVector()).normalize();
 
-                entityLocation.setDirection(toPlayer);
-                Vector offset = toPlayer.multiply(0.1);
-                if (!Double.isFinite(offset.getX()) || !Double.isFinite(offset.getY()) || !Double.isFinite(offset.getZ())) {
-                    // Logik für den Fall, dass die Koordinaten ungültig sind
+                // Erhöhe die Geschwindigkeit für aggressivere Verfolgung
+                Vector velocity = toPlayer.multiply(0.3); // Geschwindigkeitswert anpassen
+                if (!Double.isFinite(velocity.getX()) || !Double.isFinite(velocity.getY()) || !Double.isFinite(velocity.getZ())) {
                     return;
                 }
-                entity.teleport(entityLocation.add(offset));
-                // Bewegt das Entity in Richtung des Spielers
+                entity.setVelocity(velocity); // Setzt die Geschwindigkeit des Entity
+                entityLocation.setDirection(toPlayer); // Richtet das Entity zum Spieler aus
+                entity.teleport(entityLocation);
             }
         }.runTaskTimer(plugin, 0L, 20L); // Aktualisiert alle Sekunden
     }
+
+    private static final double MAX_FOLLOW_DISTANCE = 50.0; // Maximale Distanz, aus der das Entity dem Spieler folgt
+
     private void scheduleExplosion(LivingEntity entity, Player player, int probability) {
         new BukkitRunnable() {
             @Override
@@ -1124,7 +1192,7 @@ public class HCFW implements Listener {
 
                 // Explosionseffekt erzeugen
                 Location loc = entity.getLocation();
-                entity.getWorld().createExplosion(loc, 2.0F, true, false); // Explosion mit Feuer und ohne Blockschaden
+                entity.getWorld().createExplosion(loc, 2.0F, true, true); // Explosion mit Feuer und ohne Blockschaden
                 entity.remove();
             }
         }.runTaskLater(plugin, 20 * 6); // 6 Sekunden später
@@ -1192,11 +1260,20 @@ public class HCFW implements Listener {
 
         for (int i = 0; i < 5; i++) {
             Zombie zombie = (Zombie) world.spawnEntity(location, EntityType.ZOMBIE);
-            zombie.setBaby(random.nextBoolean()); // Zufällig ein Baby-Zombie
-            zombie.getEquipment().setItemInMainHand(new ItemStack(Material.IRON_SWORD));
+
+            // Reduziere die Wahrscheinlichkeit für Baby-Zombies
+            if (random.nextDouble() < 0.2) { // 20% Chance für einen Baby-Zombie
+                zombie.setBaby(true);
+            }
+
+            // Variiere die Ausrüstung der Zombies
+            ItemStack weapon = random.nextDouble() < 0.5 ? new ItemStack(Material.IRON_SWORD) : new ItemStack(Material.WOODEN_SWORD);
+            zombie.getEquipment().setItemInMainHand(weapon);
+
             zombie.setTarget(player);
         }
     }
+
 
 
     //FreakyBed
@@ -1215,7 +1292,7 @@ public class HCFW implements Listener {
                 event.setCancelled(true);
 
                 // Erzeugen einer Explosion am Standort des Bettes
-                clickedBlock.getWorld().createExplosion(clickedBlock.getLocation(), 4.0F, false, false);
+                clickedBlock.getWorld().createExplosion(clickedBlock.getLocation(), 6.0F, true, true);
             }
         }
     }
@@ -1243,7 +1320,13 @@ public class HCFW implements Listener {
 
             //plugin.getLogger().info("Zombie killed: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
 
-            int requiredKillsForEventInfo = 125; // Anzahl der Kills, die erforderlich sind, um Event-Informationen zu erhalten
+            // Schwierigkeitsgrad holen (zwischen 40% und 99%)
+            int difficultyLevel = Math.max(40, Math.min(plugin.getDiscordBot().getEventProbability(), 99));
+
+            // Berechnung der erforderlichen Kills
+            int baseKills = 90;
+            int requiredKillsForEventInfo = (int) (baseKills * (100.0 / difficultyLevel));
+
 
             if (kills >= requiredKillsForEventInfo) {
                 if (isEventCompleted) {
@@ -1257,6 +1340,25 @@ public class HCFW implements Listener {
             }
         }
     }
+
+    public void applyDarknessEffectToPlayers() {
+        int difficultyLevel = plugin.getDiscordBot().getEventProbability();
+
+        // Überprüfen, ob die Wahrscheinlichkeit über 80% liegt
+        if (difficultyLevel > 80) {
+            for (UUID playerId : playersInHCFW) {
+                Player player = Bukkit.getPlayer(playerId);
+
+                // Stelle sicher, dass der Spieler online ist
+                if (player != null) {
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.BLINDNESS, 100, 0));
+                }
+            }
+        }
+    }
+
+
+
 
 }
 

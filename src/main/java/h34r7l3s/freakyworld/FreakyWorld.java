@@ -1,19 +1,19 @@
 package h34r7l3s.freakyworld;
 
-import org.bukkit.ChatColor;
-import org.bukkit.Location;
+import org.bukkit.*;
 import org.bukkit.block.Barrel;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.entity.Villager;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.mechanics.MechanicsManager;
-import org.bukkit.Bukkit;
 
 import javax.security.auth.login.LoginException;
 import java.io.BufferedReader;
@@ -23,6 +23,9 @@ import java.io.FileNotFoundException;
 import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalTime;
 import java.util.ArrayList;
@@ -33,17 +36,21 @@ public final class FreakyWorld extends JavaPlugin {
 
     private List<RestartInfo> restartInfos;
     private DiscordBot discordBot;
+    private Connection dbConnection;
     private HCFW hcfw;
     private boolean isRestartScheduled = false;  // Hilft dabei, Mehrfachwarnungen zu verhindern
     private String nitradoAPIKey;  // Deklaration hier
     private String serverID;
     private String discordToken;
     private QuestVillager questVillager;
+    private MyVillager myVillager;
     private JavaPlugin plugin;
     private GuildGUIListener guildListener;
     private CustomBookManager customBookManager;
 
     Logger logger = this.getLogger();
+    private GuildSaver guildSaver;
+
     @Override
     public void onEnable() {
         FileConfiguration secretsConfig = YamlConfiguration.loadConfiguration(new File(getDataFolder(), "secrets.yml"));
@@ -57,7 +64,8 @@ public final class FreakyWorld extends JavaPlugin {
 
         // Initialize the Discord Bot
         try {
-            discordBot = new DiscordBot(secretsConfig);
+            this.discordBot = new DiscordBot(secretsConfig);
+            this.getServer().getPluginManager().registerEvents(new MyVillager(this, discordBot), this);
             getLogger().info("Discord Bot gestartet.");
         } catch (LoginException | InterruptedException e) {
             getLogger().severe("Konnte den Discord Bot nicht anmelden: " + e.getMessage());
@@ -108,10 +116,8 @@ public final class FreakyWorld extends JavaPlugin {
         getServer().getPluginManager().registerEvents(armorListener, this);
         logger.info("Registered ArmorEnhancements event listener");
 
-        logger.info("Villager");
-        MyVillager villagerListener = new MyVillager(this);
-        getServer().getPluginManager().registerEvents(villagerListener, this);
-        logger.info("Loaded VillagerPlug");
+        myVillager = new MyVillager(this, discordBot);
+        myVillager.createCustomVillager();
 
         logger.info("BloomAura");
         BloomAura bloomAuraListener = new BloomAura(this);
@@ -122,9 +128,29 @@ public final class FreakyWorld extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new CustomVillagerTrader(this), this);
         logger.info("Registered Trading Villager event listener");
         logger.info("Gilden System");
-        guildListener = new GuildGUIListener(this);
+        try {
+            String jdbcUrl = "jdbc:mysql://localhost:3306/FreakyWorld"; // Ändere die URL entsprechend
+            String dbUser = "mysql";
+            String dbPassword = "Admin";
+            dbConnection = DriverManager.getConnection(jdbcUrl, dbUser, dbPassword);
+            getLogger().info("Datenbankverbindung hergestellt.");
+        } catch (SQLException e) {
+            getLogger().severe("Fehler beim Herstellen der Datenbankverbindung: " + e.getMessage());
+            getServer().getPluginManager().disablePlugin(this);
+            return;
+        }
+        guildListener = new GuildGUIListener(this, dbConnection);
+        // Erstellen einer Guild-Instanz und Spawnen des Villagers
+        spawnGuildMasterVillager();
+
+
+        this.guildSaver = new GuildSaver(this, dbConnection);
+        guildSaver.createGuildTasksTable();
+        guildSaver.createAlliancesTable();
+
         getServer().getPluginManager().registerEvents(guildListener, this);
-        guildListener.spawnGuildMasterVillager();  // Fügen Sie diese Zeile hinzu, um den Villager zu spawnen
+
+
         logger.info("Registered GildenSystem");
 
 
@@ -134,6 +160,9 @@ public final class FreakyWorld extends JavaPlugin {
         // Übergeben Sie die Instanz von DiscordBot
         // Initialisieren des QuestVillager-Listeners
         getServer().getPluginManager().registerEvents(questVillager, this);  // Registrieren des QuestVillager-Listeners
+
+        //this.getServer().getPluginManager().registerEvents(new MyVillager(this), this);
+
         logger.info("Registered QuestVil");
         // VampirZepter Initialisierung und Registrierung
         VampirZepter vampirZepterListener = new VampirZepter();
@@ -167,7 +196,16 @@ public final class FreakyWorld extends JavaPlugin {
 
         //
     }
+    public void spawnGuildMasterVillager() {
+        World world = Bukkit.getWorld("world"); // Stellen Sie sicher, dass diese Welt existiert
+        Location villagerLocation = new Location(world, -42, 369, 14); // Ändern Sie die Koordinaten entsprechend
 
+        Villager guildMasterVillager = world.spawn(villagerLocation, Villager.class);
+        guildMasterVillager.setCustomName("Gildenmeister");
+        guildMasterVillager.setInvulnerable(true);
+        guildMasterVillager.setAI(false);
+        // Hier können Sie dem Villager andere Eigenschaften hinzufügen, wenn gewünscht
+    }
     public DiscordBot getDiscordBot() {
         return discordBot;
     }
@@ -191,7 +229,13 @@ public final class FreakyWorld extends JavaPlugin {
                 e.printStackTrace();
             }
         }
-        // Check if questVillager is not null before trying to remove the Quest Villager
+        // Check if questVillager is not null before trying to remove the Quest Vi
+        // Rufe die Methode removeVillagerAtPosition auf, um den Villager zu entfernen
+        Location villagerLocation = new Location(Bukkit.getWorld("world"), -42, 69, 4);
+        myVillager.removeVillagerAtPosition(villagerLocation);
+
+        //
+        // llager
         if (this.questVillager != null) {
             try {
                  this.questVillager.removeQuestVillager();
@@ -202,6 +246,15 @@ public final class FreakyWorld extends JavaPlugin {
 
         if (hcfw != null) {
             hcfw.cleanupEvents();
+        }
+
+        if (dbConnection != null) {
+            try {
+                dbConnection.close();
+                getLogger().info("Datenbankverbindung geschlossen.");
+            } catch (SQLException e) {
+                getLogger().severe("Fehler beim Schließen der Datenbankverbindung: " + e.getMessage());
+            }
         }
         // Plugin shutdown logic
     }
@@ -268,6 +321,8 @@ public final class FreakyWorld extends JavaPlugin {
             }, delayInTicks);
         }
     }
+    // Teil des Initialisierungscodes
+
 
 
 

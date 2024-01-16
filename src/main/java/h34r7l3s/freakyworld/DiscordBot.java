@@ -53,8 +53,9 @@ public class DiscordBot extends ListenerAdapter {
 
     private void calculateEventProbability() {
         Random random = new Random();
-        eventProbability = random.nextInt(100); // Generates a number between 0 and 99
+        eventProbability = random.nextInt(61) + 40; // Generiert eine Zahl zwischen 40 und 100
     }
+
 
     private void announceProbabilityInChannel(String channelId) {
         TextChannel channel = jda.getTextChannelById(channelId);
@@ -118,5 +119,23 @@ public class DiscordBot extends ListenerAdapter {
         }
     }
 
-    // ... rest of the DiscordBot class ...
+    public void sendEventMessageToChannel(String channelId, String initiatorName, int startInMinutes, int durationMinutes, String roleID) {
+        TextChannel channel = jda.getTextChannelById(channelId);
+        if (channel == null) {
+            System.err.println("Konnte den Discord-Kanal nicht finden.");
+            return;
+        }
+
+        // Erstellen der Nachricht mit dem richtigen Rollen-Tag und Event-Informationen
+        String message = "<@&1046913269966852207> " + initiatorName + " hat ein Event gestartet!\n\n" +
+                "**Startzeit:** In " + startInMinutes + " Minuten\n" +
+                "**Dauer:** " + durationMinutes + " Minuten\n" +
+                "Seid dabei! Ab zum Spawn und meldet euch bei " + initiatorName + " um teilzunehmen!";
+
+        // Senden der Nachricht
+        channel.sendMessage(message).queue();
+    }
+
+
+
 }

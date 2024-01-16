@@ -31,7 +31,7 @@ import java.util.*;
 
 public class QuestVillager implements Listener {
     private FreakyWorld plugin;
-    private Location villagerLocation = new Location(Bukkit.getWorld("World"), -39, 69, 52);
+    private Location villagerLocation = new Location(Bukkit.getWorld("World"), -80, 82, 34);
     private Villager questVillager;
     private DiscordBot discordBot;
     private Set<UUID> hasInteracted = new HashSet<>();
@@ -387,9 +387,10 @@ public class QuestVillager implements Listener {
             List<String> lore = new ArrayList<>();
             lore.add(ChatColor.RESET + "" + ChatColor.LIGHT_PURPLE + "Freaky" + ChatColor.LIGHT_PURPLE + "World" + ChatColor.DARK_PURPLE + " Season" + ChatColor.GOLD + " 3");
             lore.add(ChatColor.RESET + "" + ChatColor.GREEN + "Kapitel 1: " + ChatColor.GREEN + "" + ChatColor.UNDERLINE + "Portal des Schreckens");
-            lore.add(ChatColor.RESET + "" + ChatColor.DARK_RED + "" + "Kapitel 2: " + ChatColor.YELLOW + "Der Schatten der dunkelheit");
-            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 3: " + ChatColor.YELLOW + "" + ChatColor.STRIKETHROUGH + "Flucht in eine neue Welt");
+            lore.add(ChatColor.RESET + "" + ChatColor.YELLOW + "" + "Kapitel 2: " + ChatColor.YELLOW + "Der Schatten der dunkelheit");
+            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GREEN + ""  + "Kapitel 3: " + ChatColor.GREEN  + "Flucht in eine neue Welt");
             lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 4: " + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Geheimnisse in FreakyWorld");
+            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 5: " + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "????????");
 
 
 
