@@ -150,21 +150,29 @@ public class CustomVillagerTrader implements Listener {
     }
     private void setupWeaponsTrades(Villager villager) {
         ArrayList<MerchantRecipe> trades = new ArrayList<>();
-        trades.add(createTrade(createSilverStack(1), OraxenItems.getItemById("silkspawn_pickaxe").build(), 1, 10));
-        trades.add(createTrade(createSilverStack(15), OraxenItems.getItemById("legendary_sword").build(), 1, 5));
-        trades.add(createTrade(createSilverStack(15), OraxenItems.getItemById("vampir").build(), 1, 5));
-        trades.add(createTrade(createSilverStack(12), OraxenItems.getItemById("legendary_hoe").build(), 1, 5));
-        trades.add(createTrade(createSilverStack(12), OraxenItems.getItemById("legendary_pickaxe1").build(), 1, 5));
-        trades.add(createTrade(createSilverStack(20), OraxenItems.getItemById("timberaxt").build(), 1, 5));
-        trades.add(createTrade(createSilverStack(15), OraxenItems.getItemById("legendary_pickaxe").build(), 1, 5));
+        trades.add(createTrade(createSilverStack(4), OraxenItems.getItemById("silkspawn_pickaxe").build(), 1, 10));
+        trades.add(createTrade(createSilverStack(25), OraxenItems.getItemById("legendary_sword").build(), 1, 5));
+        trades.add(createTrade(createSilverStack(25), OraxenItems.getItemById("vampir").build(), 1, 5));
+        trades.add(createTrade(createSilverStack(22), OraxenItems.getItemById("legendary_hoe").build(), 1, 5));
+        trades.add(createTrade(createSilverStack(22), OraxenItems.getItemById("legendary_pickaxe1").build(), 1, 5));
+        trades.add(createTrade(createSilverStack(30), OraxenItems.getItemById("timberaxt").build(), 1, 5));
+        trades.add(createTrade(createSilverStack(25), OraxenItems.getItemById("legendary_pickaxe").build(), 1, 5));
+        trades.add(createMixedTrade(27, 5, OraxenItems.getItemById("blue_lantern_of_doom").build(), 10));
+        // Trade 2: 5 Gold und 27 Silber für staff_of_wisdom
+        trades.add(createMixedTrade(22, 0, OraxenItems.getItemById("staff_of_wisdom").build(), 10));
+        // Trade 3: 19 Silber für eagle_eye
+        trades.add(createMixedTrade(19, 0, OraxenItems.getItemById("eagle_eye").build(), 10));
+        // Trade 4: 3 Gold und 7 Silber für experience_orb
+        trades.add(createMixedTrade(7, 3, OraxenItems.getItemById("experience_orb").build(), 10));
+
         villager.setRecipes(trades);
     }
 
     private void setupCombatTrades(Villager villager) {
         ArrayList<MerchantRecipe> trades = new ArrayList<>();
-        trades.add(createTrade(createGoldStack(2), OraxenItems.getItemById("lightning_arrow").build(), 1, 5));
-        trades.add(createTrade(createGoldStack(1), createSilverStack(10), 1, 5)); // Gold in Silber tauschen
-        trades.add(createTrade(createSilverStack(5), createEggMacStack(1), 1, 5)); // Silber in Eggmaccs tauschen
+        trades.add(createTrade(createGoldStack(2), OraxenItems.getItemById("lightning_arrow").build(), 1, 50));
+        trades.add(createTrade(createGoldStack(1), createSilverStack(1), 12, 50)); // Gold in Silber tauschen
+        trades.add(createTrade(createSilverStack(10), createEggMacStack(1), 1, 50)); // Silber in Eggmaccs tauschen
 
         villager.setRecipes(trades);
     }
@@ -192,7 +200,7 @@ public class CustomVillagerTrader implements Listener {
 
     private void setupSpecialTrades(Villager villager) {
         ArrayList<MerchantRecipe> trades = new ArrayList<>();
-        trades.add(createTrade(createGoldStack(5), OraxenItems.getItemById("aura_of_bloom").build(), 1, 5));
+        trades.add(createTrade(createSilverStack(27), OraxenItems.getItemById("aura_of_bloom").build(), 1, 5));
         trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.COW_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
         trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.CHICKEN_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
         trades.add(createTrade(createEggMacStack(1), new ItemStack(Material.PIG_SPAWN_EGG), 1, 20)); // Annahme, dass 1 EggMac gegen 1 Cow Spawn Egg getauscht wird
@@ -249,5 +257,17 @@ public class CustomVillagerTrader implements Listener {
         goldStack.setAmount(amount);
         return goldStack;
     }
+
+    private MerchantRecipe createMixedTrade(int silverAmount, int goldAmount, ItemStack output, int maxTrades) {
+        ItemStack silverStack = createSilverStack(silverAmount);
+        ItemStack goldStack = createGoldStack(goldAmount);
+
+        MerchantRecipe recipe = new MerchantRecipe(output, maxTrades);
+        recipe.addIngredient(silverStack);
+        recipe.addIngredient(goldStack);
+
+        return recipe;
+    }
+
 
 }

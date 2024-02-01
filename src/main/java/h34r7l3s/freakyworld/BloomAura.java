@@ -179,23 +179,37 @@ public class BloomAura implements Listener {
             for (double y = -BOOST_RADIUS; y <= BOOST_RADIUS; y++) {
                 for (double z = -BOOST_RADIUS; z <= BOOST_RADIUS; z++) {
                     Block block = location.clone().add(x, y, z).getBlock();
+                    Material blockType = block.getType();
 
+                    // Check for Ageable blocks (e.g., wheat, carrots, potatoes)
                     if (block.getBlockData() instanceof org.bukkit.block.data.Ageable) {
                         org.bukkit.block.data.Ageable ageable = (org.bukkit.block.data.Ageable) block.getBlockData();
                         if (ageable.getAge() < ageable.getMaximumAge()) {
                             ageable.setAge(ageable.getAge() + 1);
                             block.setBlockData(ageable);
                         }
-                    } else if (block.getType() == Material.CACTUS || block.getType() == Material.SUGAR_CANE) {
-                        if (block.getRelative(0, 1, 0).getType() == Material.AIR) {
-                            block.getRelative(0, 1, 0).setType(block.getType());
-                        }
                     }
-                    // FAHRE HIER FORT!!!
+                    // Check for Saplings (e.g., oak, birch, spruce, etc.)
+                    else if (blockType == Material.OAK_SAPLING || blockType == Material.BIRCH_SAPLING ||
+                            blockType == Material.SPRUCE_SAPLING || blockType == Material.JUNGLE_SAPLING ||
+                            blockType == Material.ACACIA_SAPLING || blockType == Material.DARK_OAK_SAPLING) {
+                        block.setType(blockType);
+                    }
+                    // Check for Bamboo and Bamboo Saplings
+                    else if (blockType == Material.BAMBOO || blockType == Material.BAMBOO_SAPLING) {
+                        block.setType(blockType);
+                    }
+                    // Check for Cactus or Sugar Cane (place above air)
+                    else if ((blockType == Material.CACTUS || blockType == Material.SUGAR_CANE) &&
+                            block.getRelative(0, 1, 0).getType() == Material.AIR) {
+                        block.getRelative(0, 1, 0).setType(blockType);
+                    }
+                    // Add more checks for other plant-like blocks as needed
                 }
             }
         }
     }
+
 
     private boolean isNearWater(Location location) {
         for (double x = -BOOST_RADIUS; x <= BOOST_RADIUS; x++) {

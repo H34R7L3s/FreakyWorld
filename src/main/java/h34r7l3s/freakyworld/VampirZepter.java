@@ -3,6 +3,7 @@ package h34r7l3s.freakyworld;
 import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.Monster;
 import org.bukkit.entity.Player;
@@ -80,29 +81,19 @@ public class VampirZepter implements Listener {
             double currentHealth = player.getHealth();
             double healingAmount;
 
-            // Entscheiden, wie viel Gesundheit basierend auf den aktuellen Herzen des Spielers wiederhergestellt werden soll
+// Entscheiden, wie viel Gesundheit basierend auf den aktuellen Herzen des Spielers wiederhergestellt werden soll
             if (currentHealth >= 20) { // 10 Herzen
-                healingAmount = Math.random() < 0.8 ? getRandomValue(1, 2) : getRandomValue(3, 4);
-                // Boost evtl. zu hoch
-
+                healingAmount = Math.random() < 0.3 ? getRandomValue(1, 2) : getRandomValue(3, 4);
             } else if (currentHealth >= 16) { // 8 Herzen
-                healingAmount = Math.random() < 0.6 ? getRandomValue(2, 3) : getRandomValue(4, 5);
-                // Boost evt. zu hooch
-
+                healingAmount = Math.random() < 0.4 ? getRandomValue(2, 3) : getRandomValue(3, 4);
             } else if (currentHealth >= 12) { // 6 Herzen
-                healingAmount = Math.random() < 0.4 ? getRandomValue(3, 4) : getRandomValue(5, 6);
-                // Boost OK
-
+                healingAmount = Math.random() < 0.5 ? getRandomValue(2, 3) : getRandomValue(3, 4);
             } else if (currentHealth >= 8) { // 4 Herzen
-                healingAmount = Math.random() < 0.2 ? getRandomValue(4, 5) : getRandomValue(6, 7);
-                // Boost == unsterblich? XD
-
+                healingAmount = Math.random() < 0.6 ? getRandomValue(1, 2) : getRandomValue(2, 3);
             } else { // 2/1 Herzen
-                healingAmount = getRandomValue(7, 8);
-                // ????
-
-
+                healingAmount = Math.random() < 0.7 ? getRandomValue(1, 2) : getRandomValue(2, 3);
             }
+
 
             player.setHealth(Math.min(player.getHealth() + healingAmount, player.getMaxHealth()));
 
@@ -239,7 +230,7 @@ public class VampirZepter implements Listener {
 
     private void generateExperienceBottles(Player player) {
         int playerLevel = player.getLevel();
-        int maxBottles = 20; // Maximalanzahl an Flaschen
+        int maxBottles = 40; // Maximalanzahl an Flaschen
         int minBottles = 1; // Mindestanzahl an Flaschen
 
         // Berechnen der Anzahl der zu generierenden Flaschen basierend auf dem Level des Spielers
@@ -334,7 +325,7 @@ public class VampirZepter implements Listener {
                     if (monstersNearby) {
                         player.getNearbyEntities(10, 10, 10).stream()
                                 .filter(entity -> entity instanceof Monster)
-                                .forEach(entity -> ((Monster) entity).damage(1.5)); // Tick-Schaden
+                                .forEach(entity -> ((Monster) entity).damage(3.5)); // Tick-Schaden
                         player.giveExp(-1); // Verringert XP pro 6 Sekunden
                     }
                 } else if (player.getLevel() <= 0) {
@@ -397,7 +388,7 @@ public class VampirZepter implements Listener {
                                     .filter(entity -> entity instanceof Monster)
                                     .forEach(entity -> {
                                         if (playerLevel[0] > 0) {
-                                            ((Monster) entity).damage(8.0); // Fügt den Kreaturen Schaden zu
+                                            ((Monster) entity).damage(11.0); // Fügt den Kreaturen Schaden zu
                                             if (((Monster) entity).isDead()) {
                                                 player.setLevel(playerLevel[0] - 1);
                                                 playerLevel[0]--;
@@ -450,11 +441,24 @@ public class VampirZepter implements Listener {
                 // Ermittlung des Zielblocks in einer Reichweite von 50 Blöcken
                 Block targetBlock = player.getTargetBlockExact(50);
                 if (targetBlock != null && targetBlock.getType().isSolid()) {
-                    // Positionieren einer Fackel auf dem Zielblock
-                    Location blockAbove = targetBlock.getLocation().add(0, 1, 0);
+                    // Positionieren einer Fackel auf dem Zielblock oder seitlich davon
+                    Location blockLocation = targetBlock.getLocation();
+                    Location blockAbove = blockLocation.add(0, 1, 0);
+
                     if (blockAbove.getBlock().getType() == Material.AIR) {
+                        // Platzieren Sie die Fackel oben auf dem Block, wenn über ihm Luft ist
                         blockAbove.getBlock().setType(Material.TORCH);
                         removeItemFromPlayer(player, Material.TORCH);
+                    } else {
+                        // Versuchen Sie, die Fackel seitlich am Zielblock zu platzieren
+                        for (BlockFace face : BlockFace.values()) {
+                            Location adjacentLocation = blockLocation.add(face.getModX(), face.getModY(), face.getModZ());
+                            if (adjacentLocation.getBlock().getType() == Material.AIR) {
+                                adjacentLocation.getBlock().setType(Material.TORCH);
+                                removeItemFromPlayer(player, Material.TORCH);
+                                break;
+                            }
+                        }
                     }
                 }
             } else {

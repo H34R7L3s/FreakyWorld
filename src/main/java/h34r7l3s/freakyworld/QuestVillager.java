@@ -399,17 +399,17 @@ public class QuestVillager implements Listener {
 
             List<String> pages = new ArrayList<>();
             pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 3 - NEW ERA\n" + ChatColor.RESET +
-                    ChatColor.DARK_GRAY + "Eine neue Welt? Das wurde ganz schoen hektisch da drueben...");
+                    ChatColor.DARK_GRAY + "FreakyWorld! Unsere Welt! Endlich... HEIMAT!");
             pages.add(ChatColor.GOLD + "Was nun???\n" + ChatColor.DARK_GRAY +
-                    ChatColor.RED + "- Sucht euch Unterschlupf!\n" + ChatColor.GOLD + "- Rettet unseren Spawn in der alten Welt!\n" + ChatColor.DARK_GREEN + "- Lasst uns erneut landen! \n");
-            pages.add(ChatColor.RED + "Aktuelle Lage!\n\n" + ChatColor.DARK_PURPLE +
-                    "Ihr solltet euch ein neues Eigenheim suchen! Wir hoffen, dass diese Welt sicherer ist...");
+                    ChatColor.RED + "- Die Alte Welt ist noch nicht sicher!\n" + ChatColor.GOLD + "- Rettet so viel ihr koennt!\n" + ChatColor.DARK_GREEN + "- Alle wohl auf?! \n");
+            pages.add(ChatColor.RED + "Aktuelle Lage der Stadt!\n\n" + ChatColor.DARK_PURPLE +
+                    "Wir entwickeln uns! Weiterhin sollten wir Fokus auf Strassenbau und Infrasturktur legen.");
             pages.add(ChatColor.DARK_BLUE + "Die Alte Welt\n" + ChatColor.DARK_GREEN +
                     "Die alte Welt kann noch gerettet werden. Sichert unseren geliebten Spawn und macht ihn zu einem besonderen Ort!");
-            pages.add(ChatColor.DARK_BLUE + "Wir Landen! Erneut...\n" + ChatColor.DARK_GRAY +
-                    ChatColor.RED + "- Haltet euch am Schwarzen Brett auf dem Laufenden!\n" + ChatColor.GOLD + "- Wir brauchen weiterhin Ausruestung.\n" + ChatColor.DARK_GREEN + "- Bleibt wachsam. \n");
-            pages.add(ChatColor.RED + "Wir versuchen unsere Alte Welt zurueckzuerlangen. ");
-            pages.add(ChatColor.DARK_RED + "Aber nun ist jeder erneut auf sich alleingestellt.\n\n");
+            pages.add(ChatColor.DARK_BLUE + "Freaky Town\n" + ChatColor.DARK_GRAY +
+                    ChatColor.RED + "- Haltet euch am Schwarzen Brett auf dem Laufenden!\n" + ChatColor.GOLD + "- Wir brauchen weiterhin Ausruestung.\n" + ChatColor.DARK_GREEN + "- Wir brauchen ein Rathaus! \n");
+            pages.add(ChatColor.RED + "Wir versuchen weiterhin unsere Alte Welt zurueckzuerlangen. ");
+            pages.add(ChatColor.DARK_RED + "Nur gemeinsam, sind wir stark!\n\n");
             bookMeta.setPages(pages);
             bookMeta.setLore(lore);
             book.setItemMeta(bookMeta);

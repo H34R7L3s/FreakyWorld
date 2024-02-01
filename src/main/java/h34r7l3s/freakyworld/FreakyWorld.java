@@ -28,8 +28,7 @@ import java.sql.DriverManager;
 import java.sql.SQLException;
 import java.time.Duration;
 import java.time.LocalTime;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.*;
 import java.util.logging.Logger;
 
 public final class FreakyWorld extends JavaPlugin {
@@ -37,8 +36,17 @@ public final class FreakyWorld extends JavaPlugin {
     private List<RestartInfo> restartInfos;
     private DiscordBot discordBot;
     private Connection dbConnection;
+    private VillagerCategoryManager villagerCategoryManager;
+    private CategoryTaskHandler categoryTaskHandler;
+    private CategoryManager categoryManager;
+    private EventLogic eventLogic;
+    private VillagerInteractionHandler villagerInteractionHandler;
+
+
     private HCFW hcfw;
     private WeaponAttributeManager weaponAttributeManager;
+
+    private WeaponAttributeHandler weaponAttributeHandler;
 
     private boolean isRestartScheduled = false;  // Hilft dabei, Mehrfachwarnungen zu verhindern
     private String nitradoAPIKey;  // Deklaration hier
@@ -101,7 +109,22 @@ public final class FreakyWorld extends JavaPlugin {
         OraxenItems.loadItems();
 
         // Debugging: Print after items are loaded
+
         logger.info("Loaded items");
+
+        logger.info("Starting Vils Questing");
+
+        villagerCategoryManager = new VillagerCategoryManager(this);
+        categoryManager = new CategoryManager();
+        eventLogic = new EventLogic(this, categoryManager); // Verwende das Feld der Klasse, nicht eine lokale Variable
+
+        categoryTaskHandler = new CategoryTaskHandler(this, categoryManager, eventLogic); // Setze das Feld der Klasse
+
+        villagerInteractionHandler = new VillagerInteractionHandler(this, categoryManager, eventLogic);
+
+        getServer().getPluginManager().registerEvents(villagerInteractionHandler, this);
+
+        logger.info("Vils Questing Online");
         logger.info("HCFW ");
         hcfw = new HCFW(this);
 
@@ -187,7 +210,21 @@ public final class FreakyWorld extends JavaPlugin {
             getServer().getPluginManager().disablePlugin(this);
             return;
         }
-        logger.info("FreakyWorld Weapon Complete");
+
+        // Initialisieren und Registrieren des WeaponAttributeHandlers
+        this.weaponAttributeHandler = new WeaponAttributeHandler(this, weaponAttributeManager);
+        getServer().getPluginManager().registerEvents(weaponAttributeHandler, this);
+        getServer().getPluginManager().registerEvents(new WeaponAttributeHandler(this, weaponAttributeManager), this);
+
+        // Initialisieren und Registrieren des DamageApplicationListeners
+        DamageApplicationListener damageApplicationListener = new DamageApplicationListener(this, weaponAttributeManager);
+
+        getServer().getPluginManager().registerEvents(damageApplicationListener, this);
+
+
+
+
+
 
         //ab hier Testing
 
@@ -198,7 +235,7 @@ public final class FreakyWorld extends JavaPlugin {
 
 
         restartInfos = new ArrayList<>();
-        restartInfos.add(new RestartInfo(LocalTime.of(0, 0), "Oha - noch wach? Freaky! Na los, ab mit dir!!"));
+        restartInfos.add(new RestartInfo(LocalTime.of(23, 59), "Oha - noch wach? Freaky! Na los, ab mit dir!!"));
         restartInfos.add(new RestartInfo(LocalTime.of(6, 0), "Hört ihr Sie schon zwitschern... Na los, ab mit dir!!"));
         restartInfos.add(new RestartInfo(LocalTime.of(12, 0), "HappaHappa :3 Na los, ab mit dir!!"));
         restartInfos.add(new RestartInfo(LocalTime.of(16, 0), "Lets get Freaky!! Na los, ab mit dir!!"));
@@ -206,6 +243,7 @@ public final class FreakyWorld extends JavaPlugin {
         scheduleDailyRestarts();
 
         logger.info("FreakyWorld Loading Complete");
+        buttonActions = new HashMap<>();
         logger.info("Keine Fehler gefunden - Features gestartet");
 
         //
@@ -247,6 +285,7 @@ public final class FreakyWorld extends JavaPlugin {
         // Rufe die Methode removeVillagerAtPosition auf, um den Villager zu entfernen
         Location villagerLocation = new Location(Bukkit.getWorld("world"), -42, 69, 4);
         myVillager.removeVillagerAtPosition(villagerLocation);
+        villagerCategoryManager.removeVillager();
 
         //
         // llager
@@ -380,6 +419,22 @@ public final class FreakyWorld extends JavaPlugin {
         }
     }
 
+    private Map<UUID, Map<Integer, Runnable>> buttonActions;
 
+    public Map<UUID, Map<Integer, Runnable>> getButtonActions() {
+        return this.buttonActions;
+    }
+
+
+    public VillagerCategoryManager getVillagerCategoryManager() {
+        return this.villagerCategoryManager;
+    }
+    public CategoryTaskHandler getCategoryTaskHandler() {
+        return categoryTaskHandler;
+    }
+
+    public CategoryManager getCategoryManager() {
+        return this.categoryManager;
+    }
 
 }
