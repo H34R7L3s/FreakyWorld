@@ -66,9 +66,16 @@ public class FreakyDragon implements Listener {
         respawnEndBattle(world);
 
         //Basic Attacken
-        startArtilleryAttack();
-        startLaserBeamAttack();
-        startVortexAttack();
+
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                startArtilleryAttack();
+                startLaserBeamAttack();
+                startVortexAttack();
+            }
+        }.runTaskLater(plugin, 15 * 20L);
+
 
         // Füge Oraxen-Items mit ihren Wahrscheinlichkeiten hinzu (Chance von 0.0 bis 1.0)
         oraxenDropItems.put(OraxenItems.getItemById("freaky_schutz").build(), 0.1);  // 10% Chance
@@ -445,11 +452,15 @@ public class FreakyDragon implements Listener {
         spawnSupportingMobs(5, EntityType.BLAZE);
         spawnSupportingMobs(3, EntityType.WITHER_SKELETON);
 
-
-        startLightningStrikeAttack();
-        startTearBombardmentAttack();
-
-    }
+        //Attacken SCHWER
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                startLightningStrikeAttack();
+                startTearBombardmentAttack();
+            }
+            }.runTaskLater(plugin, 15 * 20L);
+        }
 
 
     private void startLightningStrikeAttack() {
@@ -463,17 +474,38 @@ public class FreakyDragon implements Listener {
 
                 for (Player player : world.getPlayers()) {
                     if (player.getLocation().distance(dragon.getLocation()) <= 5000) {
-                        int lightningStrikes = 5 + random.nextInt(6); // 5 bis 10 Blitze
+                        // Initialer massiver Blitzschlag auf den Spieler
+                        world.strikeLightningEffect(player.getLocation());
+                        world.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.5f, 0.6f);
 
-                        for (int i = 0; i < lightningStrikes; i++) {
-                            Location strikeLocation = player.getLocation().clone().add(
-                                    random.nextInt(10) - 5,
-                                    0,
-                                    random.nextInt(10) - 5
-                            );
+                        // Position des Spielers festhalten
+                        Location targetLocation = player.getLocation().clone();
 
-                            world.strikeLightningEffect(strikeLocation); // Blitz-Effekt
-                            world.playSound(strikeLocation, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.8f); // Sound-Effekt
+                        // Start der "Zeus"-Blitz-Linien, die auf den Spieler zurasen
+                        int lightningLines = 4; // Anzahl der Linien
+                        int boltsPerLine = 5; // Anzahl der Blitze pro Linie
+
+                        for (int line = 0; line < lightningLines; line++) {
+                            double angle = (2 * Math.PI / lightningLines) * line; // Berechne Winkel für jede Linie
+                            double distance = 0;
+
+                            for (int bolt = 0; bolt < boltsPerLine; bolt++) {
+                                distance += 10; // Erhöhter Abstand zwischen den Blitzen in der Linie
+                                double offsetX = distance * Math.cos(angle);
+                                double offsetZ = distance * Math.sin(angle);
+
+                                Location strikeLocation = targetLocation.clone().add(offsetX, 0, offsetZ);
+
+                                // Blitz-Effekt mit blendenden Animationen und verzögertem Einschlagen
+                                new BukkitRunnable() {
+                                    @Override
+                                    public void run() {
+                                        world.strikeLightningEffect(strikeLocation);
+                                        world.spawnParticle(Particle.FLASH, strikeLocation, 50, 2.0, 2.0, 2.0, 0.1); // Intensiver Blitz-Effekt
+                                        world.playSound(strikeLocation, Sound.ENTITY_LIGHTNING_BOLT_IMPACT, 1.5f, 0.8f);
+                                    }
+                                }.runTaskLater(plugin, bolt * 20L); // Erhöhte Verzögerung für jeden Blitz in der Linie
+                            }
                         }
                     }
                 }
@@ -661,7 +693,7 @@ public class FreakyDragon implements Listener {
         return null; // If no item matches, return null (though this should never happen)
     }
 
-    /// Andre
+    /// Andre is der Beste!
     public void respawnEndBattle(World world) {
         var battle = world.getEnderDragonBattle();
         if (battle == null || battle.getEndPortalLocation() == null) {
@@ -690,20 +722,19 @@ public class FreakyDragon implements Listener {
         startDragonMonologue(world);
         //befürchtung zu früh ausgeführt?
     }
+    /// Andre is der Beste!
 
 
     private void startDragonMonologue(World world) {
-        // Monolog des Drachen
-        String[] monologueLines = {
-                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Ah, ein weiterer sterblicher wagt es, mich herauszufordern!",
-                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Deine tapferen Taten sind nichts als vergebliche Mühe.",
-                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Ich habe Welten zerstört und Könige vernichtet.",
-                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Du wirst bald verstehen, wie unbedeutend deine Existenz wirklich ist.",
-                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Aber ich werde dir eine letzte Lektion erteilen!",
-                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Du bist nichts ohne Verbündete... und nun habe auch ich Verstärkung!"
+        // Monolog des Drachen in kurzen Blöcken
+        String[][] monologueLines = {
+                {ChatColor.DARK_PURPLE + "Drachen:", ChatColor.LIGHT_PURPLE + "Ah, ein weiterer Sterblicher wagt es, mich herauszufordern!"},
+                {ChatColor.DARK_PURPLE + "Drachen:", ChatColor.LIGHT_PURPLE + "Deine tapferen Taten sind nichts als vergebliche Mühe."},
+                {ChatColor.DARK_PURPLE + "Drachen:", ChatColor.LIGHT_PURPLE + "Ich habe Welten zerstört und Könige vernichtet."},
+                {ChatColor.DARK_PURPLE + "Drachen:", ChatColor.LIGHT_PURPLE + "Du wirst bald verstehen, wie unbedeutend deine Existenz wirklich ist."},
+                {ChatColor.DARK_PURPLE + "Drachen:", ChatColor.LIGHT_PURPLE + "Aber ich werde dir eine letzte Lektion erteilen!"},
+                {ChatColor.DARK_PURPLE + "Drachen:", ChatColor.LIGHT_PURPLE + "Du bist nichts ohne Verbündete... und nun habe auch ich Verstärkung!"}
         };
-
-
 
         new BukkitRunnable() {
             int lineIndex = 0;
@@ -714,16 +745,18 @@ public class FreakyDragon implements Listener {
                     this.cancel();
                     return;
                 }
-                //In allen Welten?? (Aktuelle Welt = End)
+                // Zeigt jede Zeile für den Drachenmonolog an
                 for (Player player : world.getPlayers()) {
-                    player.sendTitle(monologueLines[lineIndex], "", 10, 60, 10);
-                    lineIndex++;
-
+                    player.sendTitle(monologueLines[lineIndex][0], monologueLines[lineIndex][1], 10, 50, 10);
                 }
-
+                lineIndex++;
             }
-        }.runTaskTimer(plugin, 0, 120L); // Zeigt jede Zeile alle 6 Sekunden an
+        }.runTaskTimer(plugin, 0, 100L); // Zeigt jede Zeile alle 5 Sekunden an
+
+
+
     }
+
 
 
 

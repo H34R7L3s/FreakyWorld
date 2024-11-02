@@ -241,7 +241,7 @@ public class DragonEventManager implements Listener, CommandExecutor {
 
     private void teleportToEvent(Player player) {
         World endWorld = Bukkit.getWorld("world_the_end");
-        Location endLocation = new Location(endWorld, 80, 80, 0);
+        Location endLocation = new Location(endWorld, 0, 80, 0);
         player.teleport(endLocation);
     }
 

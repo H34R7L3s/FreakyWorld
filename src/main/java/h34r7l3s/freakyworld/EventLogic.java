@@ -1,5 +1,7 @@
 package h34r7l3s.freakyworld;
 
+import java.util.Random;
+import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -133,21 +135,79 @@ public class EventLogic {
 
 
     public void calculateAndStoreRewards() {
+        Random random = new Random();
+
         for (String category : categoryManager.getCategories()) {
-            List<UUID> topPlayers = getTopPlayersForCategory(category, 3);
+            List<UUID> topPlayers = getTopPlayersForCategory(category, 3); // Hol die Top 3 Spieler
+
+            // Überprüfe, ob es Spieler in der Kategorie gibt, andernfalls überspringen
+            if (topPlayers.isEmpty()) {
+                plugin.getLogger().info("Keine Spieler in der Kategorie " + category + " für Belohnungen.");
+                continue;
+            }
+
+            // Generiere Belohnungen für die Top 3 Spieler
             for (int i = 0; i < topPlayers.size(); i++) {
                 UUID playerUUID = topPlayers.get(i);
-                ItemStack reward = new ItemStack(Material.DIAMOND, 3 - i); // 1st: 3 Diamonds, 2nd: 2, 3rd: 1
+
+                // Basisbelohnungen mischen, dabei Menge > 0 sicherstellen
+                List<ItemStack> rewards = new ArrayList<>();
+                rewards.add(new ItemStack(Material.DIAMOND, Math.max(random.nextInt(3) + 1, 1))); // 1-3 Diamanten
+                rewards.add(new ItemStack(Material.GOLD_INGOT, Math.max(random.nextInt(2) + 1, 1))); // 1-2 Goldbarren
+                rewards.add(new ItemStack(Material.IRON_INGOT, Math.max(random.nextInt(2) + 1, 1))); // 1-2 Eisenbarren
+
+                // Füge Oraxen-Items hinzu (z. B. Gold & Silber) falls vorhanden
+                if (OraxenItems.exists("gold")) {
+                    ItemStack oraxenGold = OraxenItems.getItemById("gold").build();
+                    oraxenGold.setAmount(Math.max(random.nextInt(2) + (i == 0 ? 2 : 1), 1)); // 2-3 für den ersten, 1-2 für andere
+                    rewards.add(oraxenGold);
+                }
+                if (OraxenItems.exists("silber")) {
+                    ItemStack oraxenSilver = OraxenItems.getItemById("silber").build();
+                    oraxenSilver.setAmount(Math.max(random.nextInt(2) + 1, 1)); // 1-2 Silber für alle
+                    rewards.add(oraxenSilver);
+                }
+
+                // Zusätzliche seltene Belohnung für den Top-Spieler
+                if (i == 0) {
+                    rewards.add(new ItemStack(Material.NETHERITE_INGOT, 1)); // Netherite-Ingot für den Top-Spieler
+                }
+
+                // Mische die Belohnungen und wähle eine zufällige aus
+                Collections.shuffle(rewards);
+                ItemStack reward = rewards.get(0); // Eine zufällige Belohnung auswählen
                 plugin.getVillagerCategoryManager().storeRewardForPlayer(playerUUID, category, reward);
             }
 
+            // Belohnung für die führende Gilde, falls vorhanden
             UUID topGuildLeader = getLeadingGuildForCategory(category);
             if (topGuildLeader != null) {
-                ItemStack guildReward = new ItemStack(Material.EMERALD, 5); // 5 Emeralds for the leading guild
+                List<ItemStack> guildRewards = new ArrayList<>();
+                guildRewards.add(new ItemStack(Material.EMERALD, Math.max(random.nextInt(3) + 2, 1))); // 2-4 Emeralds
+
+                if (OraxenItems.exists("gold")) {
+                    ItemStack guildGold = OraxenItems.getItemById("gold").build();
+                    guildGold.setAmount(Math.max(random.nextInt(3) + 2, 1)); // 2-4 Gold für die Gilde
+                    guildRewards.add(guildGold);
+                }
+
+                if (OraxenItems.exists("silber")) {
+                    ItemStack guildSilver = OraxenItems.getItemById("silber").build();
+                    guildSilver.setAmount(Math.max(random.nextInt(3) + 1, 1)); // 1-3 Silber
+                    guildRewards.add(guildSilver);
+                }
+
+                // Zusätzliche Belohnung für die führende Gilde
+                guildRewards.add(new ItemStack(Material.DIAMOND, Math.max(1 + random.nextInt(2), 1))); // 1-2 Diamanten für die führende Gilde
+                Collections.shuffle(guildRewards);
+                ItemStack guildReward = guildRewards.get(0); // Zufällige Auswahl einer Gildenbelohnung
                 plugin.getVillagerCategoryManager().storeRewardForGuildLeader(topGuildLeader, category, guildReward);
             }
         }
     }
+
+
+
     private List<UUID> getTopPlayersForCategory(String category, int topN) {
         List<UUID> topPlayers = new ArrayList<>();
         try (Connection conn = customDatabaseManager.getConnection()) {
