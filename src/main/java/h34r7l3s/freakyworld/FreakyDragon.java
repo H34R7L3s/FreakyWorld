@@ -18,11 +18,9 @@ import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.boss.BossBar;
 import org.bukkit.boss.BarColor;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Random;
+
+import java.util.*;
+
 import org.bukkit.boss.DragonBattle;
 import org.bukkit.util.Vector;
 
@@ -60,15 +58,14 @@ public class FreakyDragon implements Listener {
 
 // Füge alle Spieler zur Bossleiste hinzu
         for (Player player : world.getPlayers()) {
+
             bossBar.addPlayer(player);
         }
         // Respawn von Ender-Kristallen und Türmen
 
+        respawnEndBattle(world);
 
-        respawnTowersAndCrystals();
-        respawnTowersAndCrystalsRivals();
-
-
+        //Basic Attacken
         startArtilleryAttack();
         startLaserBeamAttack();
         startVortexAttack();
@@ -88,12 +85,6 @@ public class FreakyDragon implements Listener {
         dragon.setPhase(EnderDragon.Phase.CHARGE_PLAYER);
         dragon.setPhase(EnderDragon.Phase.SEARCH_FOR_BREATH_ATTACK_TARGET);
         // Respawn von Ender-Kristallen und Türmen
-
-        //world.getEnderDragonBattle().resetCrystals(); // Setzt die Türme und End-Kristalle neu
-
-
-        // Ender Türme + Kristalle
-
 
 
 
@@ -133,74 +124,6 @@ public class FreakyDragon implements Listener {
         }.runTaskTimer(plugin, 0L, 20L); // Aktualisiere alle 20 Ticks (1 Sekunde)
     }
     // Methode zum Zurücksetzen der Türme und Kristalle
-    public void respawnTowersAndCrystals() {
-        // Definiere die Positionen der Kristalle relativ zur Drachen-Spawn-Position
-        List<Location> crystalPositions = new ArrayList<>();
-        crystalPositions.add(new Location(world, -2.5, 65, 0.5));
-        crystalPositions.add(new Location(world, 0.5, 65, -2.5));
-        crystalPositions.add(new Location(world, 3.5, 65, 0.5));
-        crystalPositions.add(new Location(world, 0.5, 65, 3.5));
-
-
-
-
-        //world.strikeLightningEffect(dragon.getLocation()); // Optional: Effekt für visuelle Verstärkung
-        //world.playSound(dragon.getLocation(), Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 1.0f);
-
-        for (Player player : world.getPlayers()) {
-            player.sendMessage(ChatColor.DARK_RED + "Hahaha, meine Verstärkung!!");
-        }
-
-        // Spawne die Kristalle und platziere einen Obsidian-Block darunter
-        for (Location loc : crystalPositions) {
-            Location obsidianLocation = loc.clone().add(0, -2, 0); // 1 Block unter der Kristall-Position
-            obsidianLocation.getBlock().setType(Material.BEDROCK); // Setze Obsidian-Block
-
-            EnderCrystal crystal = (EnderCrystal) world.spawnEntity(loc, EntityType.ENDER_CRYSTAL);
-            crystal.setInvulnerable(false);
-
-
-            //crystal.setInvulnerable(false); // Optional: Macht die Kristalle unzerstörbar
-        }
-
-
-    }
-
-
-
-    public void respawnTowersAndCrystalsRivals() {
-        // Hol die End-Welt, in der der Drache sein sollte
-        World endWorld = Bukkit.getWorlds().stream()
-                .filter(world -> world.getEnvironment() == World.Environment.THE_END)
-                .findFirst()
-                .orElse(null);
-
-        if (endWorld == null) {
-            Bukkit.getLogger().severe("Die Endwelt konnte nicht gefunden werden.");
-            return;
-        }
-
-        // Hol das Drachen-Kampf-Objekt für die Endwelt
-        DragonBattle dragonBattle = endWorld.getEnderDragonBattle();
-        if (dragonBattle == null) {
-            Bukkit.getLogger().severe("Kein aktiver Drachenkampf in der Endwelt.");
-            return;
-        }
-
-
-        // Setze den Drachen-Kampf-Status auf die Phase zum Aufbau der Türme
-        //dragonBattle.setRespawnPhase(DragonBattle.RespawnPhase.START);
-        dragonBattle.initiateRespawn();
-
-
-        // Kristalle und Türme nach und nach spawnen lassen
-
-        dragonBattle.setRespawnPhase(DragonBattle.RespawnPhase.SUMMONING_PILLARS);
-
-
-
-    }
-
 
     private void startArtilleryAttack() {
         new BukkitRunnable() {
@@ -521,7 +444,88 @@ public class FreakyDragon implements Listener {
         spawnSupportingMobs(2, EntityType.GHAST);
         spawnSupportingMobs(5, EntityType.BLAZE);
         spawnSupportingMobs(3, EntityType.WITHER_SKELETON);
+
+
+        startLightningStrikeAttack();
+        startTearBombardmentAttack();
+
     }
+
+
+    private void startLightningStrikeAttack() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (dragon.isDead()) {
+                    this.cancel();
+                    return;
+                }
+
+                for (Player player : world.getPlayers()) {
+                    if (player.getLocation().distance(dragon.getLocation()) <= 5000) {
+                        int lightningStrikes = 5 + random.nextInt(6); // 5 bis 10 Blitze
+
+                        for (int i = 0; i < lightningStrikes; i++) {
+                            Location strikeLocation = player.getLocation().clone().add(
+                                    random.nextInt(10) - 5,
+                                    0,
+                                    random.nextInt(10) - 5
+                            );
+
+                            world.strikeLightningEffect(strikeLocation); // Blitz-Effekt
+                            world.playSound(strikeLocation, Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.8f); // Sound-Effekt
+                        }
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 300L); // Angriff alle 15 Sekunden (300 Ticks)
+    }
+
+    private void startTearBombardmentAttack() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (dragon.isDead()) {
+                    this.cancel();
+                    return;
+                }
+
+                for (Player player : world.getPlayers()) {
+                    if (player.getLocation().distance(dragon.getLocation()) <= 5000) {
+                        int tearCount = 7 + random.nextInt(5); // 7 bis 12 Tränen
+
+                        new BukkitRunnable() {
+                            int currentTear = 0;
+
+                            @Override
+                            public void run() {
+                                if (currentTear >= tearCount) {
+                                    this.cancel();
+                                    return;
+                                }
+
+                                Location tearTarget = player.getLocation().clone().add(
+                                        random.nextInt(10) - 5,
+                                        0,
+                                        random.nextInt(10) - 5
+                                );
+
+                                DragonFireball tear = (DragonFireball) world.spawn(tearTarget.add(0, 15, 0), DragonFireball.class);
+                                tear.setDirection(new Vector(0, -1, 0)); // Richtung auf Spieler setzen
+                                tear.setIsIncendiary(false); // Keine brennende Fläche hinterlassen
+                                tear.setYield(1.5f); // Explosionseffekt
+
+                                currentTear++;
+                            }
+                        }.runTaskTimer(plugin, 0L, 20L); // Intervall zwischen Tränen
+                    }
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 600L); // Angriff alle 30 Sekunden (300 Ticks)
+    }
+
+
+
 
     private void spawnSupportingMobs(int count, EntityType mobType) {
         new BukkitRunnable() {
@@ -656,4 +660,71 @@ public class FreakyDragon implements Listener {
 
         return null; // If no item matches, return null (though this should never happen)
     }
+
+    /// Andre
+    public void respawnEndBattle(World world) {
+        var battle = world.getEnderDragonBattle();
+        if (battle == null || battle.getEndPortalLocation() == null) {
+            return;
+        }
+
+        var portalHeight = battle.getEndPortalLocation().getY() + 1;
+        var endCrystalSpawns = Arrays.asList(
+                new Location(world, 0, portalHeight, 3),
+                new Location(world, 0, portalHeight, -3),
+                new Location(world, 3, portalHeight, 0),
+                new Location(world, -3, portalHeight, 0)
+        );
+
+        endCrystalSpawns.stream()
+                // 2D blockface center
+                .map(loc -> loc.add(0.5, 0, 0.5))
+                // Spawn crystals
+                .forEach(loc -> world.spawnEntity(loc, EntityType.ENDER_CRYSTAL));
+
+
+        battle.initiateRespawn();
+
+        //Monolog Starten
+        //Intro
+        startDragonMonologue(world);
+        //befürchtung zu früh ausgeführt?
+    }
+
+
+    private void startDragonMonologue(World world) {
+        // Monolog des Drachen
+        String[] monologueLines = {
+                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Ah, ein weiterer sterblicher wagt es, mich herauszufordern!",
+                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Deine tapferen Taten sind nichts als vergebliche Mühe.",
+                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Ich habe Welten zerstört und Könige vernichtet.",
+                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Du wirst bald verstehen, wie unbedeutend deine Existenz wirklich ist.",
+                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Aber ich werde dir eine letzte Lektion erteilen!",
+                ChatColor.DARK_PURPLE + "Drachen: " + ChatColor.LIGHT_PURPLE + "Du bist nichts ohne Verbündete... und nun habe auch ich Verstärkung!"
+        };
+
+
+
+        new BukkitRunnable() {
+            int lineIndex = 0;
+
+            @Override
+            public void run() {
+                if (lineIndex >= monologueLines.length) {
+                    this.cancel();
+                    return;
+                }
+                //In allen Welten?? (Aktuelle Welt = End)
+                for (Player player : world.getPlayers()) {
+                    player.sendTitle(monologueLines[lineIndex], "", 10, 60, 10);
+                    lineIndex++;
+
+                }
+
+            }
+        }.runTaskTimer(plugin, 0, 120L); // Zeigt jede Zeile alle 6 Sekunden an
+    }
+
+
+
 }
