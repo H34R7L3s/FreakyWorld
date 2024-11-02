@@ -1,11 +1,24 @@
 package h34r7l3s.freakyworld;
 
 import io.th0rgal.oraxen.api.OraxenItems;
-import io.th0rgal.oraxen.shaded.triumphteam.gui.builder.item.ItemBuilder;
+//import io.th0rgal.oraxen.shaded.triumphteam.gui.builder.item.ItemBuilder;
+
+import net.kyori.adventure.text.Component;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
+import org.bukkit.Color;
 import org.bukkit.attribute.Attribute;
+import org.bukkit.attribute.AttributeInstance;
 import org.bukkit.block.Biome;
 import org.bukkit.block.Block;
+import org.bukkit.boss.BarColor;
+import org.bukkit.boss.BarStyle;
+import org.bukkit.boss.BossBar;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.enchantments.Enchantment;
@@ -37,7 +50,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
+
+import java.awt.*;
 import java.util.HashMap;
+import java.util.List;
 import java.util.UUID;
 import java.util.Random;
 import io.th0rgal.oraxen.api.OraxenItems;
@@ -45,12 +61,13 @@ import java.io.File;
 import java.io.IOException;
 import java.sql.*;
 import java.util.*;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 
-public class HCFW implements Listener {
+public class HCFW implements Listener, CommandExecutor {
 
     private final FreakyWorld plugin;
     private final Set<UUID> playersInHCFW;
@@ -65,6 +82,8 @@ public class HCFW implements Listener {
         loadPlayerDeathTimes();
         initializeZombieConfigurations();
         startZombieSpawnTimer();
+        startEventCompletionChecker();
+
         //startBlazeSpawnTimer(); // Für Events zurückhalten
 
         plugin.getServer().getPluginManager().registerEvents(this, plugin);
@@ -85,12 +104,14 @@ public class HCFW implements Listener {
                 applyDarknessEffectToPlayers(); // Füge die Methode hier hinzu
                 checkPlayerLocks();
                 checkAndTeleportPlayers();
+
             }
         }.runTaskTimer(plugin, 0L, 20L); // Alle 100 Ticks überprüfen (5 Sekunden)
         new BukkitRunnable() {
             @Override
             public void run() {
                 checkForExperienceBottles();
+                checkAndGivePendingRewards();
             }
         }.runTaskTimer(plugin, 0L, 20L * 10); // Überprüfe alle 60 Sekunden
 
@@ -560,7 +581,7 @@ public void startBlazeSpawnTimer() {
             Player randomPlayer = world.getPlayers().get(new Random().nextInt(world.getPlayers().size()));
             Location spawnLocation = calculateSpawnLocationNearPlayer(randomPlayer);
 
-            if (spawnLocation != null) {
+            if (spawnLocation != null && spawnLocation.getBlock().getLightLevel() == 0) {
                 Spider spider = (Spider) world.spawnEntity(spawnLocation, EntityType.SPIDER);
                 Skeleton skeleton = (Skeleton) world.spawnEntity(spawnLocation, EntityType.SKELETON);
 
@@ -579,6 +600,7 @@ public void startBlazeSpawnTimer() {
             }
         }
     }
+
 
 
     private int calculateMaxSpiderJockeys(int eventProbability, int playerCount) {
@@ -633,10 +655,10 @@ public void startBlazeSpawnTimer() {
     }
 
     private int calculateMaxGuardians(int eventProbability, int playerCount) {
-        int baseMax = eventProbability * 3; // Beispiel: 3 Guardians pro Wahrscheinlichkeitseinheit
-        int maxPerPlayer = 3; // Maximal 3 Guardians pro Spieler
+        int baseMax = eventProbability; // Beispiel: 3 Guardians pro Wahrscheinlichkeitseinheit
+        int maxPerPlayer = 2; // Maximal 3 Guardians pro Spieler
         int totalMax = Math.min(baseMax, playerCount * maxPerPlayer);
-        return Math.min(totalMax, 40); // Begrenzung auf maximal 100 Guardians insgesamt
+        return Math.min(totalMax, 57); // Begrenzung auf maximal 100 Guardians insgesamt
     }
 
     private Location calculateSpawnLocationInWater(Player player) {
@@ -690,30 +712,45 @@ public void startBlazeSpawnTimer() {
                 }
 
                 Location playerLocation = player.getLocation();
-                int x = playerLocation.getBlockX() + (new Random().nextInt(61) - 30); // Bereich von -30 bis +30 um den Spieler
-                int z = playerLocation.getBlockZ() + (new Random().nextInt(61) - 30); // Bereich von -30 bis +30 um den Spieler
-                int y = world.getHighestBlockYAt(x, z);
-                Location spawnLocation = new Location(world, x, y, z);
+                int x = playerLocation.getBlockX() + (new Random().nextInt(61) - 30);
+                int z = playerLocation.getBlockZ() + (new Random().nextInt(61) - 30);
+                int y = world.getHighestBlockYAt(x, z) + 1; // +1 um sicherzustellen, dass wir oberhalb des Bodens prüfen
 
-                // Zombie an der berechneten Position spawnen
-                Zombie zombie = (Zombie) world.spawnEntity(spawnLocation, EntityType.ZOMBIE);
+                // Prüfe, ob der Bereich für einen Zombie geeignet ist
+                if (isSpawnAreaSuitable(world, x, y, z)) {
+                    Location spawnLocation = new Location(world, x, y, z);
 
-                // Konfiguration des Zombies
-                setupBasicZombieAttributes(zombie, eventProbability);
-                enhanceZombieAttributes(zombie, eventProbability);
-                applyVisualEffects(zombie, eventProbability);
+                    // Zombie an der berechneten Position spawnen
+                    Zombie zombie = (Zombie) world.spawnEntity(spawnLocation, EntityType.ZOMBIE);
 
-                // Setze benutzerdefiniertes Metadatum, um die Rüstung zu speichern
-                zombie.getPersistentDataContainer().set(new NamespacedKey(plugin, "keepArmor"), PersistentDataType.BYTE, (byte) 1);
-                zombie.setCanPickupItems(false);
+                    // Konfiguration des Zombies
+                    setupBasicZombieAttributes(zombie, eventProbability);
+                    enhanceZombieAttributes(zombie, eventProbability);
+                    applyVisualEffects(zombie, eventProbability);
 
-                // Sonderfall für Zombies im Wasser
-                if (spawnLocation.getBlock().getType() == Material.WATER) {
-                    zombie.getEquipment().setItemInMainHand(new ItemStack(Material.TRIDENT));
+                    // Setze benutzerdefiniertes Metadatum, um die Rüstung zu speichern
+                    zombie.getPersistentDataContainer().set(new NamespacedKey(plugin, "keepArmor"), PersistentDataType.BYTE, (byte) 1);
+                    zombie.setCanPickupItems(false);
+
+                    // Sonderfall für Zombies im Wasser
+                    if (spawnLocation.getBlock().getType() == Material.WATER) {
+                        zombie.getEquipment().setItemInMainHand(new ItemStack(Material.TRIDENT));
+                    }
                 }
             }
         }
     }
+
+    private boolean isSpawnAreaSuitable(World world, int x, int y, int z) {
+        Block blockAtSpawn = world.getBlockAt(x, y, z);
+        Block blockBelow = world.getBlockAt(x, y - 1, z);
+        boolean isSolidGround = blockBelow.getType().isSolid();
+        boolean isAirAbove = blockAtSpawn.getType() == Material.AIR;
+
+        // Prüfe das Lichtlevel und ob genügend Platz ist
+        return isSolidGround && isAirAbove && blockAtSpawn.getLightLevel() <= 0;
+    }
+
     // Beispielmethoden
     private int calculateMaxZombies(int eventProbability, int playerCount) {
         int baseMax = eventProbability * 5; // Reduziere die Anzahl basierend auf der Event-Wahrscheinlichkeit
@@ -975,13 +1012,15 @@ public void startBlazeSpawnTimer() {
     public void initializeEvent() {
         World world = plugin.getServer().getWorld("hcfw");
         plugin.getLogger().info("Event initialized erreicht");
+
         int maxAttempts = 500; // Maximale Anzahl von Versuchen, einen geeigneten Ort zu finden
         int attempt = 0;
+        int searchRadius = 6000; // Der maximale Suchradius für zufällige Koordinaten
 
         while (attempt < maxAttempts) {
-            // Zufällige Koordinaten in der Welt "hcfw" generieren
-            int x = new Random().nextInt(world.getMaxHeight());
-            int z = new Random().nextInt(world.getMaxHeight());
+            // Zufällige Koordinaten in einem großen Bereich generieren
+            int x = new Random().nextInt(searchRadius * 2) - searchRadius;
+            int z = new Random().nextInt(searchRadius * 2) - searchRadius;
             int y = world.getHighestBlockYAt(x, z);
 
             // Überprüfen, ob die Position in einem ungünstigen Biome ist oder in der Nähe von Bäumen oder Wasser liegt
@@ -1028,6 +1067,8 @@ public void startBlazeSpawnTimer() {
             isEventInitialized = true;
             isEventCompleted = false;
             plugin.getLogger().info("Event initialized: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
+        // Discord-Benachrichtigung über das neue Event senden
+            plugin.getDiscordBot().announceEventWithTimer("Event Manager", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!");
 
             // Partikeleffekt für inaktives Event (Rot)
             world.spawnParticle(Particle.REDSTONE, eventLocation.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
@@ -1035,6 +1076,7 @@ public void startBlazeSpawnTimer() {
             break; // Geeignete Position gefunden, Schleife beenden
         }
     }
+
 
 
 
@@ -1061,9 +1103,9 @@ public void startBlazeSpawnTimer() {
             probabilityBooster = 0; // Booster zurücksetzen
             plugin.getLogger().info("Event started");
         } else {
-            probabilityBooster += 14; // Booster erhöhen
-            randomValue = randomValue -16;
-            plugin.getLogger().info("Booster +14 started");
+            probabilityBooster += 4; // Booster erhöhen
+            randomValue = randomValue -6;
+            plugin.getLogger().info("Booster + started");
             cumulativeProbability = baseEventProbability + probabilityBooster;
             plugin.getLogger().info("Probability=" + cumulativeProbability + ", Random=" + randomValue + "Try again");
             if (randomValue < cumulativeProbability) {
@@ -1316,41 +1358,57 @@ public void startBlazeSpawnTimer() {
 
     private void distributeRewards(Location location) {
         World world = location.getWorld();
+        if (world == null) return; // Sicherstellen, dass die Welt nicht null ist.
         Collection<Entity> nearbyEntities = world.getNearbyEntities(location, 10, 10, 10);
 
         for (Entity entity : nearbyEntities) {
             if (entity instanceof Player) {
                 Player player = (Player) entity;
-
                 // Erstelle eine zufällige Menge an Silber zwischen 3 und 9
-                int randomSilverAmount = new Random().nextInt(7) + 3; // Gibt eine zufällige Zahl zwischen 3 und 9
+                // Korrigiere die Berechnung für eine zufällige Menge zwischen 3 und 9
+                int randomSilverAmount = new Random().nextInt(7) + 1;
                 ItemStack silverStack = createSilverStack(randomSilverAmount);
 
-                // Überprüfe, ob der Spieler genug Platz im Inventar hat
-                if (hasEnoughSpace(player.getInventory(), silverStack)) {
-                    // Belohnungen an Spieler verteilen
+                if (hasEnoughSpace(player, silverStack)) {
                     player.getInventory().addItem(silverStack);
                     player.sendMessage(ChatColor.GREEN + "Du hast " + randomSilverAmount + " Silber als Belohnung erhalten!");
                 } else {
-                    player.sendMessage(ChatColor.RED + "Dein Inventar ist voll. Du hast keine Belohnung erhalten.");
+                    // Speichere die Belohnung für später, wenn das Inventar voll ist
+                    UUID playerId = player.getUniqueId();
+                    pendingRewards.put(playerId, silverStack); // Nehme an, dass es in Ordnung ist, bestehende Einträge zu überschreiben
+                    player.sendMessage(ChatColor.RED + "Dein Inventar ist voll. Du erhältst deine Belohnung, sobald du Platz hast.");
                 }
             }
         }
     }
 
-    private boolean hasEnoughSpace(Inventory inventory, ItemStack itemStack) {
+
+    private boolean hasEnoughSpace(Player player, ItemStack itemStack) {
         int freeSlots = 0;
 
-        for (ItemStack slot : inventory.getContents()) {
+        // Zähle leere Slots in der gesamten Inventarliste des Spielers
+        for (ItemStack slot : player.getInventory().getStorageContents()) {
             if (slot == null || slot.getType() == Material.AIR) {
                 freeSlots++;
-            } else if (slot.isSimilar(itemStack) && (slot.getAmount() + itemStack.getAmount()) <= slot.getMaxStackSize()) {
-                return true;
             }
         }
 
-        return freeSlots >= itemStack.getAmount();
+        // Überprüfe, ob mindestens ein Slot in der Hotbar (Slots 0-8) leer ist
+        boolean hotbarEmpty = false;
+        for (int i = 0; i < 9; i++) {
+            ItemStack hotbarSlot = player.getInventory().getItem(i);
+            if (hotbarSlot == null || hotbarSlot.getType() == Material.AIR) {
+                hotbarEmpty = true;
+                break;
+            }
+        }
+
+        // Wenn mindestens ein Slot in der Hotbar oder im gesamten Inventar leer ist und genug Platz im gesamten Inventar ist
+        return (hotbarEmpty || freeSlots > 0) && freeSlots >= itemStack.getAmount();
     }
+
+
+
 
 
     private ItemStack createSilverStack(int amount) {
@@ -1867,13 +1925,14 @@ public void startBlazeSpawnTimer() {
                 // Führen Sie hier weitere Schritte aus, die auf der gefundenen Ritualposition basieren
             }
         } else {
-            System.out.println("Keine ausreichenden XP-Flaschen gefunden. Gefundene Flaschen: " + foundExperienceBottles);
+            //System.out.println("Keine ausreichenden XP-Flaschen gefunden. Gefundene Flaschen: " + foundExperienceBottles);
         }
     }
 
 
 
 
+    // Diese Methode ermittelt den Spieler, der ein Item gedroppt hat
     // Diese Methode ermittelt den Spieler, der ein Item gedroppt hat
     private Player getPlayerWhoDroppedItemNearLocation(Location ritualLocation, int radius) {
         if (ritualLocation == null) {
@@ -1891,13 +1950,11 @@ public void startBlazeSpawnTimer() {
 
         List<Player> nearbyPlayers = new ArrayList<>();
 
-        for (Player player : world.getPlayers()) {
-            if (player.getWorld().getName().equals("hcfw")) {
-                double distance = player.getLocation().distance(ritualLocation);
-                System.out.println("Entfernung zwischen Spieler " + player.getName() + " und Ritual Location: " + distance);
-                if (distance <= radius) {
-                    nearbyPlayers.add(player);
-                }
+        for (Entity entity : world.getNearbyEntities(ritualLocation, radius, radius, radius)) {
+            if (entity instanceof Player) {
+                Player player = (Player) entity;
+                System.out.println("Spieler in der Nähe: " + player.getName());
+                nearbyPlayers.add(player);
             }
         }
 
@@ -1911,6 +1968,7 @@ public void startBlazeSpawnTimer() {
         System.out.println("Kein passender Spieler in der Nähe gefunden");
         return null;
     }
+
 
 
 
@@ -1965,6 +2023,11 @@ public void startBlazeSpawnTimer() {
 
         // Erstelle den Wither ohne AI
         Location bossLocation = ritualLocation.clone().add(0, 2, 0); // Über dem Ritualort
+        //Aktuelle Versetzung auf Y Achse
+        //Ritual Ort wird übergeben, XP Flaschen werden gefunden & gelöscht
+        //Ritual Ort wird an TriggerRitual übergeben
+        //wird hier auf Y Achse unter die Erde verschoben
+        // Änderung /Anpassung geplant
         Wither witherBoss = (Wither) world.spawnEntity(bossLocation, EntityType.WITHER);
         witherBoss.setAI(false); // Deaktiviere die KI
 
@@ -1989,64 +2052,97 @@ public void startBlazeSpawnTimer() {
         final int[] taskIdWrapper = new int[1]; // Wrapper für die Task-ID
         taskIdWrapper[0] = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
             updateBossHealthBar(witherBoss);
-            checkAndUpdatePhase(witherBoss);
-
-            if (witherBoss.getHealth() <= 0) {
+            double health = witherBoss.getHealth();
+            if (health <= 0) {
                 handleRitualCompletion(witherBoss, initiatingPlayer); // Übergebe den Initiierenden Spieler
-                scheduler.cancelTask(taskIdWrapper[0]); // Verwende die umschlossene Task-ID
+                scheduler.cancelTask(taskIdWrapper[0]); // Stoppe den Task
+            } else {
+                // Die checkAndUpdatePhase Methode kümmert sich um die Logik des Phasenwechsels.
+                checkAndUpdatePhase(witherBoss);
             }
         }, 0L, 20L); // Aktualisiert jede Sekunde (20 Ticks)
+        // Aktualisiert jede Sekunde (20 Ticks)
     }
 
     private boolean blazesSpawnedForCurrentPhase = false; // Globale Variable
 
+    // Globale Variablen zur Speicherung der Gesundheitsmarken und des höchsten Phasenfortschritts
+    private int highestPhaseReached = 0;
+    private final double[] healthMarks = {0.75, 0.50, 0.25, 0.0}; // Gesundheitsmarken für die Phasenwechsel
+
+    private double lastHealth = 1000; // Startet mit der maximalen Gesundheit
+
     private void checkAndUpdatePhase(Wither witherBoss) {
-        double healthPercentage = witherBoss.getHealth() / witherBoss.getMaxHealth();
+        double currentHealth = witherBoss.getHealth();
+        int newPhase = calculatePhaseBasedOnHealth(currentHealth);
 
-        // Bestimme die Phase basierend auf dem Gesundheitsprozentsatz
-        int newPhase;
-        if (healthPercentage > 0.75) {
-            newPhase = 0;
-        } else if (healthPercentage > 0.50) {
-            newPhase = 1;
-        } else if (healthPercentage > 0.25) {
-            newPhase = 2;
-        } else {
-            newPhase = 3;
-        }
-
-        if (newPhase != currentPhase) {
+        // Überprüfen Sie, ob die Gesundheit gefallen ist, um in eine neue Phase zu gelangen
+        if (currentHealth <= lastHealth && newPhase != currentPhase) {
             currentPhase = newPhase;
-            blazesSpawnedForCurrentPhase = false; // Zurücksetzen, wenn die Phase wechselt
+            highestPhaseReached = Math.max(highestPhaseReached, newPhase);
+            blazesSpawnedForCurrentPhase = false;
             handleBossMessagesAndPhases(witherBoss, currentPhase);
         }
+
+        lastHealth = currentHealth; // Aktualisiere die zuletzt bekannte Gesundheit
     }
+
+
+
+    private int calculatePhaseBasedOnHealth(double health) {
+        if (health > 750) return 0;
+        if (health > 500) return 1;
+        if (health > 250) return 2;
+        return 3;
+    }
+
+
+
+
 
     private Set<Player> participants = new HashSet<>();
 
     private void trackParticipant(Player player) {
         participants.add(player);
     }
+    private final Map<UUID, ItemStack> pendingRewards = new HashMap<>();
 
     private void handleRitualCompletion(Wither witherBoss, Player initiatingPlayer) {
-        // Nachricht und Belohnung nur für den Spieler, der das Ritual gestartet hat
         if (initiatingPlayer != null) {
             initiatingPlayer.sendMessage("Das Ritual wurde erfolgreich abgeschlossen!");
-
-            // Gib dem initiierenden Spieler 4 Stücke des benutzerdefinierten Oraxen-Items "Gold"
             ItemStack goldItem = OraxenItems.getItemById("gold").build();
-            goldItem.setAmount(4); // Setze die Menge auf 4
-            if (hasEnoughSpace(initiatingPlayer.getInventory(), goldItem)) {
+            goldItem.setAmount(8); // Setze die Menge auf 14
+
+            if (hasEnoughSpace(initiatingPlayer, goldItem)) {
                 initiatingPlayer.getInventory().addItem(goldItem);
-                initiatingPlayer.sendMessage(ChatColor.GREEN + "Du hast 4 Gold als Belohnung erhalten!");
+                initiatingPlayer.sendMessage(ChatColor.GREEN + "Du hast 8 Gold als Belohnung erhalten!");
             } else {
-                initiatingPlayer.sendMessage(ChatColor.RED + "Dein Inventar ist voll. Du hast keine Belohnung erhalten.");
+                pendingRewards.put(initiatingPlayer.getUniqueId(), goldItem);
+                initiatingPlayer.sendMessage(ChatColor.RED + "Dein Inventar ist voll. Du erhältst deine Belohnung, sobald du Platz hast.");
             }
         }
-
-        // Leere die Teilnehmerliste für das nächste Ritual
         participants.clear();
     }
+    public void checkAndGivePendingRewards() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            // Sammeln Sie UUIDs von Spielern, deren Belohnungen ausgegeben werden sollen.
+            List<UUID> rewardedPlayers = new ArrayList<>();
+
+            pendingRewards.forEach((uuid, itemStack) -> {
+                Player player = Bukkit.getPlayer(uuid);
+                if (player != null && hasEnoughSpace(player, itemStack)) {
+                    player.getInventory().addItem(itemStack);
+                    player.sendMessage(ChatColor.GREEN + "Du hast deine ausstehende Belohnung erhalten!");
+                    rewardedPlayers.add(uuid); // Füge die UUID zur Liste der belohnten Spieler hinzu
+                }
+            });
+
+            // Entferne belohnte Spieler aus der Map der ausstehenden Belohnungen
+            rewardedPlayers.forEach(pendingRewards::remove);
+        }, 0L, 20L * 60); // Überprüfe jede Minute
+    }
+
+
 
 
     private void playSpawnSound() {
@@ -2075,9 +2171,15 @@ public void startBlazeSpawnTimer() {
     private boolean isBossAIEnabled = false; // Variable zur Verwaltung des KI-Zustands
 
     private void handleBossMessagesAndPhases(Wither witherBoss, int phase) {
-        // Boss-Nachrichten und Phasen verwalten
-        witherBoss.setCustomName("Freaky Demon"); // Beispiel: Setze den Namen des Bosses
+        // Überprüfe, ob das maximale Gesundheitsattribut bereits angepasst wurde
+        AttributeInstance healthAttribute = witherBoss.getAttribute(Attribute.GENERIC_MAX_HEALTH);
+        if (healthAttribute != null && healthAttribute.getBaseValue() != bossHealth) {
+            healthAttribute.setBaseValue(bossHealth); // Setze das maximale Gesundheitsattribut auf 1000, falls noch nicht geschehen
+            witherBoss.setHealth(bossHealth); // Setze die Gesundheit des Bosses nur, wenn die maximale Gesundheit geändert wurde
+        }
 
+        witherBoss.setCustomName("Freaky Demon"); // Beispiel: Setze den Namen des Bosses
+        sendNearbyPlayersMessageToWither(witherBoss, "Was wollt ihr?!", 50);
         // Aktualisiere die Boss-Lebensanzeige
         double progress = witherBoss.getHealth() / witherBoss.getMaxHealth();
         witherBoss.getBossBar().setProgress(progress);
@@ -2086,37 +2188,40 @@ public void startBlazeSpawnTimer() {
         // Nachrichten und Aktionen abhängig von der Phase
         switch (phase) {
             case 0:
-                sendNearbyPlayersMessage(witherBoss.getWorld(), witherBoss.getLocation(), "Kampf begonnen!", 50);
+                sendNearbyPlayersMessageToWither(witherBoss, "Kampf begonnen!", 50);
                 setBossAIState(witherBoss, true); // Boss wechselt in AI True
                 blazesSpawnedForCurrentPhase = false; // Zurücksetzen der Flag
                 break;
             case 1:
-                sendNearbyPlayersMessage(witherBoss.getWorld(), witherBoss.getLocation(), "Ihr seid sehr stark!", 50);
+                sendNearbyPlayersMessageToWither(witherBoss, "Ihr seid sehr stark!", 50);
                 setBossAIState(witherBoss, false); // Boss wechselt in AI False
                 blazesSpawnedForCurrentPhase = false; // Zurücksetzen der Flag
                 if (!blazesSpawnedForCurrentPhase) {
-                    spawnHealingBlazes(witherBoss.getWorld(), witherBoss.getLocation(), witherBoss, 2); // Spawn 2 Blazes
+                    spawnHealingBlazes(witherBoss.getWorld(), witherBoss.getLocation(), witherBoss, 3); // Spawn 2 Blazes
                     blazesSpawnedForCurrentPhase = true; // Setzen der Flag
                 }
                 // Setze die Bewegungsgeschwindigkeit des Withers in Phase 1
                 witherBoss.setVelocity(new Vector(0, -0.2, 0)); // Bewegt sich nach unten
                 break;
             case 2:
-                sendNearbyPlayersMessage(witherBoss.getWorld(), witherBoss.getLocation(), "Boss wechselt die Taktik! Der Wither wird nun von Blazes geheilt!", 50);
-                if (!blazesSpawnedForCurrentPhase) {
-                    spawnHealingBlazes(witherBoss.getWorld(), witherBoss.getLocation(), witherBoss, 5); // Spawn 5 Blazes
-                    blazesSpawnedForCurrentPhase = true; // Setzen der Flag
-                }
+                sendNearbyPlayersMessageToWither(witherBoss, "Ich habe euch unterschätzt. Ich verzieh mich!", 50);
+
                 setBossAIState(witherBoss, true); // Boss wechselt in AI True
                 // Setze die maximale Position des Withers in Phase 2
                 Location currentLocation = witherBoss.getLocation();
-                Location maxPosition = new Location(currentLocation.getWorld(), currentLocation.getX(), 50, currentLocation.getZ());
+                Location maxPosition = new Location(currentLocation.getWorld(), currentLocation.getX(), 19, currentLocation.getZ());
+                witherBoss.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 1));
+
                 witherBoss.teleport(maxPosition);
                 break;
             case 3:
-                sendNearbyPlayersMessage(witherBoss.getWorld(), witherBoss.getLocation(), "Die letzte Phase beginnt!", 50);
+                sendNearbyPlayersMessageToWither(witherBoss, "Bis zum Ende!", 50);
                 setBossAIState(witherBoss, true); // Boss wechselt in AI True
                 blazesSpawnedForCurrentPhase = false; // Zurücksetzen der Flag
+                if (!blazesSpawnedForCurrentPhase) {
+                    spawnHealingBlazes(witherBoss.getWorld(), witherBoss.getLocation(), witherBoss, 4); // Spawn 5 Blazes
+                    blazesSpawnedForCurrentPhase = true; // Setzen der Flag
+                }
                 // Setze die Bewegungsgeschwindigkeit und Geschwindigkeit des Withers in Phase 3
                 witherBoss.setVelocity(new Vector(0, 1.0, 0)); // Bewegt sich sehr schnell nach oben
                 witherBoss.getAttribute(Attribute.GENERIC_MOVEMENT_SPEED).setBaseValue(2.0); // Erhöhe die Bewegungsgeschwindigkeit
@@ -2142,13 +2247,26 @@ public void startBlazeSpawnTimer() {
             double angle = angleStep * i;
             Location blazeLocation = witherLocation.clone().add(Math.cos(angle) * 5, 3, Math.sin(angle) * 5); // Kreisformation um den Wither
 
+            // Löse eine Explosion aus, bevor der Blaze gespawnt wird
+            world.createExplosion(blazeLocation.getX(), blazeLocation.getY(), blazeLocation.getZ(), 3.0f, false, true);
+
             Blaze blaze = (Blaze) world.spawnEntity(blazeLocation, EntityType.BLAZE);
             blaze.setAI(false); // Deaktiviere die KI der Blazes
+            blaze.addPotionEffect(new PotionEffect(PotionEffectType.GLOWING, Integer.MAX_VALUE, 1));
+
+            // Setze das Ziel des Blaze auf null, damit sie keine Ziele angreifen
+            blaze.setTarget(null);
+            // Füge dem Blaze eine unendlich lange Regeneration II hinzu
+            blaze.getAttribute(Attribute.GENERIC_MAX_HEALTH).setBaseValue(140); // Erhöhe die Gesundheit des Blaze
+            blaze.setHealth(140); // Setze die Gesundheit auf das Maximum
+
+            blaze.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, Integer.MAX_VALUE, 1));
 
             // Starte einen visuellen Effekt und heile den Wither regelmäßig
             startHealingEffect(blaze, witherBoss);
         }
     }
+
 
 
     private List<Blaze> healingBlazes = new ArrayList<>();
@@ -2157,6 +2275,14 @@ public void startBlazeSpawnTimer() {
         healingBlazes.add(blaze);
         BukkitScheduler scheduler = Bukkit.getServer().getScheduler();
         final int[] taskIdWrapper = new int[1];
+
+        // Konfigurieren Sie den visuellen Effekt
+        double offsetX = 0.5;
+        double offsetY = 1.0;
+        double offsetZ = 0.5;
+        int particleCount = 100;
+        double speed = 0.1;
+
         taskIdWrapper[0] = scheduler.scheduleSyncRepeatingTask(plugin, () -> {
             if (!blaze.isValid() || !witherBoss.isValid()) {
                 healingBlazes.remove(blaze);
@@ -2166,26 +2292,48 @@ public void startBlazeSpawnTimer() {
                 return;
             }
 
-            // Visueller Effekt: Partikelstrahl von Blaze zu Wither
-            Location blazeLocation = blaze.getLocation();
+            Location blazeLocation = blaze.getEyeLocation(); // Verwenden Sie die Augenhöhe des Blaze
             Location witherLocation = witherBoss.getLocation();
-            blaze.getWorld().spawnParticle(Particle.END_ROD, blazeLocation, 0, witherLocation.getX() - blazeLocation.getX(), witherLocation.getY() - blazeLocation.getY(), witherLocation.getZ() - blazeLocation.getZ(), 0.1);
-            blaze.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, blazeLocation, 5,witherLocation.getX() - blazeLocation.getX(), witherLocation.getY() - blazeLocation.getY(), witherLocation.getZ() - blazeLocation.getZ(), 0.1);
-            blaze.getWorld().spawnParticle(Particle.SMOKE_LARGE, blazeLocation, 5, witherLocation.getX() - blazeLocation.getX(), witherLocation.getY() - blazeLocation.getY(), witherLocation.getZ() - blazeLocation.getZ(), 0.1);
 
-            // Heile den Wither, wenn mindestens ein Blaze lebt
+            // Berechnen Sie den Vektor zwischen Blaze und Wither
+            Vector direction = witherLocation.toVector().subtract(blazeLocation.toVector()).normalize();
+
+            for (int i = 0; i < particleCount; i++) {
+                double x = blazeLocation.getX() + offsetX;
+                double y = blazeLocation.getY() + offsetY;
+                double z = blazeLocation.getZ() + offsetZ;
+
+                // Fügen Sie etwas Zufälligkeit hinzu
+                double randomX = (Math.random() - 0.5) * 0.5;
+                double randomY = (Math.random() - 0.5) * 0.5;
+                double randomZ = (Math.random() - 0.5) * 0.5;
+
+                // Berechnen Sie die Endposition des Partikels
+                double endX = x + direction.getX() * i * speed + randomX;
+                double endY = y + direction.getY() * i * speed + randomY;
+                double endZ = z + direction.getZ() * i * speed + randomZ;
+
+                blaze.getWorld().spawnParticle(Particle.END_ROD, endX, endY, endZ, 1, 0, 0, 0, 0);
+                blaze.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, endX, endY, endZ, 1, 0, 0, 0, 0);
+                blaze.getWorld().spawnParticle(Particle.SMOKE_LARGE, endX, endY, endZ, 1, 0, 0, 0, 0);
+            }
+
+            // Heilen Sie den Wither, wenn mindestens ein Blaze lebt
             if (!healingBlazes.isEmpty()) {
                 double newHealth = Math.min(witherBoss.getHealth() + 1, witherBoss.getMaxHealth());
                 witherBoss.setHealth(newHealth);
             }
-        }, 0L, 20L);
+        }, 0L, 10L); // Ändern Sie die Intervalle für die Animation
     }
 
 
-    private void sendNearbyPlayersMessage(World world, Location location, String message, double radius) {
+
+    private void sendNearbyPlayersMessageToWither(Wither witherBoss, String message, double radius) {
         double radiusSquared = radius * radius;
-        for (Player player : world.getPlayers()) {
-            if (player.getWorld().getName().equals("hcfw") && player.getLocation().distanceSquared(location) <= radiusSquared) {
+        Location witherLocation = witherBoss.getLocation();
+
+        for (Player player : witherBoss.getWorld().getPlayers()) {
+            if (player.getWorld().equals(witherLocation.getWorld()) && player.getLocation().distanceSquared(witherLocation) <= radiusSquared) {
                 player.sendMessage(message);
             }
         }
@@ -2193,7 +2341,6 @@ public void startBlazeSpawnTimer() {
 
 
 
-// Verwende diese Methode in `handleBossMessagesAndPhases`, um Nachrichten an Spieler in der Nähe zu senden
 
     private void setBossAIState(Wither witherBoss, boolean enableAI) {
         if (isBossAIEnabled != enableAI) {
@@ -2204,10 +2351,10 @@ public void startBlazeSpawnTimer() {
 
 
     private Location findRitualLocation(World world, Location previousLocation) {
-        System.out.println("findRitualLocation wird ausgeführt"); // Debugging-Nachricht
+        //System.out.println("findRitualLocation wird ausgeführt"); // Debugging-Nachricht
 
         if (previousLocation != null) {
-            System.out.println("Verwende vorherige Position: " + previousLocation.toString()); // Debugging-Nachricht
+            //System.out.println("Verwende vorherige Position: " + previousLocation.toString()); // Debugging-Nachricht
             return previousLocation;
         }
 
@@ -2217,16 +2364,523 @@ public void startBlazeSpawnTimer() {
                 ItemStack itemStack = item.getItemStack();
                 if (itemStack != null && itemStack.getType() == Material.EXPERIENCE_BOTTLE) {
                     Location ritualLocation = item.getLocation();
-                    System.out.println("Ritualort gefunden: " + ritualLocation.toString()); // Debugging-Nachricht
+                    //System.out.println("Ritualort gefunden: " + ritualLocation.toString()); // Debugging-Nachricht
                     return ritualLocation;
                 }
             }
         }
 
-        System.out.println("Kein passender Ort gefunden"); // Debugging-Nachricht
+        //System.out.println("Kein passender Ort gefunden"); // Debugging-Nachricht
         return null; // Kein passender Ort gefunden
     }
 
+
+    //Edgars Jagd
+    private final Map<UUID, Integer> playerPigKillCount = new HashMap<>();
+    private final Map<UUID, BossBar> playerBossBars = new HashMap<>();
+    private final Map<UUID, List<Location>> playerEventLocations = new HashMap<>();
+    private final Map<UUID, List<Pig>> markedPigs = new HashMap<>();
+    private final Set<UUID> playersInEvent = new HashSet<>();
+    private final Map<UUID, Long> playerEventStartTimes = new HashMap<>();
+
+    @EventHandler
+    public void onPigDeath(EntityDeathEvent event) {
+        if (!(event.getEntity() instanceof Pig)) return;
+        if (!event.getEntity().getWorld().getName().equalsIgnoreCase("hcfw")) return;
+
+        Player killer = event.getEntity().getKiller();
+        if (killer == null) return;
+
+        UUID playerID = killer.getUniqueId();
+        if (!isPigMarkedForEvent(playerID, (Pig) event.getEntity())) {
+            int pigsKilled = playerPigKillCount.getOrDefault(playerID, 0) + 1;
+            playerPigKillCount.put(playerID, pigsKilled);
+
+            if (!playersInEvent.contains(playerID)) {
+                int eventProbability = plugin.getDiscordBot().getEventProbability();
+                int requiredPigs = calculateRequiredPigs(eventProbability);
+                if (pigsKilled >= requiredPigs) {
+
+                    // Bossbar zeigt Position an, bevor der Spieler am Ort ist
+                    updateBossBarAndLocations(killer, 0);
+                    scheduleEventStart(killer, eventProbability);
+
+                }
+            }
+        } else {
+            // Wenn das Schwein markiert war, handle den Event-bezogenen Tod
+            handleEventPigDeath(killer, (Pig) event.getEntity());
+        }
+    }
+
+    //Testfunktion, verzögerter Start
+    private void scheduleEventStart(Player player, int probability) {
+        Bukkit.getScheduler().runTaskLater(plugin, () -> startEdgarsHunt(player, probability), 20L * 10); // 10 Sekunden Verzögerung
+    }
+
+
+    private boolean isPigMarkedForEvent(UUID playerID, Pig pig) {
+        List<Pig> pigs = markedPigs.get(playerID);
+        return pigs != null && pigs.contains(pig);
+    }
+
+    private final Map<UUID, Integer> currentPlayerLocationIndex = new HashMap<>();
+
+    // Globale Maps zur Speicherung von Fortschritten und Zuständen
+    private final Map<UUID, Integer> locationCompletionCount = new HashMap<>();
+
+    private void handleEventPigDeath(Player player, Pig pig) {
+        UUID playerID = player.getUniqueId();
+        List<Pig> pigs = markedPigs.get(playerID);
+        int locationIndex = currentPlayerLocationIndex.getOrDefault(playerID, 0);
+
+        if (pigs != null && pigs.contains(pig)) {
+            pigs.remove(pig);
+            if (pigs.isEmpty()) {
+                markedPigs.remove(playerID);
+                int completedLocations = locationCompletionCount.getOrDefault(playerID, 0) + 1;
+                locationCompletionCount.put(playerID, completedLocations);
+                updateBossBarProgress(playerID, locationIndex, true);
+
+                // Überprüfe, ob alle Locations abgeschlossen wurden
+                if (completedLocations >= playerEventLocations.get(playerID).size()) {
+                    completeEventForPlayer(playerID);
+                } else {
+                    // Vorbereiten der BossBar für die nächste Location, falls vorhanden
+                    updateBossBarAndLocations(player, locationIndex + 1);
+                }
+            } else {
+                updateBossBarProgress(playerID, locationIndex, false);
+            }
+        }
+    }
+    private void checkEventCompletion(UUID playerID, int locationIndex) {
+        int completedLocations = locationCompletionCount.getOrDefault(playerID, 0);
+        List<Location> locations = playerEventLocations.get(playerID);
+        if (completedLocations >= locations.size()) {
+            completeEventForPlayer(playerID);
+        } else {
+            updateBossBarAndLocations(Bukkit.getPlayer(playerID), locationIndex + 1);
+        }
+    }
+
+
+    private void updateBossBarProgress(UUID playerID, int locationIndex, boolean complete) {
+        BossBar bossBar = playerBossBars.get(playerID);
+        if (bossBar != null) {
+            if (complete) {
+                bossBar.setProgress(1.0);
+                bossBar.setColor(BarColor.GREEN); // Optional: Change color to indicate completion
+                bossBar.setTitle("Location abgeschlossen!");
+                if (locationIndex + 1 < playerEventLocations.get(playerID).size()) {
+                    // Vorbereiten der BossBar für die nächste Location
+                    updateBossBarAndLocations(Bukkit.getPlayer(playerID), locationIndex + 1);
+                }
+            } else {
+                // Berechne den Fortschritt basierend auf verbleibenden Schweinen
+                List<Pig> pigs = markedPigs.get(playerID);
+                Integer totalPigs = playerPigKillCount.getOrDefault(playerID, 0);  // Gesamtanzahl der Schweine für diese Location
+                double progress = 1.0 - (double) pigs.size() / totalPigs;
+                bossBar.setProgress(progress);
+            }
+        }
+    }
+
+
+
+
+
+
+
+
+    private int calculateRequiredPigs(int eventProbability) {
+        // Stellt sicher, dass weniger Schweine benötigt werden, je höher die Wahrscheinlichkeit ist
+        return Math.max(5, (int)(50 * (1 - (eventProbability / 100.0))));
+    }
+
+
+    // Anpassung der startEdgarsHunt Methode, um sie asynchron auszuführen
+    private void startEdgarsHunt(Player player, int probability) {
+        UUID playerID = player.getUniqueId();
+        playersInEvent.add(playerID);
+        playerEventStartTimes.put(playerID, System.currentTimeMillis());
+
+        // Starte die asynchrone Suche nach einem geeigneten Standort
+        generateRandomLocationAsync(player.getWorld(), player).thenAccept(location -> {
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                if (location != null) {
+                    // Ein geeigneter Standort wurde gefunden
+                    List<Location> locations = new ArrayList<>();
+                    locations.add(location);
+                    playerEventLocations.put(playerID, locations);
+
+                    BossBar bossBar = Bukkit.createBossBar("Edgars Jagd", BarColor.PINK, BarStyle.SOLID);
+                    bossBar.addPlayer(player);
+                    playerBossBars.put(playerID, bossBar);
+                    updateBossBarAndLocations(player, 0);
+                } else {
+                    // Kein geeigneter Standort gefunden
+                    player.sendMessage(ChatColor.RED + "Es konnten keine geeigneten Orte für Edgars Jagd gefunden werden.");
+                    playersInEvent.remove(playerID);
+                }
+            });
+        });
+    }
+
+
+
+
+
+    private void updateBossBarAndLocations(Player player, int locationIndex) {
+        UUID playerID = player.getUniqueId();
+        List<Location> locations = playerEventLocations.get(playerID);
+        BossBar bossBar = playerBossBars.get(playerID);
+
+        if (bossBar == null) {
+            bossBar = Bukkit.createBossBar("Edgars Jagd", BarColor.PINK, BarStyle.SOLID);
+            playerBossBars.put(playerID, bossBar);
+            bossBar.addPlayer(player);
+        }
+
+        if (locations == null || locations.isEmpty() || locationIndex >= locations.size()) {
+            return; // Keine weiteren Aktionen, wenn keine gültigen Locations vorhanden sind
+        }
+
+        Location currentLocation = locations.get(locationIndex);
+        bossBar.setTitle(String.format("Ziel %d von %d: [%d, %d, %d]",
+                locationIndex + 1, locations.size(), currentLocation.getBlockX(), currentLocation.getBlockY(), currentLocation.getBlockZ()));
+
+        List<Pig> pigsAtLocation = markedPigs.getOrDefault(playerID, new ArrayList<>());
+        double progress = pigsAtLocation != null ? 1.0 - (double) pigsAtLocation.size() / playerPigKillCount.getOrDefault(playerID, 0) : 1.0;
+        bossBar.setProgress(progress);
+
+        checkAndUpdatePlayerProximity(player, currentLocation, locationIndex);
+    }
+
+
+
+
+
+    private void checkAndUpdatePlayerProximity(Player player, Location currentLocation, int locationIndex) {
+        UUID playerID = player.getUniqueId();
+        Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+            if (player.getWorld().equals(currentLocation.getWorld())) {
+                double distance = player.getLocation().distance(currentLocation);
+                if (distance < 100) {
+                    spawnPigsAtLocation(currentLocation, plugin.getDiscordBot().getEventProbability(), playerID);
+                    Bukkit.getScheduler().cancelTask(task.getTaskId()); // Stoppt den Timer, nachdem die Schweine gespawnt wurden
+                    if (locationIndex + 1 < playerEventLocations.get(player.getUniqueId()).size()) {
+                        updateBossBarAndLocations(player, locationIndex + 1);
+                    }
+                }
+            }
+        }, 0L, 20L); // Überprüft die Distanz jede Sekunde
+    }
+
+
+    private void completeEventForPlayer(UUID playerID) {
+        Player player = Bukkit.getPlayer(playerID);
+        if (player == null || !playersInEvent.contains(playerID)) {
+            return; // Der Spieler ist nicht online oder bereits verarbeitet
+        }
+
+        // Entferne den Spieler aus der Liste der Eventteilnehmer
+        playersInEvent.remove(playerID);
+
+        // Entferne die BossBar
+        BossBar bossBar = playerBossBars.remove(playerID);
+        if (bossBar != null) {
+            bossBar.removeAll();
+        }
+
+        // Berechne und vergebe die Belohnung
+        long eventDuration = System.currentTimeMillis() - playerEventStartTimes.getOrDefault(playerID, System.currentTimeMillis());
+        ItemStack reward = calculateReward(eventDuration);
+        pendingRewards.put(playerID, reward);
+        player.sendMessage(ChatColor.GOLD + "Edgars Jagd abgeschlossen! Deine Belohnung wartet.");
+    }
+    private ItemStack calculateReward(long eventDuration) {
+        int baseReward = 10;
+        long maxDurationForReward = 3600000;
+        long minDurationForMaxReward = 900000;
+        long rewardReductionInterval = 450000;
+
+        int reduction = Math.max(0, (int) ((eventDuration - minDurationForMaxReward) / rewardReductionInterval));
+        int finalRewardAmount = Math.max(1, baseReward - reduction);
+
+        ItemStack edgarsSteakStack = OraxenItems.getItemById("edgars_steak").build();
+        edgarsSteakStack.setAmount(finalRewardAmount);
+
+        return edgarsSteakStack;
+    }
+
+
+    private CompletableFuture<Location> generateRandomLocationAsync(World world, Player player) {
+        return CompletableFuture.supplyAsync(() -> {
+            Random random = new Random();
+            int baseSearchRadius = 500;
+            int maxAttempts = 300; // Erhöhung der Versuche pro Radius
+            int radiusIncrement = 100; // Feinere Radius-Steigerung
+
+            for (int searchRadius = baseSearchRadius; searchRadius <= 2000; searchRadius += radiusIncrement) {
+                for (int attempt = 0; attempt < maxAttempts; attempt++) {
+                    int x = random.nextInt(searchRadius * 2) - searchRadius + world.getSpawnLocation().getBlockX();
+                    int z = random.nextInt(searchRadius * 2) - searchRadius + world.getSpawnLocation().getBlockZ();
+                    int y = world.getHighestBlockYAt(x, z);
+
+                    Location loc = new Location(world, x, y, z);
+                    if (checkAccessibility(loc, player)) {
+                        return loc;
+                    }
+                }
+            }
+            return null; // Kein Standort gefunden
+        });
+    }
+
+
+    private boolean checkAccessibility(Location location, Player player) {
+        World world = location.getWorld();
+        int safeMinY = 50; // Senken des minimalen sicheren Y-Wertes
+        int safeMaxY = world.getMaxHeight() - 1; // Leichte Anpassung des maximalen Y-Wertes
+        return location.getY() > safeMinY && location.getY() < safeMaxY && location.getBlock().getType().isSolid();
+    }
+
+
+
+    private void spawnPigsAtLocation(Location location, int probability, UUID playerID) {
+        List<Pig> spawnedPigs = markedPigs.getOrDefault(playerID, new ArrayList<>());
+
+        // Überprüfung, ob bereits Schweine an dieser Location gespawnt wurden
+        if (!spawnedPigs.isEmpty()) {
+            return; // Beendet die Methode, wenn bereits Schweine vorhanden sind
+        }
+
+        int pigsCount = calculatePigsCount(probability);
+        for (int i = 0; i < pigsCount; i++) {
+            int offsetX = (new Random().nextInt(11) - 5);
+            int offsetZ = (new Random().nextInt(11) - 5);
+            int newY = location.getWorld().getHighestBlockYAt(location.getBlockX() + offsetX, location.getBlockZ() + offsetZ) + 1;
+            Location spawnLocation = new Location(location.getWorld(), location.getX() + offsetX, newY, location.getZ() + offsetZ);
+
+            Pig pig = (Pig) location.getWorld().spawnEntity(spawnLocation, EntityType.PIG);
+            pig.setGlowing(true);
+            spawnedPigs.add(pig);
+        }
+
+        markedPigs.put(playerID, spawnedPigs);
+        playerPigKillCount.put(playerID, pigsCount);
+    }
+
+
+
+
+    private int calculatePigsCount(int probability) {
+        // Je höher die Wahrscheinlichkeit, desto weniger Schweine müssen gespawnt werden
+        return Math.max(5, (100 - probability) / 10 + 3); // Beispielhafte Berechnung
+    }
+
+
+
+
+    public void startEventCompletionChecker() {
+        Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            for (UUID playerID : new HashSet<>(playersInEvent)) {
+                Player player = Bukkit.getPlayer(playerID);
+                // Continue only if player is valid and involved in the event
+                if (player == null || !playersInEvent.contains(playerID) || !markedPigs.containsKey(playerID)) {
+                    continue;
+                }
+
+                List<Pig> pigs = markedPigs.get(playerID);
+                // Check if all spawned pigs at the current location are no longer valid (i.e., dead)
+                if (pigs.stream().allMatch(Pig::isDead)) {
+                    // Fetch the current location index
+                    int locationIndex = currentPlayerLocationIndex.getOrDefault(playerID, 0);
+                    advanceEventOrComplete(playerID, locationIndex);
+                }
+            }
+        }, 20L, 20L * 5); // Check every 5 seconds
+    }
+
+
+
+    private void advanceEventOrComplete(UUID playerID, int locationIndex) {
+        List<Location> locations = playerEventLocations.get(playerID);
+        if (locationIndex < locations.size() - 1) {
+            // Noch nicht die letzte Location, bereite die nächste vor
+            currentPlayerLocationIndex.put(playerID, locationIndex + 1);
+            updateBossBarAndLocations(Bukkit.getPlayer(playerID), locationIndex + 1);
+        } else {
+            // Letzte Location abgeschlossen, jetzt das Event abschließen und Belohnung vergeben
+            completeEventForPlayer(playerID);
+        }
+    }
+
+    //HCFW Villager
+    // HCFW Villager
+
+    private Villager hcfwVillager;
+    private boolean isTeleportFree = false; // Boolean für spätere Freischaltung der kostenfreien Teleportation
+    private Map<UUID, Boolean> pendingTeleports = new HashMap<>(); // Map, um Spieler zu tracken, die den Villager angesprochen haben
+
+    public void spawnHCFWVillager() {
+        Location location = new Location(Bukkit.getWorld("world"), 0, 11, -34);
+        hcfwVillager = location.getWorld().spawn(location, Villager.class, villager -> {
+            villager.setProfession(Villager.Profession.CLERIC);
+            villager.setCustomName(ChatColor.DARK_PURPLE + "HCFW Portalwächter");
+            villager.setCustomNameVisible(true);
+            villager.setPersistent(true);
+            villager.setAI(false); // Der Villager soll nur mit Spielern interagieren, keine KI
+            villager.addScoreboardTag("HCFW_Villager");
+        });
+
+        startVillagerLookTask(); // Startet den Task, der den Villager den Spieler anschauen lässt
+    }
+
+    public void removeHCFWVillager() {
+        if (hcfwVillager != null && !hcfwVillager.isDead()) {
+            hcfwVillager.remove();
+            hcfwVillager = null;
+        }
+    }
+
+    // Task, damit der Villager den nächsten Spieler immer anschaut
+    private void startVillagerLookTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (hcfwVillager != null && !hcfwVillager.isDead()) {
+                    lookAtNearestPlayerHCFWVillager();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 40L); // alle 2 Sekunden (40 Ticks)
+    }
+
+    private void lookAtNearestPlayerHCFWVillager() {
+        if (hcfwVillager == null) return;
+
+        Collection<Player> nearbyPlayers = hcfwVillager.getWorld().getNearbyPlayers(hcfwVillager.getLocation(), 10);
+        Player nearestPlayer = null;
+        double nearestDistance = Double.MAX_VALUE;
+
+        for (Player player : nearbyPlayers) {
+            double distance = player.getLocation().distanceSquared(hcfwVillager.getLocation());
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestPlayer = player;
+            }
+        }
+
+        if (nearestPlayer != null) {
+            Location villagerLocation = hcfwVillager.getLocation();
+            Location playerLocation = nearestPlayer.getLocation();
+
+            double dx = playerLocation.getX() - villagerLocation.getX();
+            double dz = playerLocation.getZ() - villagerLocation.getZ();
+            float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+            villagerLocation.setYaw(yaw);
+            hcfwVillager.teleport(villagerLocation); // Aktualisiert die Blickrichtung des Villagers
+        }
+    }
+
+    @EventHandler
+    public void onPlayerInteractWithVillagerHCFW(PlayerInteractEntityEvent event) {
+        if (!(event.getRightClicked() instanceof Villager)) return;
+        Villager villager = (Villager) event.getRightClicked();
+        if (!villager.getScoreboardTags().contains("HCFW_Villager")) return;
+
+        event.setCancelled(true); // Verhindert das Öffnen des Handelsmenüs
+
+        Player player = event.getPlayer();
+        player.sendMessage(ChatColor.GREEN + "Soll ich dich für 500 Freaky-XP in die HCFW teleportieren?");
+        player.sendMessage(ChatColor.DARK_RED + "Ich empfehle dir hier nur einzutreten, wenn du breits einen" + ChatColor.GOLD + ChatColor.BOLD + " Orb des Wissens "+ ChatColor.RESET + ChatColor.DARK_RED + "bei dir hast!");
+
+        // Baue die klickbaren Chat-Komponenten
+        Component message = Component.text("Möchtest du in die HCFW-Welt teleportiert werden? ");
+        Component accept = Component.text("[Ja]")
+                .color(NamedTextColor.GREEN)
+                .clickEvent(ClickEvent.runCommand("/portalwatcher spawn"))
+                .hoverEvent(HoverEvent.showText(Component.text("Klicke hier, um den Teleport anzunehmen.")));
+
+        Component decline = Component.text("[Nein]")
+                .color(NamedTextColor.RED)
+                .clickEvent(ClickEvent.runCommand("/portalwatcher remove"))
+                .hoverEvent(HoverEvent.showText(Component.text("Klicke hier, um den Teleport abzulehnen.")));
+
+        message = message.append(accept).append(Component.text(" ")).append(decline);
+        player.sendMessage(message);
+
+        pendingTeleports.put(player.getUniqueId(), true); // Markiere Spieler für den Teleport-Befehl
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) {
+            sender.sendMessage("Dieser Befehl kann nur von Spielern verwendet werden.");
+            return true;
+        }
+
+        Player player = (Player) sender;
+
+        if (command.getName().equalsIgnoreCase("portalwatcher")) {
+            if (args.length == 0) {
+                //Umschreiben
+                //player.sendMessage(ChatColor.RED + "Verwende: /portalwatcher [annehmen|ablehnen]");
+                return true;
+            }
+
+            if (args[0].equalsIgnoreCase("spawn")) {
+                // Überprüfe, ob der Spieler den Villager vorher angesprochen hat
+                if (pendingTeleports.containsKey(player.getUniqueId()) && pendingTeleports.get(player.getUniqueId())) {
+                    handleAcceptTeleport(player);
+                    pendingTeleports.remove(player.getUniqueId()); // Entferne den Spieler aus der Liste
+                    return true;
+                } else {
+                    player.sendMessage(ChatColor.RED + "Du musst zuerst den Portalwächter ansprechen.");
+                    return true;
+                }
+
+            } else if (args[0].equalsIgnoreCase("remove")) {
+                pendingTeleports.remove(player.getUniqueId());
+                player.sendMessage(ChatColor.RED + "Du hast den Teleport in die HCFW-Welt abgelehnt.");
+                return true;
+
+            } else {
+                player.sendMessage(ChatColor.RED + "Ungültiges Argument. Verwende: /portalwatcher [spawn|remove]");
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private void handleAcceptTeleport(Player player) {
+        int teleportCost = 500; // Beispielwert für Freaky XP-Kosten
+        GameLoop gameLoop = plugin.getGameLoop(); // Hol das GameLoop-Objekt für XP-Abzug
+
+        if (!isTeleportFree) {
+            if (gameLoop.deductFreakyXP(player, teleportCost)) {
+                teleportPlayerToHCFW(player);
+                player.sendMessage(ChatColor.GREEN + "Der Portalwächter akzeptiert deine Freaky XP und teleportiert dich in die HCFW-Welt!");
+            } else {
+                player.sendMessage(ChatColor.RED + "Du hast nicht genug Freaky XP dabei, um in die HCFW zu gelangen.");
+            }
+        } else {
+            teleportPlayerToHCFW(player);
+            player.sendMessage(ChatColor.GREEN + "Du wurdest kostenlos in die HCFW-Welt teleportiert!");
+        }
+    }
+
+    private void teleportPlayerToHCFW(Player player) {
+        World hcfwWorld = plugin.getServer().getWorld("hcfw");
+        if (hcfwWorld != null) {
+            Location spawnLocation = hcfwWorld.getSpawnLocation();
+            player.teleport(spawnLocation);
+        } else {
+            player.sendMessage(ChatColor.RED + "Die HCFW-Welt konnte nicht gefunden werden.");
+        }
+    }
 
 
 }

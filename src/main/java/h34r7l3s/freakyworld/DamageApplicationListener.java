@@ -16,7 +16,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import java.util.Map;
 import java.util.UUID;
 
-import static io.th0rgal.oraxen.shaded.playeranimator.api.PlayerAnimatorPlugin.plugin;
+//import static io.th0rgal.oraxen.shaded.playeranimator.api.PlayerAnimatorPlugin.plugin;
 
 public class DamageApplicationListener implements Listener {
 

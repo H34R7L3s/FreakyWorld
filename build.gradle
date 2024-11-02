@@ -4,13 +4,14 @@ plugins {
 }
 
 group = 'H34R7L3s'
-version = '1.1.0-BetaSNAPSHOT'
+version = '2.1.0-BetaSNAPSHOT'
 
 
 repositories {
     mavenCentral()
     maven { url 'https://jitpack.io' }
     maven { url 'https://cursemaven.com' }
+    maven { url "https://repo.dmulloy2.net/repository/public/" }
     maven {
         name = "papermc-repo"
         url = "https://repo.papermc.io/repository/maven-public/"
@@ -19,20 +20,26 @@ repositories {
         name = "sonatype"
         url = "https://oss.sonatype.org/content/groups/public/"
     }
+    maven {
+        url "https://repo.oraxen.com/releases"
+    }
 }
 
 dependencies {
-    compileOnly('com.github.oraxen:oraxen:1.167.0')
+    compileOnly("io.th0rgal:oraxen:1.181.0")
     compileOnly "io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT"
     implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-beta.17'
     implementation 'org.yaml:snakeyaml:2.2'
     // Fügen Sie die Abhängigkeit zum SQLite-JDBC-Treiber hinzu
     implementation group: 'org.xerial', name: 'sqlite-jdbc', version: '3.36.0.3'
     //implementation ("curse.maven:lodestone-616457:4636991")
+    compileOnly group: "com.comphenix.protocol", name: "ProtocolLib", version: "4.8.0";
+    implementation 'com.zaxxer:HikariCP:5.0.1'
+
 
 }
 
-def targetJavaVersion = 17
+def targetJavaVersion = 21
 java {
     def javaVersion = JavaVersion.toVersion(targetJavaVersion)
     sourceCompatibility = javaVersion
@@ -59,6 +66,8 @@ processResources {
 shadowJar {
     archiveClassifier.set('')
     configurations = [project.configurations.runtimeClasspath]
+    // This ensures that all non-compileOnly dependencies are included
 }
+
 
 build.dependsOn shadowJar

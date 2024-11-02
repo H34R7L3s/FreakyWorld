@@ -220,4 +220,30 @@ public class Guild {
         }
     }
 
+    public boolean removeTask(int taskId, String playerName) {
+        if (leader.equals(playerName)) {
+            GuildTask task = findTaskById(taskId);
+            if (task != null) {
+                tasks.remove(task);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    public boolean removeMessage(int messageIndex, String playerName) {
+        if (leader.equals(playerName) && messageIndex >= 0 && messageIndex < messages.size()) {
+            messages.remove(messageIndex);
+            return true;
+        }
+        return false;
+    }
+
+    public void updateMemberRank(String playerName, GuildRank newRank) {
+        if (members.containsKey(playerName)) {
+            members.put(playerName, newRank); // Aktualisiert den Rang in der members Map
+        }
+    }
+
+
 }

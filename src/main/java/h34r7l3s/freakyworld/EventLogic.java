@@ -1,145 +1,197 @@
 package h34r7l3s.freakyworld;
 
+import org.bukkit.Bukkit;
+import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.SkullMeta;
+
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.stream.Collectors;
 
 public class EventLogic {
-
     private final FreakyWorld plugin;
     private final CategoryManager categoryManager;
     private final Map<String, Map<UUID, Integer>> categoryScores;
+    private final CustomDatabaseManager customDatabaseManager;
 
-    public EventLogic(FreakyWorld plugin, CategoryManager categoryManager) {
+    private final Map<String, List<UUID>> topPlayersRewards = new HashMap<>();
+    private final Map<String, UUID> topGuildRewards = new HashMap<>();
+    private final GuildManager guildManager;
+
+
+    public EventLogic(FreakyWorld plugin, CategoryManager categoryManager, CustomDatabaseManager customDatabaseManager, GuildManager guildManager) {
         this.plugin = plugin;
         this.categoryManager = categoryManager;
+        this.customDatabaseManager = customDatabaseManager;
         this.categoryScores = new HashMap<>();
+        this.guildManager = guildManager;
 
         for (String category : categoryManager.getCategories()) {
             categoryScores.put(category, new HashMap<>());
         }
     }
+
     public UUID getLeadingPlayerForCategory(String category) {
         UUID leadingPlayerUUID = null;
         int topScore = -1;
 
-        Map<UUID, Integer> categoryScoresMap = categoryScores.get(category);
-
-        if (categoryScoresMap != null) {
-            for (Map.Entry<UUID, Integer> entry : categoryScoresMap.entrySet()) {
-                if (entry.getValue() > topScore) {
-                    leadingPlayerUUID = entry.getKey();
-                    topScore = entry.getValue();
+        // Lade die Scores direkt aus der Datenbank
+        try (Connection conn = customDatabaseManager.getConnection()) {
+            String query = "SELECT player_uuid, score FROM player_scores WHERE category = ? ORDER BY score DESC LIMIT 1";
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setString(1, category);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        leadingPlayerUUID = UUID.fromString(rs.getString("player_uuid"));
+                        topScore = rs.getInt("score");
+                    }
                 }
             }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Fehler beim Laden der führenden Spieler aus der Datenbank: " + e.getMessage());
+        }
+
+        if (leadingPlayerUUID != null) {
+            plugin.getLogger().info("Führender Spieler in Kategorie " + category + ": " + leadingPlayerUUID + " mit Score " + topScore);
+        } else {
+            plugin.getLogger().info("Kein führender Spieler in Kategorie " + category + " gefunden.");
         }
 
         return leadingPlayerUUID;
     }
 
 
-    public void handleItemSubmission(Player player, ItemStack item, String currentCategory) {
-        String mode = categoryManager.getCategoryMode(currentCategory);
 
-        switch (mode) {
-            case "FreeForAll":
-                handleFreeForAll(player, item, currentCategory);
-                break;
-            case "DailyTask":
-                handleDailyTask(player, item, currentCategory);
-                break;
-            case "TeamMode":
-                handleTeamMode(player, item, currentCategory);
-                break;
-            default:
-                player.sendMessage("Unbekannter Modus für diese Kategorie.");
-                break;
+
+    public int getPlayerScoreForCategory(UUID playerUUID, String category) {
+        return customDatabaseManager.getPlayerScore(playerUUID, category);
+    }
+
+    public void updatePlayerScore(UUID playerUUID, String category, int amount, boolean isTeamMode) {
+        Map<UUID, Integer> scores = categoryScores.get(category);
+        if (scores != null) {
+            int newScore = scores.getOrDefault(playerUUID, 0) + amount;
+            scores.put(playerUUID, newScore);
+            categoryScores.put(category, scores);
+            customDatabaseManager.updatePlayerScore(playerUUID, category, newScore);
         }
     }
 
-    public void handleFreeForAll(Player player, ItemStack item, String category) {
-        if (!isValidCategory(category)) return;
 
-        int currentScore = categoryScores.get(category).getOrDefault(player.getUniqueId(), 0);
-        int itemAmount = getItemCount(player, item);
 
-        if (itemAmount > currentScore) {
-            categoryScores.get(category).put(player.getUniqueId(), itemAmount);
-            updateScoreboard(category);
-        }
-    }
-
-    private int getItemCount(Player player, ItemStack item) {
-        int count = 0;
-
-        for (ItemStack stack : player.getInventory().getContents()) {
-            if (stack != null && stack.getType() == item.getType()) {
-                count += stack.getAmount();
-            }
-        }
-
-        return count;
-    }
-
-    private void updateScoreboard(String category) {
-        String topPlayerName = getTopPlayerName(category);
-
-        for (Player player : plugin.getServer().getOnlinePlayers()) {
-            // Hier fehlt die Methode setScoreboard, die den Spielern ein Scoreboard zuweist.
-            // Das muss entsprechend Ihrer Implementierung hinzugefügt werden.
-        }
-    }
-
-    private String getTopPlayerName(String category) {
-        UUID topPlayerUUID = null;
-        int topScore = -1;
-
-        for (Map.Entry<UUID, Integer> entry : categoryScores.get(category).entrySet()) {
-            if (entry.getValue() > topScore) {
-                topPlayerUUID = entry.getKey();
-                topScore = entry.getValue();
-            }
-        }
-
-        if (topPlayerUUID != null) {
-            Player topPlayer = plugin.getServer().getPlayer(topPlayerUUID);
-
-            if (topPlayer != null) {
-                return topPlayer.getName();
-            }
-        }
-
-        return "No Leader";
-    }
-
-    public void handleDailyTask(Player player, ItemStack item, String category) {
-        if (!isValidCategory(category)) return;
-
-        List<String> tasksForCategory = categoryManager.getTasksForCategory(category);
-
-        if (tasksForCategory.contains(item.getType().toString())) {
-            int requiredAmount = Collections.frequency(tasksForCategory, item.getType().toString());
-            int providedAmount = getItemCount(player, item);
-
-            if (providedAmount >= requiredAmount) {
-                // Spieler hat die tägliche Aufgabe erfolgreich abgeschlossen
-                rewardPlayerForDailyTask(player);
+    public void rewardTopPlayers() {
+        for (String category : categoryManager.getCategories()) {
+            UUID leadingPlayerUUID = getLeadingPlayerForCategory(category);
+            if (leadingPlayerUUID != null) {
+                Player player = Bukkit.getPlayer(leadingPlayerUUID);
+                if (player != null) {
+                    rewardPlayer(player, category);
+                }
             }
         }
     }
 
-    private void rewardPlayerForDailyTask(Player player) {
-        // Belohnen Sie den Spieler für das Erfüllen der täglichen Aufgabe, z.B. Erfahrungspunkte hinzufügen
-        player.giveExp(10); // Beispielbelohnung
+    private void rewardPlayer(Player player, String category) {
+        ItemStack reward = new ItemStack(Material.GOLD_INGOT, 1);
+        player.getInventory().addItem(reward);
+        player.sendMessage("§6Du hast die höchste Punktzahl in der Kategorie " + category + " und erhältst eine Belohnung!");
     }
 
-    private boolean isValidCategory(String category) {
-        return categoryScores.containsKey(category);
+    public List<String> getCategoryLore(String category) {
+        List<String> lore = new ArrayList<>();
+        lore.add("§eTop Spieler in Kategorie '" + category + "':");
+
+        Map<UUID, Integer> categoryScoresMap = categoryScores.get(category);
+        if (categoryScoresMap != null && !categoryScoresMap.isEmpty()) {
+            List<Map.Entry<UUID, Integer>> sortedScores = categoryScoresMap.entrySet()
+                    .stream()
+                    .sorted(Map.Entry.<UUID, Integer>comparingByValue().reversed())
+                    .collect(Collectors.toList());
+
+            int place = 1;
+            for (Map.Entry<UUID, Integer> entry : sortedScores) {
+                if (place <= 5) {
+                    Player player = Bukkit.getPlayer(entry.getKey());
+                    if (player != null) {
+                        lore.add("§7" + place + ". " + player.getName() + ": " + entry.getValue() + " Punkte");
+                        place++;
+                    }
+                } else {
+                    break;
+                }
+            }
+        } else {
+            lore.add("§cKeine Spieler in dieser Kategorie.");
+        }
+
+        return lore;
     }
 
-    private void handleTeamMode(Player player, ItemStack item, String category) {
-        // Team-Modus Logik
-        handleFreeForAll(player, item, category); // Team-Modus ist auch ein "Frei für Alle"
+
+    public void calculateAndStoreRewards() {
+        for (String category : categoryManager.getCategories()) {
+            List<UUID> topPlayers = getTopPlayersForCategory(category, 3);
+            for (int i = 0; i < topPlayers.size(); i++) {
+                UUID playerUUID = topPlayers.get(i);
+                ItemStack reward = new ItemStack(Material.DIAMOND, 3 - i); // 1st: 3 Diamonds, 2nd: 2, 3rd: 1
+                plugin.getVillagerCategoryManager().storeRewardForPlayer(playerUUID, category, reward);
+            }
+
+            UUID topGuildLeader = getLeadingGuildForCategory(category);
+            if (topGuildLeader != null) {
+                ItemStack guildReward = new ItemStack(Material.EMERALD, 5); // 5 Emeralds for the leading guild
+                plugin.getVillagerCategoryManager().storeRewardForGuildLeader(topGuildLeader, category, guildReward);
+            }
+        }
     }
+    private List<UUID> getTopPlayersForCategory(String category, int topN) {
+        List<UUID> topPlayers = new ArrayList<>();
+        try (Connection conn = customDatabaseManager.getConnection()) {
+            String query = "SELECT player_uuid FROM player_scores WHERE category = ? ORDER BY score DESC LIMIT ?";
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setString(1, category);
+                stmt.setInt(2, topN);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    while (rs.next()) {
+                        topPlayers.add(UUID.fromString(rs.getString("player_uuid")));
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Fehler beim Laden der Top-Spieler aus der Datenbank: " + e.getMessage());
+        }
+        return topPlayers;
+    }
+
+    private UUID getLeadingGuildForCategory(String category) {
+        UUID guildLeaderUUID = null;
+        try (Connection conn = customDatabaseManager.getConnection()) {
+            String query = "SELECT guild_name FROM guild_scores WHERE category = ? ORDER BY score DESC LIMIT 1";
+            try (PreparedStatement stmt = conn.prepareStatement(query)) {
+                stmt.setString(1, category);
+                try (ResultSet rs = stmt.executeQuery()) {
+                    if (rs.next()) {
+                        String guildName = rs.getString("guild_name");
+                        guildLeaderUUID = guildManager.getGuildLeader(guildName);
+                    }
+                }
+            }
+        } catch (SQLException e) {
+            plugin.getLogger().severe("Fehler beim Laden der führenden Gilde aus der Datenbank: " + e.getMessage());
+        }
+        return guildLeaderUUID;
+    }
+
+    public List<UUID> getTopPlayersRewards(String category) {
+        return topPlayersRewards.getOrDefault(category, new ArrayList<>());
+    }
+
+    public UUID getTopGuildReward(String category) {
+        return topGuildRewards.get(category);
+    }
+
 }

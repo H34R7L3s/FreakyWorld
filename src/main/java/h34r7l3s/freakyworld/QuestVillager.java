@@ -1,4 +1,3 @@
-
 package h34r7l3s.freakyworld;
 
 import net.dv8tion.jda.api.entities.channel.attribute.IGuildChannelContainer;
@@ -15,9 +14,7 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.event.inventory.InventoryDragEvent;
-import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.BookMeta;
@@ -26,30 +23,51 @@ import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionData;
 import org.bukkit.potion.PotionType;
+import io.th0rgal.oraxen.api.OraxenItems;
+import org.bukkit.scheduler.BukkitRunnable;
 
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
 
 public class QuestVillager implements Listener {
     private FreakyWorld plugin;
-    private Location villagerLocation = new Location(Bukkit.getWorld("World"), -80, 82, 34);
+    private Location villagerLocation = new Location(Bukkit.getWorld("World"), -40, 14, -50);
     private Villager questVillager;
     private DiscordBot discordBot;
     private Set<UUID> hasInteracted = new HashSet<>();
+    private GameLoop gameLoop;
 
-    public QuestVillager(FreakyWorld plugin, DiscordBot discordBot) {
+    public QuestVillager(FreakyWorld plugin, DiscordBot discordBot, GameLoop gameLoop) {
         this.plugin = plugin;
         this.discordBot = discordBot;
-        // Additional setup...
+        this.gameLoop = gameLoop;
     }
+
     private final Set<Material> validMaterials = new HashSet<>(Arrays.asList(
-            Material.CRYING_OBSIDIAN,
-            Material.DIAMOND_SWORD, // Schwert (muss verzaubert werden)
-            Material.IRON_HELMET, Material.IRON_CHESTPLATE, Material.IRON_LEGGINGS, Material.IRON_BOOTS, // Eisen-Rüstungsset
-            Material.ENCHANTED_GOLDEN_APPLE, Material.GOLDEN_APPLE,
-            Material.POTION // Generischer Trank
+            Material.IRON_INGOT,
+            Material.SCAFFOLDING,
+            Material.BOOKSHELF,
+            Material.TNT,
+            Material.ENDER_EYE,
+            Material.DIAMOND,
+            Material.SOUL_CAMPFIRE
     ));
 
+    private final Map<Material, String> materialRewards = new HashMap<>() {{
+        put(Material.IRON_INGOT, "freaky_ingot");
+        put(Material.SCAFFOLDING, "auftragsbuch");
+        put(Material.BOOKSHELF, "freaky_wissen");
+        put(Material.TNT, "kriegsmarke");
+        put(Material.ENDER_EYE, "eisenherz");
+        put(Material.DIAMOND, "freaky_coin");
+        put(Material.SOUL_CAMPFIRE, "freakyworlds_willen");
+    }};
 
+    private Map<UUID, Material> playerSelectedMaterial = new HashMap<>();
+    private Map<UUID, Integer> playerSelectedAmount = new HashMap<>();
 
     public void spawnVillager() {
         questVillager = (Villager) Bukkit.getWorld("World").spawnEntity(villagerLocation, EntityType.VILLAGER);
@@ -61,7 +79,48 @@ public class QuestVillager implements Listener {
         float currentYaw = questVillager.getLocation().getYaw();
         float newYaw = currentYaw + 180;
         newYaw = newYaw % 360; // Stellt sicher, dass der Wert zwischen 0 und 360 liegt
+
+
         questVillager.setRotation(newYaw, questVillager.getLocation().getPitch());
+
+        initializeHugoLookTask();
+    }
+
+    private void initializeHugoLookTask() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (questVillager != null && !questVillager.isDead()) {
+                    lookAtNearestPlayerHugo();
+                }
+            }
+        }.runTaskTimer(plugin, 0L, 40L); // alle 2 Sekunden (40 Ticks)
+    }
+
+    private void lookAtNearestPlayerHugo() {
+        Collection<Player> nearbyPlayers = questVillager.getWorld().getNearbyPlayers(questVillager.getLocation(), 10);
+        Player nearestPlayer = null;
+        double nearestDistance = Double.MAX_VALUE;
+
+        for (Player player : nearbyPlayers) {
+            double distance = player.getLocation().distanceSquared(questVillager.getLocation());
+            if (distance < nearestDistance) {
+                nearestDistance = distance;
+                nearestPlayer = player;
+            }
+        }
+
+        if (nearestPlayer != null) {
+            Location villagerLocation = questVillager.getLocation();
+            Location playerLocation = nearestPlayer.getLocation();
+
+            // Berechne die Richtung zum Spieler und setze die Rotation von Hugo
+            double dx = playerLocation.getX() - villagerLocation.getX();
+            double dz = playerLocation.getZ() - villagerLocation.getZ();
+            float yaw = (float) Math.toDegrees(Math.atan2(-dx, dz));
+            villagerLocation.setYaw(yaw);
+            questVillager.teleport(villagerLocation); // Aktualisiert die Blickrichtung von Hugo
+        }
     }
 
     @EventHandler(priority = EventPriority.HIGH)
@@ -75,18 +134,6 @@ public class QuestVillager implements Listener {
         }
     }
 
-    // Diese Methode überprüft, ob ein Item in das Abgabeinventar gelegt werden darf.
-    private Map<UUID, Material> playerSelectedMaterial = new HashMap<>();
-    private Map<UUID, Integer> playerSelectedAmount = new HashMap<>();
-
-    private Map<UUID, Integer> playerSelectedItemSlot = new HashMap<>();
-
-    private enum PlayerMode {
-        QUEST_ITEM, ITEM_SUBMISSION
-    }
-
-    private Map<UUID, PlayerMode> playerModes = new HashMap<>();
-
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
@@ -94,45 +141,45 @@ public class QuestVillager implements Listener {
         ItemStack clickedItem = event.getCurrentItem();
         String inventoryTitle = event.getView().getTitle();
 
-        // Prüfen, ob das geklickte Inventar oder das Item null ist
         if (clickedInventory == null || clickedItem == null) return;
 
-        // Behandeln von Klicks im "Geben Sie Ihre Items ab" Inventar
         if (inventoryTitle.equals("Geben Sie Ihre Items ab")) {
-            event.setCancelled(true); // Verhindern, dass Items herausgenommen werden können
+            event.setCancelled(true);
 
-            // Prüfen, ob der grüne Wollblock geklickt wurde
             if (event.getRawSlot() == 8 && clickedItem.getType() == Material.GREEN_WOOL) {
-                handleItemSubmission(player, true, -1); // Alle Items des ausgewählten Typs entfernen
+                handleItemSubmission(player, true, -1);
+            } else if (validMaterials.contains(clickedItem.getType())) {
+                handleItemSubmission(player, false, event.getRawSlot());
+            } else {
+                player.sendMessage(ChatColor.RED + "Ungültiges Item angeklickt.");
             }
-            // Prüfen, ob ein gültiges Material geklickt wurde
-            else if (validMaterials.contains(clickedItem.getType())) {
-                handleItemSubmission(player, false, event.getRawSlot()); // Nur den ausgewählten Item-Stack entfernen
-            }
-        }
-
-        // Logik für das "Quest Items" Inventar und andere Fälle
-        else if (inventoryTitle.equals("Quest Items")) {
-            if (validMaterials.contains(clickedItem.getType())) {
-                playerSelectedMaterial.put(player.getUniqueId(), clickedItem.getType());
-                openTradingInterface(player);
+            player.updateInventory();
+        } else if (inventoryTitle.equals("Quest Items")) {
+            if (clickedItem.getType() == Material.WRITTEN_BOOK) {
+                BookMeta clickedBookMeta = (BookMeta) clickedItem.getItemMeta();
+                if (clickedBookMeta != null && clickedBookMeta.hasCustomModelData() && clickedBookMeta.getCustomModelData() == 123456) {
+                    event.setCancelled(true);
+                    openQuestBook(player);
+                }
+            } else {
+                if (validMaterials.contains(clickedItem.getType())) {
+                    playerSelectedMaterial.put(player.getUniqueId(), clickedItem.getType());
+                    openTradingInterface(player);
+                }
             }
         }
     }
-
 
 
     private void openTradingInterface(Player player) {
         Inventory tradeInventory = Bukkit.createInventory(null, 9, "Geben Sie Ihre Items ab");
-        // Füge einen grünen Wolle-Knopf hinzu, der als 'Abgeben' dient
         tradeInventory.setItem(8, createGreenWool());
         player.openInventory(tradeInventory);
     }
-    // Verhindern, dass Items durch Ziehen aus dem Quest-Inventar gezogen werden
+
     @EventHandler
     public void onInventoryDrag(InventoryDragEvent event) {
         if (event.getView().getTitle().equals("Geben Sie Ihre Items ab")) {
-            // Erlaube das Ziehen von gültigen Materialien
             for (ItemStack item : event.getNewItems().values()) {
                 if (!validMaterials.contains(item.getType())) {
                     event.setCancelled(true);
@@ -141,7 +188,6 @@ public class QuestVillager implements Listener {
             }
         }
     }
-
 
     private ItemStack createGreenWool() {
         ItemStack item = new ItemStack(Material.GREEN_WOOL, 1);
@@ -153,42 +199,64 @@ public class QuestVillager implements Listener {
         return item;
     }
 
-
-    // Diese Methode handhabt die Abgabe von Items.
-    // In QuestVillager Klasse
     private void handleItemSubmission(Player player, boolean isWoolBlockClicked, int clickedSlot) {
         UUID playerId = player.getUniqueId();
         if (!playerSelectedMaterial.containsKey(playerId)) return;
 
         Material selectedMaterial = playerSelectedMaterial.get(playerId);
         Inventory playerInv = player.getInventory();
+        int totalAmount = 0;
 
         if (isWoolBlockClicked) {
-            // Wenn der Wollblock geklickt wurde, entfernen Sie bis zu 64 Items des ausgewählten Typs
-            int amountRemoved = removeItemsFromPlayer(player, selectedMaterial, 64, isWoolBlockClicked);
-
-            sendTradeConfirmationToDiscord(player, new ItemStack(selectedMaterial, amountRemoved), amountRemoved);
-            player.sendMessage(ChatColor.GREEN + "Du hast " + amountRemoved + "x " + selectedMaterial.toString() + " abgegeben!");
-            player.updateInventory();
+            totalAmount = countMaterial(playerInv, selectedMaterial);
         } else {
-            // Wenn ein einzelnes Item geklickt wurde, entfernen Sie nur diesen Item-Stack
-            ItemStack itemInSlot = playerInv.getItem(clickedSlot);
-            if (itemInSlot != null && itemInSlot.getType() == selectedMaterial) {
-                int amountToRemove = itemInSlot.getAmount();
-                itemInSlot.setAmount(0);
-                sendTradeConfirmationToDiscord(player, new ItemStack(selectedMaterial, amountToRemove), amountToRemove);
-                player.sendMessage(ChatColor.GREEN + "Du hast " + amountToRemove + "x " + selectedMaterial.toString() + " abgegeben!");
-                player.updateInventory();
+            ItemStack clickedItem = playerInv.getItem(clickedSlot);
+            if (clickedItem != null) {
+                totalAmount = clickedItem.getAmount();
+            } else {
+                player.sendMessage(ChatColor.RED + "Es ist kein Item in diesem Slot.");
+                return;
             }
         }
-        // Aktualisieren oder Zurücksetzen von playerSelectedMaterial
-        playerSelectedMaterial.remove(playerId);
 
-        // Aktualisieren des Spielerinventars, falls notwendig
+        int amountRemoved = removeItemsFromPlayer(player, selectedMaterial, totalAmount, isWoolBlockClicked);
+
+        if (amountRemoved > 0) {
+            plugin.getLogger().info("Player " + player.getName() + " removed " + amountRemoved + " of " + selectedMaterial);
+            updatePlayerProgress(player, amountRemoved, selectedMaterial);
+            int rewardCount = amountRemoved / 1000;
+            int xpEarned = calculateXPEarned(amountRemoved, selectedMaterial);
+
+            // XP hinzufügen
+            gameLoop.addXPToPlayer(player, xpEarned, xpEarned);
+
+            if (rewardCount > 0) {
+                String rewardItem = materialRewards.get(selectedMaterial);
+                for (int i = 0; i < rewardCount; i++) {
+                    giveReward(player, rewardItem);
+                }
+            } else {
+                giveReward(player, "angsthase");
+            }
+
+            sendTradeConfirmationToDiscord(player, new ItemStack(selectedMaterial, amountRemoved), amountRemoved);
+            player.sendMessage(ChatColor.GREEN + "Du hast " + amountRemoved + "x " + selectedMaterial.toString() + " abgegeben und " + rewardCount + " Belohnungen sowie " + xpEarned + " XP erhalten!");
+        } else {
+            plugin.getLogger().warning("Player " + player.getName() + " could not remove items. Amount removed: " + amountRemoved);
+        }
+
         player.updateInventory();
+        playerSelectedMaterial.remove(playerId);
     }
 
 
+
+
+    private int calculateXPEarned(int amountRemoved, Material selectedMaterial) {
+        String category = materialCategories.get(selectedMaterial);
+        int baseXP = categoryXpValues.getOrDefault(category, 0);
+        return amountRemoved * baseXP;
+    }
 
 
     private int countMaterial(Inventory inventory, Material material) {
@@ -201,8 +269,6 @@ public class QuestVillager implements Listener {
         return count;
     }
 
-
-
     private int removeItemsFromPlayer(Player player, Material material, int amountToRemove, boolean isWoolBlockClicked) {
         Inventory playerInv = player.getInventory();
         int totalRemoved = 0;
@@ -213,20 +279,20 @@ public class QuestVillager implements Listener {
                 int amountInStack = item.getAmount();
 
                 if (isWoolBlockClicked) {
-                    // Entfernen Sie alle Items des Typs, wenn der Wollblock angeklickt wurde
                     totalRemoved += amountInStack;
                     playerInv.clear(i);
                 } else {
-                    // Entfernen Sie Items bis zur festgelegten Grenze, wenn ein einzelnes Item geklickt wurde
-                    if (amountInStack > amountToRemove - totalRemoved) {
+                    if (amountInStack >= amountToRemove - totalRemoved) {
                         item.setAmount(amountInStack - (amountToRemove - totalRemoved));
                         totalRemoved = amountToRemove;
                         break;
                     } else {
-                        playerInv.clear(i);
                         totalRemoved += amountInStack;
+                        playerInv.clear(i);
+                    }
 
-                        if (totalRemoved >= amountToRemove) break;
+                    if (totalRemoved >= amountToRemove) {
+                        break;
                     }
                 }
             }
@@ -236,25 +302,25 @@ public class QuestVillager implements Listener {
     }
 
 
-
-
+    private void giveReward(Player player, String rewardItem) {
+        // Use Oraxen API to get and give the item
+        ItemStack oraxenItem = OraxenItems.getItemById(rewardItem).build();
+        if (oraxenItem != null) {
+            player.getInventory().addItem(oraxenItem);
+        } else {
+            player.sendMessage(ChatColor.RED + "Fehler: Belohnung konnte nicht gefunden werden.");
+        }
+    }
 
     public void sendTradeConfirmationToDiscord(Player player, ItemStack itemStack, int amount) {
         if (itemStack == null || player == null) {
-            return; // Sicherstellen, dass weder der Spieler noch der ItemStack null ist.
+            return;
         }
 
-        // Konvertiere das Material des ItemStacks in einen String für die Nachricht.
         String itemName = itemStack.getType().toString();
-
-        // Erstelle die Nachricht, die an Discord gesendet werden soll.
-        String message = player.getName() + " hat " + amount + "x " + itemName + " abgegeben!";
-
-        // Hier würde Ihr DiscordBot die Nachricht an den entsprechenden Kanal senden.
-        // Dies hängt von der Implementierung Ihres DiscordBots ab.
+        String message = player.getName() + " hat " + amount + "x " + itemName+" abgegeben!";
         discordBot.sendMessageToDiscord(message);
     }
-
 
     private ItemStack createNamedItem(Material material, String name) {
         ItemStack item = new ItemStack(material, 1);
@@ -288,62 +354,51 @@ public class QuestVillager implements Listener {
         return item;
     }
 
-
-
-
     // Dieses Event tritt ein, wenn der Spieler das Handelsinventar benutzt
-        @EventHandler
-        public void onTrade(InventoryClickEvent event) {
-            Inventory inv = event.getInventory();
-            if (inv.getHolder() == null && "Geben Sie Ihre Items ab".equals(event.getView().getTitle())) {
-                event.setCancelled(true);
+    @EventHandler
+    public void onTrade(InventoryClickEvent event) {
+        Inventory inv = event.getInventory();
+        if (inv.getHolder() == null && "Geben Sie Ihre Items ab".equals(event.getView().getTitle())) {
+            event.setCancelled(true);
 
-                ItemStack clickedItem = event.getCurrentItem();
-                Player player = (Player) event.getWhoClicked();
+            ItemStack clickedItem = event.getCurrentItem();
+            Player player = (Player) event.getWhoClicked();
 
-                // Überprüfen, ob der grüne Wollblock angeklickt wurde
-                if (clickedItem != null && clickedItem.getType() == Material.GREEN_WOOL) {
-                    // Grüner Wollblock geklickt: Verarbeiten Sie die Abgabe aller Items des ausgewählten Typs
-                    handleItemSubmission(player, true, -1);
-                    player.updateInventory();
-                } else if (clickedItem != null && validMaterials.contains(clickedItem.getType())) {
-                    // Ein spezifisches Item geklickt: Verarbeiten Sie die Abgabe des angeklickten Item-Stacks
-                    handleItemSubmission(player, false, event.getRawSlot());
-                    player.updateInventory();
-                } else {
-                    // Nachricht an den Spieler, wenn auf einen ungültigen oder leeren Slot geklickt wurde
-                    player.sendMessage(ChatColor.RED + "Ungültiges Item angeklickt.");
-                    player.updateInventory();
-                }
+            // Überprüfen, ob der grüne Wollblock angeklickt wurde
+            if (clickedItem != null && clickedItem.getType() == Material.GREEN_WOOL) {
+                // Grüner Wollblock geklickt: Verarbeiten Sie die Abgabe aller Items des ausgewählten Typs
+                handleItemSubmission(player, true, -1);
+                player.updateInventory();
+            } else if (clickedItem != null && validMaterials.contains(clickedItem.getType())) {
+                // Ein spezifisches Item geklickt: Verarbeiten Sie die Abgabe des angeklickten Item-Stacks
+                handleItemSubmission(player, false, event.getRawSlot());
+                player.updateInventory();
+            } else {
+                // Nachricht an den Spieler, wenn auf einen ungültigen oder leeren Slot geklickt wurde
+                player.sendMessage(ChatColor.RED + "Ungültiges Item angeklickt.");
+                player.updateInventory();
             }
         }
-
-
-
-
-
-
-
+    }
 
     private void openQuestGUI(Player player) {
         Inventory questInventory = Bukkit.createInventory(null, 9, "Quest Items");
 
         // Füge die benannten Items zum Inventar hinzu
-        questInventory.setItem(0, createNamedItem(Material.CRYING_OBSIDIAN, "Geheimnisvoller Obsidian"));
-        questInventory.setItem(1, createNamedItem(Material.DIAMOND_SWORD, "Legendäres Schwert (VZ)"));
-        questInventory.setItem(2, createNamedItem(Material.IRON_HELMET, "Robuster Eisenhelm (VZ)"));
-        questInventory.setItem(3, createNamedItem(Material.IRON_CHESTPLATE, "Starke Eisenbrustplatte (VZ)"));
-        questInventory.setItem(4, createNamedItem(Material.IRON_LEGGINGS, "Feste Eisenbeinpanzer(VZ)"));
-        questInventory.setItem(5, createNamedItem(Material.IRON_BOOTS, "Solide Eisenstiefel(VZ)"));
-        questInventory.setItem(6, createNamedItem(Material.ENCHANTED_GOLDEN_APPLE, "Magischer Goldapfel"));
-        questInventory.setItem(7, createNamedItem(Material.POTION, "Mystischer Trank - Das beste vom besten!")); // Dies wird später spezifiziert
+        questInventory.setItem(0, createNamedItem(Material.IRON_INGOT, "Schmiedekunst"));
+        questInventory.setItem(1, createNamedItem(Material.SCAFFOLDING, "Baukuenste"));
+        questInventory.setItem(2, createNamedItem(Material.BOOKSHELF, "Wissenschaft"));
+        questInventory.setItem(3, createNamedItem(Material.TNT, "Kriegsfuehrung"));
+        questInventory.setItem(4, createNamedItem(Material.ENDER_EYE, "Selbstfindung"));
+        questInventory.setItem(5, createNamedItem(Material.DIAMOND, "Reichtum"));
+        questInventory.setItem(6, createNamedItem(Material.SOUL_CAMPFIRE, "Unbekannt"));
+        questInventory.setItem(7, createNamedItem(Material.POTION, "Mystischer Trank - Mich gibts um sonst!")); // Dies wird später spezifiziert
 
         questInventory.setItem(8, createQuestBook());
 
         // Öffne das Inventar für den Spieler
         player.openInventory(questInventory);
     }
-
 
     // In QuestVillager Klasse
     @EventHandler
@@ -382,44 +437,60 @@ public class QuestVillager implements Listener {
             bookMeta.setTitle(ChatColor.MAGIC + "Erben der FreakyWorld" + ChatColor.RESET);
             bookMeta.setAuthor(ChatColor.DARK_PURPLE + "" + ChatColor.ITALIC + "Unbekannt");
 
+            // Setzen des benutzerdefinierten Metadaten-Schlüssels
+            bookMeta.setCustomModelData(123456); // Beispielwert, bitte durch einen eindeutigen Wert ersetzen
 
             // Erstellen der Kapitelbeschreibungen in der Lore
             List<String> lore = new ArrayList<>();
-            lore.add(ChatColor.RESET + "" + ChatColor.LIGHT_PURPLE + "Freaky" + ChatColor.LIGHT_PURPLE + "World" + ChatColor.DARK_PURPLE + " Season" + ChatColor.GOLD + " 3");
-            lore.add(ChatColor.RESET + "" + ChatColor.GREEN + "Kapitel 1: " + ChatColor.GREEN + "" + ChatColor.UNDERLINE + "Portal des Schreckens");
-            lore.add(ChatColor.RESET + "" + ChatColor.YELLOW + "" + "Kapitel 2: " + ChatColor.YELLOW + "Der Schatten der dunkelheit");
-            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GREEN + ""  + "Kapitel 3: " + ChatColor.GREEN  + "Flucht in eine neue Welt");
-            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 4: " + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Geheimnisse in FreakyWorld");
-            lore.add(ChatColor.RESET + "" + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "Kapitel 5: " + ChatColor.DARK_GRAY + "" + ChatColor.STRIKETHROUGH + "????????");
-
-
-
-
-
-
-            List<String> pages = new ArrayList<>();
-            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 3 - NEW ERA\n" + ChatColor.RESET +
-                    ChatColor.DARK_GRAY + "FreakyWorld! Unsere Welt! Endlich... HEIMAT!");
-            pages.add(ChatColor.GOLD + "Was nun???\n" + ChatColor.DARK_GRAY +
-                    ChatColor.RED + "- Die Alte Welt ist noch nicht sicher!\n" + ChatColor.GOLD + "- Rettet so viel ihr koennt!\n" + ChatColor.DARK_GREEN + "- Alle wohl auf?! \n");
-            pages.add(ChatColor.RED + "Aktuelle Lage der Stadt!\n\n" + ChatColor.DARK_PURPLE +
-                    "Wir entwickeln uns! Weiterhin sollten wir Fokus auf Strassenbau und Infrasturktur legen.");
-            pages.add(ChatColor.DARK_BLUE + "Die Alte Welt\n" + ChatColor.DARK_GREEN +
-                    "Die alte Welt kann noch gerettet werden. Sichert unseren geliebten Spawn und macht ihn zu einem besonderen Ort!");
-            pages.add(ChatColor.DARK_BLUE + "Freaky Town\n" + ChatColor.DARK_GRAY +
-                    ChatColor.RED + "- Haltet euch am Schwarzen Brett auf dem Laufenden!\n" + ChatColor.GOLD + "- Wir brauchen weiterhin Ausruestung.\n" + ChatColor.DARK_GREEN + "- Wir brauchen ein Rathaus! \n");
-            pages.add(ChatColor.RED + "Wir versuchen weiterhin unsere Alte Welt zurueckzuerlangen. ");
-            pages.add(ChatColor.DARK_RED + "Nur gemeinsam, sind wir stark!\n\n");
-            bookMeta.setPages(pages);
+            lore.add(ChatColor.RESET + "" + ChatColor.LIGHT_PURPLE + "Freaky" + ChatColor.LIGHT_PURPLE + "World" + ChatColor.DARK_PURPLE + " Season" + ChatColor.GOLD + " 4");
             bookMeta.setLore(lore);
-            book.setItemMeta(bookMeta);
 
+            // Erstellen der Seiteninhalte
+            List<String> pages = new ArrayList<>();
+
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 4 - Überblick\n" + ChatColor.RESET +
+                    ChatColor.DARK_GRAY + "FreakyWorld FAQ im Discord\n" +
+                    "Keine zeitliche Begrenzung\n" +
+                    "Nether und End sofort geöffnet\n");
+
+            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Freies Spielen\n" + ChatColor.RESET +
+                    "Keine Vorgaben für das Spiel\n" +
+                    "Vanilla-Spiel und Freaky Content\n" +
+                    "Alles startet bei Hugo\n");
+
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Hugo und die Kategorien\n" + ChatColor.RESET +
+                    "Schmiedekunst\n" +
+                    "Baukuenste\n" +
+                    "Wissenschaft\n" +
+                    "Kriegsführung\n" +
+                    "Selbstfindung\n" +
+                    "Reichtum\n" +
+                    "Unbekannt\n");
+
+            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Items abgeben\n" + ChatColor.RESET +
+                    "Hugo will viele Items\n" +
+                    "Mehr Items = Mehr freischalten\n" +
+                    "Freaky XP als Belohnung\n" +
+                    "Belohnung für 1.000 Items\n");
+
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Schmied und Bank\n" + ChatColor.RESET +
+                    "Schmied benötigt Items\n" +
+                    "Freaky XP in Bank einzahlen\n");
+
+            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Spielerfortschritt\n" + ChatColor.RESET +
+                    "Mehr Freaky Content = Mehr Fortschritt\n" +
+                    "Dynamische Welt\n" +
+                    "Jeder Spieler hat eigenen Fortschritt\n");
+
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Entdeckung und Innovation\n" + ChatColor.RESET +
+                    "Vieles muss von Spielern entdeckt werden\n");
+
+            bookMeta.setPages(pages);
+            book.setItemMeta(bookMeta);
         }
 
         return book;
     }
-
-
 
 
     private void openQuestBook(Player player) {
@@ -427,15 +498,171 @@ public class QuestVillager implements Listener {
         player.openBook(questBook);
     }
 
-
-
     public void removeQuestVillager() {
-        if (questVillager != null) {
+        if (questVillager != null && !questVillager.isDead()) {
             questVillager.remove();
             questVillager = null;
+            Bukkit.getLogger().info("Quest Villager wurde erfolgreich entfernt.");
+        } else {
+            Bukkit.getLogger().info("Quest Villager war bereits tot oder nicht gesetzt.");
         }
     }
 
+    private void updatePlayerProgress(Player player, int amountSubmitted, Material material) {
+        UUID playerId = player.getUniqueId();
+        String playerName = player.getName();
+        String category = materialCategories.get(material);
+        int xpEarned = amountSubmitted * categoryXpValues.get(category);
+
+        try (Connection conn = gameLoop.getConnection()) {
+            PreparedStatement stmt = conn.prepareStatement(
+                    "INSERT INTO player_progress (uuid, player_name, items_submitted, level, freaky_xp, xp_on_hand) " +
+                            "VALUES (?, ?, ?, ?, ?, ?) " +
+                            "ON CONFLICT(uuid) DO UPDATE SET items_submitted = items_submitted + ?, " +
+                            "level = level + ?, freaky_xp = freaky_xp + ?, xp_on_hand = xp_on_hand + ? WHERE uuid = ?");
+            stmt.setString(1, playerId.toString());
+            stmt.setString(2, playerName);
+            stmt.setInt(3, amountSubmitted);
+            stmt.setInt(4, calculateLevel(amountSubmitted));
+            stmt.setInt(5, xpEarned);
+            stmt.setInt(6, xpEarned); // Initial XP on hand should be the earned XP
+            stmt.setInt(7, amountSubmitted);
+            stmt.setInt(8, calculateLevel(amountSubmitted));
+            stmt.setInt(9, xpEarned);
+            stmt.setInt(10, xpEarned); // Add earned XP to xp_on_hand
+            stmt.setString(11, playerId.toString());
+            stmt.executeUpdate();
+
+            // Update the item category table
+            PreparedStatement categoryStmt = conn.prepareStatement(
+                    "INSERT INTO player_item_categories (uuid, category, items_submitted, freaky_xp, player_name) " +
+                            "VALUES (?, ?, ?, ?, ?) " +
+                            "ON CONFLICT(uuid, category) DO UPDATE SET items_submitted = items_submitted + ?, " +
+                            "freaky_xp = freaky_xp + ?, player_name = ? WHERE uuid = ? AND category = ?");
+            categoryStmt.setString(1, playerId.toString());
+            categoryStmt.setString(2, category);
+            categoryStmt.setInt(3, amountSubmitted);
+            categoryStmt.setInt(4, xpEarned);
+            categoryStmt.setString(5, playerName);
+            categoryStmt.setInt(6, amountSubmitted);
+            categoryStmt.setInt(7, xpEarned);
+            categoryStmt.setString(8, playerName);
+            categoryStmt.setString(9, playerId.toString());
+            categoryStmt.setString(10, category);
+            categoryStmt.executeUpdate();
+
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+
+    private int calculateLevel(int itemsSubmitted) {
+        return itemsSubmitted / 1000; // Beispiel: 1000 Items = 1 Level
+    }
+
+    private int getTotalItemsSubmitted() {
+        int total = 0;
+        try (Connection conn = gameLoop.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT SUM(items_submitted) AS total FROM player_progress");
+             ResultSet rs = stmt.executeQuery()) {
+            if (rs.next()) {
+                total = rs.getInt("total");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return total;
+    }
+    public int getPlayerContribution(Player player) {
+        int playerItems = 0;
+        UUID playerId = player.getUniqueId(); // Spieler-ID abrufen
+        try (Connection conn = gameLoop.getConnection(); // Verbindung von gameLoop abrufen
+             PreparedStatement stmt = conn.prepareStatement("SELECT items_submitted FROM player_progress WHERE uuid = ?")) {
+            stmt.setString(1, playerId.toString());
+            ResultSet rs = stmt.executeQuery();
+            if (rs.next()) {
+                playerItems = rs.getInt("items_submitted");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return playerItems;
+    }
+
+    public double calculatePlayerContributionPercentage(Player player) {
+        int totalItems = getTotalItemsSubmitted();
+        int playerItems = getPlayerContribution(player);
+
+        if (totalItems == 0) return 0;
+
+        return (double) playerItems / totalItems * 100;
+    }
+    private final Map<Material, String> materialCategories = new HashMap<>() {{
+        put(Material.IRON_INGOT, "Schmiedekunst");
+        put(Material.SCAFFOLDING, "Baukünste");
+        put(Material.BOOKSHELF, "Wissenschaft");
+        put(Material.TNT, "Kriegsführung");
+        put(Material.ENDER_EYE, "Selbstfindung");
+        put(Material.DIAMOND, "Reichtum");
+        put(Material.SOUL_CAMPFIRE, "Unbekannt");
+    }};
+
+    private final Map<String, Integer> categoryXpValues = new HashMap<>() {{
+        put("Schmiedekunst", 5);
+        put("Baukünste", 5);
+        put("Wissenschaft", 10);
+        put("Kriegsführung", 10);
+        put("Selbstfindung", 15);
+        put("Reichtum", 20);
+        put("Unbekannt", 20);
+    }};
+
+    public List<String> getTopPlayers() {
+        List<String> topPlayers = new ArrayList<>();
+        try (Connection conn = gameLoop.getConnection();
+             PreparedStatement stmt = conn.prepareStatement("SELECT player_name, freaky_xp FROM player_progress ORDER BY freaky_xp DESC LIMIT 10");
+             ResultSet rs = stmt.executeQuery()) {
+            while (rs.next()) {
+                String playerName = rs.getString("player_name");
+                int xp = rs.getInt("freaky_xp");
+                topPlayers.add(playerName + " - " + xp + " XP");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return topPlayers;
+    }
+
+    public List<String> getTopPlayersByCategory(String category, int limit) {
+        List<String> topPlayers = new ArrayList<>();
+        String sql = "SELECT pic.items_submitted, pp.player_name " +
+                "FROM player_item_categories pic " +
+                "JOIN player_progress pp ON pic.uuid = pp.uuid " +
+                "WHERE pic.category = ? " +
+                "ORDER BY pic.items_submitted DESC " +
+                "LIMIT ?";
+
+        try (Connection conn = gameLoop.getConnection();
+             PreparedStatement pstmt = conn.prepareStatement(sql)) {
+            pstmt.setString(1, category);
+            pstmt.setInt(2, limit);
+            ResultSet rs = pstmt.executeQuery();
+
+            while (rs.next()) {
+                String playerName = rs.getString("player_name");
+                int score = rs.getInt("items_submitted");
+                topPlayers.add(playerName + ": " + score);
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+        return topPlayers;
+    }
+
+
+
+    public Map<Material, String> getMaterialCategories() {
+        return materialCategories;
+    }
 }
-
-

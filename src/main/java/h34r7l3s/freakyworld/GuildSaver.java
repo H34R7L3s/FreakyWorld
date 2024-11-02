@@ -1,29 +1,26 @@
 package h34r7l3s.freakyworld;
 
 import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.configuration.ConfigurationSection;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
 
-import java.io.File;
-import java.io.IOException;
+import javax.sql.DataSource;
 import java.sql.*;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.logging.Level;
 
 public class GuildSaver {
     private final JavaPlugin plugin;
-    private Connection dbConnection;
+    private DataSource dataSource;
 
-    public GuildSaver(JavaPlugin plugin, Connection dbConnection) {
+    public GuildSaver(JavaPlugin plugin, DataSource dataSource) {
         this.plugin = plugin;
-        this.dbConnection = dbConnection;
-        createGuildsTable(); // Erstellen Sie die Gilden-Tabelle in der Datenbank
+        this.dataSource = dataSource;
+        createGuildsTable(); // Create guilds table in the database
+    }
 
+    private Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 
     public void createGuildsTable() {
@@ -36,12 +33,13 @@ public class GuildSaver {
                 "home_location TEXT" +
                 ")";
 
-        try (Statement statement = dbConnection.createStatement()) {
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.execute(createTableSQL);
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Fehler beim Erstellen der Gilden-Tabelle", e);
+            plugin.getLogger().log(Level.SEVERE, "Error creating guilds table", e);
         }
     }
+
     public void createGuildTasksTable() {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS guild_tasks (" +
                 "id INT AUTO_INCREMENT PRIMARY KEY," +
@@ -52,10 +50,10 @@ public class GuildSaver {
                 "FOREIGN KEY (guild_name) REFERENCES guilds(name)" +
                 ")";
 
-        try (Statement statement = dbConnection.createStatement()) {
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.execute(createTableSQL);
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Fehler beim Erstellen der Guild-Tasks-Tabelle", e);
+            plugin.getLogger().log(Level.SEVERE, "Error creating guild tasks table", e);
         }
     }
 
@@ -76,7 +74,7 @@ public class GuildSaver {
                 "messages = VALUES(messages), " +
                 "home_location = VALUES(home_location)";
 
-        try (PreparedStatement preparedStatement = dbConnection.prepareStatement(insertSQL)) {
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(insertSQL)) {
             preparedStatement.setString(1, name);
             preparedStatement.setString(2, description);
             preparedStatement.setString(3, leader);
@@ -85,14 +83,14 @@ public class GuildSaver {
             preparedStatement.setString(6, homeLocation);
             preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Fehler beim Speichern der Gilden-Daten", e);
+            plugin.getLogger().log(Level.SEVERE, "Error saving guild data", e);
         }
     }
 
     public Guild loadGuildData(String guildName) {
         String selectSQL = "SELECT * FROM guilds WHERE name = ?";
 
-        try (PreparedStatement preparedStatement = dbConnection.prepareStatement(selectSQL)) {
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
             preparedStatement.setString(1, guildName);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
@@ -102,7 +100,7 @@ public class GuildSaver {
                 String messagesString = resultSet.getString("messages");
                 String homeLocationString = resultSet.getString("home_location");
 
-                ItemManager itemManager = new ItemManager(dbConnection);
+                ItemManager itemManager = new ItemManager(dataSource);
                 Guild guild = new Guild(guildName, leader, itemManager);
                 guild.setDescription(description);
                 for (String member : membersString.split(",")) {
@@ -116,7 +114,7 @@ public class GuildSaver {
                 return guild;
             }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Fehler beim Laden der Gilden-Daten", e);
+            plugin.getLogger().log(Level.SEVERE, "Error loading guild data", e);
         }
         return null;
     }
@@ -142,32 +140,30 @@ public class GuildSaver {
         }
         return null;
     }
+
     public void saveGuildTask(Guild.GuildTask task, String guildName) {
-        String insertSQL = "INSERT INTO guild_tasks (guild_name, description, assigned_member, status) " +
-                "VALUES (?, ?, ?, ?)";
+        String upsertSQL = "INSERT INTO guild_tasks (id, guild_name, description, assigned_member, status) " +
+                "VALUES (?, ?, ?, ?, ?) " +
+                "ON DUPLICATE KEY UPDATE " +
+                "description = VALUES(description), " +
+                "assigned_member = VALUES(assigned_member), " +
+                "status = VALUES(status)";
 
-        try (PreparedStatement preparedStatement = dbConnection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
-            preparedStatement.setString(1, guildName);
-            preparedStatement.setString(2, task.getDescription());
-            preparedStatement.setString(3, task.getAssignedMember());
-            preparedStatement.setString(4, task.getStatus());
-            int affectedRows = preparedStatement.executeUpdate();
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(upsertSQL)) {
+            preparedStatement.setInt(1, task.getId());
+            preparedStatement.setString(2, guildName);
+            preparedStatement.setString(3, task.getDescription());
+            preparedStatement.setString(4, task.getAssignedMember());
+            preparedStatement.setString(5, task.getStatus());
 
-            if (affectedRows == 0) {
-                throw new SQLException("Creating task failed, no rows affected.");
-            }
-
-            try (ResultSet generatedKeys = preparedStatement.getGeneratedKeys()) {
-                if (generatedKeys.next()) {
-                    task.setId(generatedKeys.getInt(1)); // Hier setzen Sie die ID auf das GuildTask-Objekt
-                } else {
-                    throw new SQLException("Creating task failed, no ID obtained.");
-                }
-            }
+            preparedStatement.executeUpdate();
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Fehler beim Speichern der Gilden-Aufgaben", e);
+            plugin.getLogger().log(Level.SEVERE, "Error saving guild task", e);
         }
     }
+
+
     public void createAlliancesTable() {
         String createTableSQL = "CREATE TABLE IF NOT EXISTS alliances (" +
                 "guild_name_1 VARCHAR(255)," +
@@ -179,19 +175,17 @@ public class GuildSaver {
                 "FOREIGN KEY (guild_name_2) REFERENCES guilds(name)" +
                 ")";
 
-        try (Statement statement = dbConnection.createStatement()) {
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.execute(createTableSQL);
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Fehler beim Erstellen der Allianzen-Tabelle", e);
+            plugin.getLogger().log(Level.SEVERE, "Error creating alliances table", e);
         }
     }
-
-
 
     public void loadGuildTasks(Guild guild) {
         String selectSQL = "SELECT * FROM guild_tasks WHERE guild_name = ?";
 
-        try (PreparedStatement preparedStatement = dbConnection.prepareStatement(selectSQL)) {
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
             preparedStatement.setString(1, guild.getName());
             ResultSet resultSet = preparedStatement.executeQuery();
             while (resultSet.next()) {
@@ -206,10 +200,36 @@ public class GuildSaver {
                 guild.addTask(task);
             }
         } catch (SQLException e) {
-            plugin.getLogger().log(Level.SEVERE, "Fehler beim Laden der Gilden-Aufgaben", e);
+            plugin.getLogger().log(Level.SEVERE, "Error loading guild tasks", e);
         }
     }
 
+    public void deleteGuildTask(int taskId) {
+        String deleteSQL = "DELETE FROM guild_tasks WHERE id = ?";
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(deleteSQL)) {
+            preparedStatement.setInt(1, taskId);
+            preparedStatement.executeUpdate();
+        } catch (SQLException e) {
+            plugin.getLogger().log(Level.SEVERE, "Error deleting guild task", e);
+        }
+    }
 
+    public Guild.GuildRank getMemberRank(String playerName) {
+        String selectSQL = "SELECT rank FROM guild_members WHERE member_name = ?"; // Annahme, dass die Tabelle `guild_members` einen `rank` für jedes Mitglied speichert
 
+        try (Connection connection = getConnection();
+             PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
+            preparedStatement.setString(1, playerName);
+            ResultSet resultSet = preparedStatement.executeQuery();
+
+            if (resultSet.next()) {
+                String rankString = resultSet.getString("rank");
+                return Guild.GuildRank.valueOf(rankString.toUpperCase()); // Konvertiert den Datenbankwert in den GuildRank Enum
+            }
+        } catch (SQLException e) {
+            //.getLogger().log(Level.SEVERE, "Error retrieving guild rank for player: " + playerName, e);
+        }
+
+        return Guild.GuildRank.MEMBER; // Fallback auf MEMBER, falls kein Rang gefunden oder ein Fehler auftritt
+    }
 }

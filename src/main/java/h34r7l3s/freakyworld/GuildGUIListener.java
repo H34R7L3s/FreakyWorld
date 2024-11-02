@@ -1,6 +1,12 @@
 package h34r7l3s.freakyworld;
 
+import net.kyori.adventure.text.ComponentBuilder;
+import net.kyori.adventure.text.event.ClickEvent;
+import net.kyori.adventure.text.event.HoverEvent;
+import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.*;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.Player;
@@ -21,34 +27,56 @@ import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.SkullMeta;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
+import net.md_5.bungee.api.chat.TextComponent;
+import net.kyori.adventure.text.Component;
 
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandExecutor;
+import org.bukkit.command.CommandSender;
+import org.bukkit.event.Listener;
+import org.bukkit.plugin.java.JavaPlugin;
+
+import org.bukkit.Bukkit;
+
+
+import javax.sql.DataSource;
+import java.awt.*;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.*;
+import java.util.List;
 
-public class GuildGUIListener implements Listener {
+public class GuildGUIListener implements Listener, CommandExecutor  {
 
     private final JavaPlugin plugin;
     private final GuildSaver guildSaver;
     private GuildManager guildManager;
     private Map<Player, PlayerState> playerStates = new HashMap<>();
     private Map<Player, Guild> viewedGuilds = new HashMap<>();
+    private final Map<String, String> pendingInvitations = new HashMap<>();
+
 
     public enum PlayerState {
         NONE,
         ADDING_TASK,
         CREATING_ALLIANCE,
+        DELETING_ALLIANCE,
         CREATING_GUILD,
         ADDING_MEMBER,
         REMOVING_MEMBER,
         VIEWING_GUILD,
         SETTING_DESCRIPTION,
-        ADDING_MESSAGE
+        DELETING_TASK,
+        ADDING_MESSAGE,
+        CHANGING_ALLIANCE_STATUS // Falls dieser Zustand auch benötigt wird
     }
 
-    public GuildGUIListener(JavaPlugin plugin, Connection connection) {
+    public GuildGUIListener(JavaPlugin plugin, DataSource dataSource) {
         this.plugin = plugin;
-        this.guildManager = new GuildManager(connection);
-        this.guildSaver = new GuildSaver(plugin, connection);
+        this.guildManager = new GuildManager(dataSource, plugin);
+        this.guildSaver = new GuildSaver(plugin, dataSource);
 
     }
     // Füge diese Methoden zu GuildGUIListener hinzu
@@ -67,7 +95,7 @@ public class GuildGUIListener implements Listener {
 
     public void removeGuildVillager() {
         World world = Bukkit.getWorld("world"); // Ändern Sie "Weltname" in den Namen Ihrer Welt
-        Location villagerLocation = new Location(world, -45, 369, 14); // Ändern Sie die Koordinaten entsprechend der Position des Gildenmeister-Villagers
+        Location villagerLocation = new Location(world, -21, 14, -54); // Ändern Sie die Koordinaten entsprechend der Position des Gildenmeister-Villagers
 
         for (Entity entity : world.getEntities()) {
             if (entity instanceof Villager) {
@@ -118,7 +146,9 @@ public class GuildGUIListener implements Listener {
             // Icon zum Verwalten von Allianzen
             ItemStack manageAlliancesItem = new ItemStack(Material.DIAMOND_SWORD);
             ItemMeta manageAlliancesMeta = manageAlliancesItem.getItemMeta();
-            manageAlliancesMeta.setDisplayName("Allianzen verwalten");
+            manageAlliancesMeta.setDisplayName("Allianzen verwalten (Beta)");
+            //ggfs. Lore einfügen?
+
             manageAlliancesItem.setItemMeta(manageAlliancesMeta);
             guildMenu.setItem(26, manageAlliancesItem); // Platzierung im Inventar anpassen
 
@@ -126,13 +156,15 @@ public class GuildGUIListener implements Listener {
             ItemStack createGuildItem = new ItemStack(Material.GREEN_WOOL);
             ItemMeta createGuildMeta = createGuildItem.getItemMeta();
             createGuildMeta.setDisplayName("Neue Gilde gründen");
+            //ggfs. Lore einfügen
+
+
             createGuildItem.setItemMeta(createGuildMeta);
             guildMenu.setItem(25, createGuildItem);
 
             player.openInventory(guildMenu);
         });
     }
-
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
@@ -155,7 +187,6 @@ public class GuildGUIListener implements Listener {
             ItemStack clickedItem = event.getCurrentItem();
             if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
-            //Player player = (Player) event.getWhoClicked();
             String targetGuildName = clickedItem.getItemMeta().getDisplayName();
             String playerGuildName = guildManager.getPlayerGuild(player.getName()).getName();
 
@@ -172,6 +203,7 @@ public class GuildGUIListener implements Listener {
             }
 
             player.closeInventory(); // Schließt das Inventar
+            return; // Früher Rückkehr, um weitere Verarbeitung zu vermeiden
         }
         if (inventoryTitle.equals("Gilden Menü")) {
             String itemName = currentItem.getItemMeta().getDisplayName();
@@ -197,13 +229,11 @@ public class GuildGUIListener implements Listener {
         }
     }
 
-
     private void handleGuildMenu(InventoryClickEvent event, Player player, ItemStack currentItem, Guild playerGuild) {
         event.setCancelled(true);
         String itemName = currentItem.getItemMeta().getDisplayName();
         Guild clickedGuild = guildManager.getGuild(itemName);
 
-        // Logik für "Neue Gilde gründen"
         if ("Neue Gilde gründen".equals(itemName)) {
             if (playerGuild == null) {
                 playerStates.put(player, PlayerState.CREATING_GUILD);
@@ -215,13 +245,8 @@ public class GuildGUIListener implements Listener {
         } else if (clickedGuild != null && clickedGuild.equals(playerGuild)) {
             viewedGuilds.put(player, clickedGuild);
             showGuildOptions(player, clickedGuild);
-        }
-        if ("Allianzen verwalten".equals(itemName)) {
-            // Call the method to show the Alliances menu
+        } else if ("Allianzen verwalten (Beta)".equals(itemName)) {
             showAllianceOptions(player);
-        } else {
-            // Handle other options in the Guilds menu
-            player.sendMessage("Da ist was schief gelaufen!");
         }
     }
 
@@ -269,8 +294,35 @@ public class GuildGUIListener implements Listener {
             case "Aufgabe/Nachricht hinzufügen":
                 openAddTaskOrMessageMenu(player);
                 break;
+            default:
+                // Hinzufügen der Logik zum Löschen abgeschlossener Aufgaben
+                if (itemName.startsWith("Aufgabe:") && playerGuild.getMemberRank(player.getName()) == Guild.GuildRank.LEADER) {
+                    String taskIdString = currentItem.getItemMeta().getLore().get(0).replace("ID: ", "");
+                    try {
+                        int taskId = Integer.parseInt(taskIdString);
+                        Guild.GuildTask task = playerGuild.findTaskById(taskId);
+
+                        if (task != null && "erledigt".equals(task.getStatus())) {
+                            if (playerGuild.removeTask(taskId, player.getName())) {
+                                player.sendMessage("Aufgabe erfolgreich gelöscht!");
+                                guildSaver.deleteGuildTask(taskId);
+                                playerStates.put(player, PlayerState.VIEWING_GUILD);
+                                showGuildOptions(player, playerGuild);
+                            } else {
+                                player.sendMessage("Fehler beim Löschen der Aufgabe.");
+                            }
+                        } else {
+                            player.sendMessage("Diese Aufgabe ist noch nicht abgeschlossen oder konnte nicht gefunden werden.");
+                        }
+                    } catch (NumberFormatException e) {
+                        player.sendMessage("Fehler: Ungültige Aufgaben-ID.");
+                    }
+                }
+                break;
         }
     }
+
+
 
     private void handlePlayerInvitation(InventoryClickEvent event, Player player, ItemStack currentItem, Guild playerGuild) {
         event.setCancelled(true);
@@ -279,22 +331,95 @@ public class GuildGUIListener implements Listener {
         if (skullMeta.getOwningPlayer() == null) return;
 
         String invitedPlayerName = skullMeta.getOwningPlayer().getName();
-        if (playerGuild != null) {
-            Player invitedPlayer = Bukkit.getPlayer(invitedPlayerName);
-            if (invitedPlayer != null && !playerGuild.isMember(invitedPlayerName)) {
-                guildManager.addMemberToGuild(playerGuild.getName(), invitedPlayerName);
-                player.sendMessage(invitedPlayerName + " wurde zu " + playerGuild.getName() + " hinzugefügt!");
-                invitedPlayer.sendMessage("Du wurdest zu " + playerGuild.getName() + " hinzugefügt!");
+        Player invitedPlayer = Bukkit.getPlayer(invitedPlayerName);
+
+        if (playerGuild != null && invitedPlayer != null) {
+            if (!playerGuild.isMember(invitedPlayerName)) {
+                // Einladung speichern
+                pendingInvitations.put(invitedPlayerName, playerGuild.getName());
+
+                // Nachricht mit klickbaren Optionen senden
+                Component message = Component.text("Du wurdest zu " + playerGuild.getName() + " eingeladen. ");
+                Component accept = Component.text("[Annehmen]")
+                        .color(NamedTextColor.GREEN)
+                        .clickEvent(ClickEvent.runCommand("/gilde annehmen"))
+                        .hoverEvent(HoverEvent.showText(Component.text("Klicke hier, um die Einladung anzunehmen")));
+
+                Component decline = Component.text("[Ablehnen]")
+                        .color(NamedTextColor.RED)
+                        .clickEvent(ClickEvent.runCommand("/gilde ablehnen"))
+                        .hoverEvent(HoverEvent.showText(Component.text("Klicke hier, um die Einladung abzulehnen")));
+
+                message = message.append(accept).append(Component.text(" ")).append(decline);
+
+                invitedPlayer.sendMessage(message);
             } else {
-                player.sendMessage(invitedPlayerName + " ist bereits in einer Gilde oder existiert nicht.");
+                player.sendMessage(invitedPlayerName + " ist bereits in einer Gilde.");
             }
         }
         playerStates.put(player, PlayerState.VIEWING_GUILD);
         showGuildOptions(player, playerGuild);
     }
 
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (!(sender instanceof Player)) return false;
+        Player player = (Player) sender;
+
+        if (command.getName().equalsIgnoreCase("gilde")) {
+            if (args.length == 1) {
+                if (args[0].equalsIgnoreCase("annehmen")) {
+                    if (acceptGuildInvitation(player)) {
+                        player.sendMessage("Du hast die Einladung erfolgreich angenommen.");
+                    }
+                } else if (args[0].equalsIgnoreCase("ablehnen")) {
+                    if (declineGuildInvitation(player)) {
+                        player.sendMessage("Du hast die Einladung erfolgreich abgelehnt.");
+                    }
+                }
+            }
+        }
+        return true;
+    }
+
+    public boolean acceptGuildInvitation(Player player) {
+        String playerName = player.getName();
+        String guildName = pendingInvitations.remove(playerName); // Einladung entfernen, nachdem sie akzeptiert wurde
+
+        if (guildName != null) {
+            Guild guild = guildManager.getGuild(guildName);
+            if (guild != null) {
+                guildManager.addMemberToGuild(guildName, playerName);
+                player.sendMessage("Du bist nun Mitglied der Gilde " + guildName + ".");
+                return true;
+            }
+        }
+        player.sendMessage("Keine offene Einladung gefunden.");
+        return false;
+    }
+
+    public boolean declineGuildInvitation(Player player) {
+        String playerName = player.getName();
+        if (pendingInvitations.remove(playerName) != null) { // Einladung einfach entfernen
+            player.sendMessage("Einladung abgelehnt.");
+            return true;
+        }
+        player.sendMessage("Keine offene Einladung gefunden.");
+        return false;
+    }
+
+
+
     private void handleTaskOrMessageAddition(InventoryClickEvent event, Player player, ItemStack currentItem, Guild playerGuild) {
         event.setCancelled(true);
+        if (playerGuild == null) return;
+
+        Guild.GuildRank rank = playerGuild.getMemberRank(player.getName());
+        if (rank != Guild.GuildRank.LEADER && rank != Guild.GuildRank.OFFICER) {  // Nur Leader und Officer dürfen Aufgaben hinzufügen
+            player.sendMessage("Nur Leader und Officer können Aufgaben hinzufügen.");
+            return;
+        }
+
         ItemMeta meta = currentItem.getItemMeta();
         if (meta == null) return;
 
@@ -308,36 +433,96 @@ public class GuildGUIListener implements Listener {
             player.sendMessage("Bitte gebe die Nachricht für die Gilde im Chat ein.");
         }
     }
-
+    private Map<Integer, Guild.GuildTask> taskMap = new HashMap<>();
     private void handleGuildMessagesAndTasks(InventoryClickEvent event, Player player, ItemStack currentItem, Guild playerGuild) {
         event.setCancelled(true);
-        ItemMeta meta = currentItem.getItemMeta();
-        if (meta == null || playerGuild == null) return;
+        if (playerGuild == null) return;
 
-        if (meta.getDisplayName().equals("Aufgabe")) {
-            List<String> lore = meta.getLore();
-            if (lore != null && !lore.isEmpty()) {
-                String taskIdString = lore.get(0);
+        ItemMeta meta = currentItem.getItemMeta();
+        if (meta == null) return;
+
+        List<String> lore = meta.getLore();
+        if (lore == null || lore.isEmpty()) return;
+
+        if (meta.getDisplayName().startsWith("Aufgabe:")) {
+            String taskIdString = lore.get(0).replace("ID: ", "");
+            try {
                 int taskId = Integer.parseInt(taskIdString);
                 Guild.GuildTask task = playerGuild.findTaskById(taskId);
 
-                if (task != null && task.getStatus().equals("offen")) {
-                    if (playerGuild.assignTaskToMember(taskId, player.getName())) {
-                        player.sendMessage("Du hast die Aufgabe angenommen!");
-                        guildSaver.saveGuildTask(task, playerGuild.getName());
-                    } else {
-                        player.sendMessage("Diese Aufgabe ist bereits angenommen.");
-                    }
-                } else if (task != null && task.getStatus().equals("zugewiesen") && task.getAssignedMember().equals(player.getName())) {
-                    task.completeTask();
-                    player.sendMessage("Aufgabe abgeschlossen!");
-                    guildSaver.saveGuildTask(task, playerGuild.getName());
-                } else {
-                    player.sendMessage("Du kannst diese Aufgabe nicht annehmen oder abschließen.");
+                if (task == null) {
+                    player.sendMessage("Fehler: Aufgabe nicht gefunden.");
+                    return;
                 }
+
+                // Status- und Berechtigungsprüfung
+                if (task.getStatus().equals("abgeschlossen") && playerGuild.getLeader().equals(player.getName())) {
+                    playerGuild.removeTask(taskId, player.getName());
+                    guildSaver.deleteGuildTask(taskId);
+                    player.sendMessage("Abgeschlossene Aufgabe wurde erfolgreich gelöscht.");
+                } else {
+                    // Andernfalls den Status aktualisieren oder Fehlermeldung ausgeben
+                    updateTaskStatus(player, task, playerGuild);
+                    guildSaver.saveGuildTask(task, playerGuild.getName());
+                    updateTaskLore(currentItem, task);
+                }
+            } catch (NumberFormatException e) {
+                player.sendMessage("Fehler: Ungültige Aufgaben-ID.");
+            }
+        } else {
+            player.sendMessage("Das ist eine Nachricht: " + lore.get(0));
+            player.closeInventory();
+        }
+
+        //showGuildOptions(player, playerGuild);
+    }
+
+
+
+    private void updateTaskStatus(Player player, Guild.GuildTask task, Guild playerGuild) {
+        Guild.GuildRank rank = playerGuild.getMemberRank(player.getName());
+
+        if (task.getStatus().equals("offen")) {
+            if (task.getAssignedMember().isEmpty()) {
+                task.setAssignedMember(player.getName());
+                task.setStatus("angenommen");
+                player.sendMessage("Du hast die Aufgabe angenommen!");
+            } else {
+                player.sendMessage("Diese Aufgabe ist bereits angenommen.");
+            }
+        } else if (task.getStatus().equals("angenommen")) {
+            if (task.getAssignedMember().equals(player.getName())) {
+                task.setStatus("abgeschlossen");
+                player.sendMessage("Du hast die Aufgabe abgeschlossen!");
+            } else {
+                player.sendMessage("Nur derjenige, der die Aufgabe angenommen hat, kann sie abschließen.");
+            }
+        } else if (task.getStatus().equals("abgeschlossen")) {
+            if (rank == Guild.GuildRank.LEADER) {
+                playerGuild.removeTask(task.getId(), player.getName());
+                guildSaver.deleteGuildTask(task.getId());
+                player.sendMessage("Die abgeschlossene Aufgabe wurde gelöscht.");
+            } else {
+                player.sendMessage("Nur der Leader kann abgeschlossene Aufgaben löschen.");
             }
         }
     }
+
+    private void updateTaskLore(ItemStack taskItem, Guild.GuildTask task) {
+        ItemMeta meta = taskItem.getItemMeta();
+        if (meta != null) {
+            List<String> lore = new ArrayList<>();
+            lore.add("ID: " + task.getId()); // Sicherstellen, dass die ID der Aufgabe korrekt gesetzt ist
+            lore.add("Status: " + task.getStatus());
+            if (!task.getAssignedMember().isEmpty()) {
+                lore.add("Zugewiesen an: " + task.getAssignedMember());
+            }
+            meta.setLore(lore);
+            taskItem.setItemMeta(meta);
+        }
+    }
+
+
 
 
     private void openAddMemberMenu(Player player) {
@@ -419,7 +604,7 @@ public class GuildGUIListener implements Listener {
         }
     }
 
-    private void openGuildMessagesMenu(Player player, Guild guild) {
+    public void openGuildMessagesMenu(Player player, Guild guild) {
         Inventory messagesMenu = Bukkit.createInventory(null, 54, "Gilden-Nachrichten und Aufgaben");
 
         // Hinzufügen von Nachrichten
@@ -439,8 +624,10 @@ public class GuildGUIListener implements Listener {
         for (Guild.GuildTask task : guild.getTasks()) {
             ItemStack taskItem = new ItemStack(Material.WRITABLE_BOOK);
             ItemMeta meta = taskItem.getItemMeta();
-            meta.setDisplayName(task.getDescription());
+            meta.setDisplayName("Aufgabe: " + task.getDescription());
+
             List<String> lore = new ArrayList<>();
+            lore.add("ID: " + task.getId());
             lore.add("Status: " + task.getStatus());
             if (!task.getAssignedMember().isEmpty()) {
                 lore.add("Zugewiesen an: " + task.getAssignedMember());
@@ -477,35 +664,143 @@ public class GuildGUIListener implements Listener {
         Inventory rankMenu = Bukkit.createInventory(null, 27, "Rang ändern");
 
         for (String member : guild.getMembers()) {
-            if (!member.equals(player.getName())) {
+            if (!member.equals(player.getName()) && !guild.getLeader().equals(member)) {  // Leader kann nicht entfernt werden
                 ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD);
                 SkullMeta skullMeta = (SkullMeta) playerHead.getItemMeta();
                 skullMeta.setOwner(member);
                 skullMeta.setDisplayName(member);
-                playerHead.setItemMeta(skullMeta);
 
-                rankMenu.addItem(playerHead);
+                // Füge den aktuellen Rang des Spielers zur Lore hinzu
+                List<String> lore = new ArrayList<>();
+
+                // Hole den aktuellen Rang aus der Datenbank
+                Guild.GuildRank rank = getMemberRankFromDatabase(guild.getName(), member);
+                lore.add(ChatColor.GRAY + "Aktueller Rang: " + rank.getDisplayName()); // Zeige den Rang in der GUI an
+
+                skullMeta.setLore(lore); // Setze die Lore für das Item
+                playerHead.setItemMeta(skullMeta);
+                rankMenu.addItem(playerHead); // Füge das Item ins Menü ein
             }
         }
 
-        player.openInventory(rankMenu);
+        player.openInventory(rankMenu); // Öffne das Menü für den Spieler
     }
 
-    private void openTreasuryMenu(Player player, Guild guild) {
-        Inventory treasuryMenu = Bukkit.createInventory(null, 27, "Gilden Schatztruhe für " + guild.getName());
+    private Guild.GuildRank getMemberRankFromDatabase(String guildName, String memberName) {
+        Guild.GuildRank rank = Guild.GuildRank.MEMBER; // Standard-Rang ist "Member"
 
-        // Holen Sie die gespeicherten Gegenstände aus der Datenbank
+        String query = "SELECT rank FROM guild_members WHERE guild_name = ? AND player_name = ?";
+
+        try (Connection connection = guildManager.getConnection();
+             PreparedStatement statement = connection.prepareStatement(query)) {
+            statement.setString(1, guildName);
+            statement.setString(2, memberName);
+
+            ResultSet resultSet = statement.executeQuery();
+            if (resultSet.next()) {
+                String rankString = resultSet.getString("rank");
+                rank = Guild.GuildRank.valueOf(rankString); // Rang aus dem Datenbankwert zuordnen
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+
+        return rank;
+    }
+
+
+    @EventHandler
+    public void onInventoryClickRankChange(InventoryClickEvent event) {
+        if (!(event.getWhoClicked() instanceof Player)) return;
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clickedItem = event.getCurrentItem();
+
+        if (clickedItem == null || !clickedItem.hasItemMeta()) return;
+
+        String inventoryTitle = event.getView().getTitle();
+
+        // Cancel click events in the "Rang ändern" inventory to prevent item removal
+        if (inventoryTitle.equals("Rang ändern")) {
+            event.setCancelled(true); // Prevent the player from taking items
+            handleRankChange(event, player); // Handle the rank change logic
+        }
+    }
+    private void handleRankChange(InventoryClickEvent event, Player player) {
+        ItemStack clickedItem = event.getCurrentItem();
+        if (clickedItem == null || !clickedItem.hasItemMeta()) return;
+
+        String targetPlayerName = clickedItem.getItemMeta().getDisplayName(); // Name des Mitglieds
+        Guild playerGuild = guildManager.getPlayerGuild(player.getName());
+
+        if (playerGuild != null) {
+            // Lese den aktuellen Rang des Spielers aus der Gilden-Map
+
+
+            ///// !!!!!!!!!!
+            // Prüfung auf Falschen Eintrag des Spielers
+            // Muss umgeschrieben werden auf DB Prüfung
+            // Prüft aktuell Default Wert aus playerGuild.getMemberRank
+
+
+            //GuildSaver.getMemberRank(player);
+            Guild.GuildRank currentRank = playerGuild.getMemberRank(targetPlayerName);
+
+            // Bestimme den neuen Rang basierend auf dem aktuellen Rang
+            Guild.GuildRank newRank = determineNextRank(currentRank);
+
+            // Aktualisiere den Rang in der Map und in der Datenbank
+            try (Connection connection = guildManager.getConnection()) {
+                PreparedStatement statement = connection.prepareStatement("UPDATE guild_members SET rank = ? WHERE guild_name = ? AND player_name = ?");
+                statement.setString(1, newRank.name()); // Speichern des neuen Rangs als String
+                statement.setString(2, playerGuild.getName());
+                statement.setString(3, targetPlayerName);
+                statement.executeUpdate();
+
+                // Aktualisiere den Rang in der Gilden-Map
+                playerGuild.updateMemberRank(targetPlayerName, newRank); // Aktualisiere den Rang des Spielers in der Map
+
+                player.sendMessage("Du hast den Rang von " + targetPlayerName + " von " + currentRank.getDisplayName() + " zu " + newRank.getDisplayName() + " geändert.");
+                showGuildOptions(player, playerGuild);
+            } catch (SQLException e) {
+                player.sendMessage(ChatColor.RED + "Fehler beim Aktualisieren des Rangs.");
+                e.printStackTrace();
+            }
+        } else {
+            player.sendMessage(ChatColor.RED + "Gilde nicht gefunden.");
+        }
+    }
+
+
+
+    private Guild.GuildRank determineNextRank(Guild.GuildRank currentRank) {
+        switch (currentRank) {
+            case MEMBER:
+                return Guild.GuildRank.OFFICER; // Von Member zu Officer
+            case OFFICER:
+                return Guild.GuildRank.LEADER;  // Von Officer zu Leader
+            case LEADER:
+                return Guild.GuildRank.MEMBER;  // Von Leader zurück zu Member (oder je nach deiner Logik)
+            default:
+                return Guild.GuildRank.MEMBER;  // Default-Fall, wenn kein Rang gefunden wird
+        }
+    }
+
+
+    private Set<Player> playersWithOpenTreasury = new HashSet<>();
+    private void openTreasuryMenu(Player player, Guild guild) {
+        if (playersWithOpenTreasury.contains(player)) {
+            player.sendMessage("Die Schatztruhe ist bereits geöffnet!");
+            return;
+        }
+
+        playersWithOpenTreasury.add(player);
+
+        Inventory treasuryMenu = Bukkit.createInventory(null, 27, "Gilden Schatztruhe für " + guild.getName());
         List<ItemStack> storedItems = guildManager.getGuildItems(guild.getName());
 
-        // Füllen Sie das treasuryMenu mit den gespeicherten Gegenständen
         for (int i = 0; i < storedItems.size() && i < treasuryMenu.getSize(); i++) {
             ItemStack item = storedItems.get(i);
             treasuryMenu.setItem(i, item);
-        }
-
-        // Setzen Sie leere Slots auf null
-        for (int i = storedItems.size(); i < treasuryMenu.getSize(); i++) {
-            treasuryMenu.setItem(i, null);
         }
 
         player.openInventory(treasuryMenu);
@@ -665,16 +960,12 @@ public class GuildGUIListener implements Listener {
         Inventory inventory = event.getInventory();
         String inventoryTitle = event.getView().getTitle();
 
-        // Überprüfen, ob es die Gilden-Schatztruhe ist
         if (inventoryTitle.startsWith("Gilden Schatztruhe für ")) {
             String guildName = inventoryTitle.replace("Gilden Schatztruhe für ", "");
             Guild guild = guildManager.getGuild(guildName);
 
             if (guild != null) {
-                // Löschen Sie alle aktuellen Items aus der Datenbank für diese Gilde
                 guildManager.removeAllGuildItems(guildName);
-
-                // Speichern Sie jedes Item im Inventar in der Datenbank
                 for (int i = 0; i < inventory.getSize(); i++) {
                     ItemStack item = inventory.getItem(i);
                     if (item != null) {
@@ -682,6 +973,8 @@ public class GuildGUIListener implements Listener {
                     }
                 }
             }
+
+            playersWithOpenTreasury.remove(player);
         }
     }
 
@@ -744,8 +1037,6 @@ public class GuildGUIListener implements Listener {
     }
 
 
-
-
     private void handleAllianceMenuInteraction(InventoryClickEvent event, Player player, GuildManager guildManager) {
         ItemStack clickedItem = event.getCurrentItem();
         if (clickedItem == null || clickedItem.getItemMeta() == null) return;
@@ -759,42 +1050,38 @@ public class GuildGUIListener implements Listener {
             return;
         }
 
-        // Prüfen, ob der Spieler berechtigt ist, Allianzaktionen durchzuführen
-        if (!guildManager.isPlayerAllowedToManageAlliances(player.getName(), playerGuild.getName())) {
-            player.sendMessage("Du hast keine Berechtigung, Allianzen zu verwalten.");
-            return;
-        }
-
         switch (itemName) {
             case "Neue Allianz gründen":
-                // Implementierung zum Erstellen einer neuen Allianz
-                // Beispiel: guildManager.createAlliance(playerGuild.getName(), "AndereGilde", "Status");
-                player.sendMessage("Neue Allianz gegründet.");
+                if (!playerGuild.getLeader().equals(player.getName())) {
+                    player.sendMessage("Nur der Leader kann neue Allianzen gründen.");
+                    return;
+                }
+                playerStates.put(player, PlayerState.CREATING_ALLIANCE);
+                player.closeInventory();
+                player.sendMessage("Bitte gebe den Namen der Gilde ein, mit der du eine Allianz gründen möchtest.");
                 break;
 
             case "Allianzen anzeigen":
                 List<String[]> alliances = guildManager.getAlliancesOfGuild(playerGuild.getName());
-                // Hier Code zum Anzeigen der Allianzen
-                player.sendMessage("Beta");
-                // Beispiel: alliances.forEach(a -> player.sendMessage(a[0] + " - " + a[1] + " : " + a[2]));
+                if (alliances.isEmpty()) {
+                    player.sendMessage("Deine Gilde hat derzeit keine Allianzen.");
+                } else {
+                    alliances.forEach(a -> player.sendMessage(a[0] + " - " + a[1] + " : " + a[2]));
+                }
                 break;
 
             case "Status ändern":
-                //Guild playerGuild = guildManager.getPlayerGuild(player.getName());
-                if (playerGuild == null || !playerGuild.getLeader().equals(player.getName())) {
-                    player.sendMessage("Du bist nicht berechtigt, den Allianzstatus zu ändern.");
-                    break;
+                if (!playerGuild.getLeader().equals(player.getName())) {
+                    player.sendMessage("Nur der Leader kann den Allianzstatus ändern.");
+                    return;
                 }
-
                 List<Guild> allGuilds = guildManager.getAllGuilds();
                 allGuilds.remove(playerGuild); // Entfernen der eigenen Gilde aus der Liste
 
-                // GUI erstellen und anzeigen
                 Inventory inv = Bukkit.createInventory(null, 9, "Allianzstatus ändern");
-                // Vorhandene Instanz von playerGuild verwenden
 
                 for (Guild guild : allGuilds) {
-                    ItemStack item = createItemForGuild(guild, playerGuild.getName()); // Übergeben Sie playerGuild.getName() als zweiten Parameter
+                    ItemStack item = createItemForGuild(guild, playerGuild.getName());
                     inv.addItem(item);
                 }
 
@@ -802,28 +1089,32 @@ public class GuildGUIListener implements Listener {
                 break;
 
             case "Allianz löschen":
-                // Implementierung zum Löschen einer Allianz
-                // Beispiel: guildManager.deleteAlliance(guildId1, guildId2);
-                player.sendMessage("Allianz gelöscht. BETA");
+                if (!playerGuild.getLeader().equals(player.getName())) {
+                    player.sendMessage("Nur der Leader kann Allianzen löschen.");
+                    return;
+                }
+                playerStates.put(player, PlayerState.DELETING_ALLIANCE);
+                player.closeInventory();
+                player.sendMessage("Bitte gebe den Namen der Gilde ein, mit der du die Allianz löschen möchtest.");
                 break;
         }
 
         event.setCancelled(true);
     }
+
     private ItemStack createItemForGuild(Guild guild, String playerGuildName) {
-        // Annahme: Eine Methode getAllianceStatus existiert im GuildManager
         String allianceStatus = guildManager.getAllianceStatus(playerGuildName, guild.getName());
 
         Material iconMaterial;
         String displayName;
         switch (allianceStatus) {
             case "Krieg":
-                iconMaterial = Material.DIAMOND_SWORD;
+                iconMaterial = Material.RED_BANNER;
                 displayName = "Krieg mit " + guild.getName();
                 break;
-            case "Frieden":
-                iconMaterial = Material.EMERALD;
-                displayName = "Frieden mit " + guild.getName();
+            case "verbündet":
+                iconMaterial = Material.GREEN_BANNER;
+                displayName = "Verbündet mit " + guild.getName();
                 break;
             default:
                 iconMaterial = Material.WHITE_BANNER;
@@ -834,15 +1125,12 @@ public class GuildGUIListener implements Listener {
         ItemMeta meta = item.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(displayName);
-            // Hier können Sie zusätzliche Informationen in die Lore einfügen
             meta.setLore(Arrays.asList("Klicken, um den Status zu ändern"));
             item.setItemMeta(meta);
         }
 
         return item;
     }
-
-
 
     @EventHandler
     public void onPlayerChatAllianz(AsyncPlayerChatEvent event) {
@@ -856,11 +1144,7 @@ public class GuildGUIListener implements Listener {
             Guild targetGuild = guildManager.getGuild(message);
 
             if (playerGuild != null && targetGuild != null && !playerGuild.equals(targetGuild)) {
-                // Implementieren Sie die Logik zum Erstellen einer Allianz
                 boolean success = guildManager.createAlliance(playerGuild.getName(), targetGuild.getName(), "verbündet");
-
-
-
                 if (success) {
                     player.sendMessage("Allianz mit " + targetGuild.getName() + " erfolgreich gegründet.");
                 } else {
@@ -871,28 +1155,43 @@ public class GuildGUIListener implements Listener {
             }
 
             playerStates.put(player, PlayerState.NONE);
-        }
+        } else if (state == PlayerState.DELETING_ALLIANCE) {
+            event.setCancelled(true);
+            Guild playerGuild = guildManager.getPlayerGuild(player.getName());
+            Guild targetGuild = guildManager.getGuild(message);
 
-        // Weitere Zustände und Logik...
+            if (playerGuild != null && targetGuild != null) {
+                boolean success = guildManager.deleteAlliance(playerGuild.getName(), targetGuild.getName());
+                if (success) {
+                    player.sendMessage("Allianz mit " + targetGuild.getName() + " erfolgreich gelöscht.");
+                } else {
+                    player.sendMessage("Fehler beim Löschen der Allianz.");
+                }
+            } else {
+                player.sendMessage("Ungültige Gildeninformationen.");
+            }
+
+            playerStates.put(player, PlayerState.NONE);
+        }
     }
+
+
     private String determineNewStatus(ItemStack clickedItem) {
         ItemMeta itemMeta = clickedItem.getItemMeta();
         if (itemMeta == null) {
-            return "Unbekannt";
+            return "Unbekannt - nicht implementiert";
         }
 
-        // Angenommen, der Name des Items repräsentiert den aktuellen Status
-        // Wir wechseln den Status basierend auf dem aktuellen
         String currentStatus = itemMeta.getDisplayName();
         switch (currentStatus) {
             case "Krieg":
-                return "Frieden";
-            case "Frieden":
+                return "verbündet";
+            case "verbündet":
                 return "Neutral";
             case "Neutral":
                 return "Krieg";
             default:
-                return "Unbekannt";
+                return "Unbekannt - nicht implementiert";
         }
     }
 

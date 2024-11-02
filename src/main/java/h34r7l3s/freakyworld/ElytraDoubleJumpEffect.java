@@ -2,6 +2,7 @@ package h34r7l3s.freakyworld;
 
 import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.Bukkit;
+import org.bukkit.Color;
 import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
@@ -49,8 +50,9 @@ public class ElytraDoubleJumpEffect implements Listener {
     private void createDarkMysteriousParticles(Player player) {
         // Angepasste Partikeleffekte
         player.getWorld().spawnParticle(Particle.SMOKE_NORMAL, player.getLocation(), 20, 0.5, 0.5, 0.5, 0.05);
-        player.getWorld().spawnParticle(Particle.SPELL_MOB, player.getLocation(), 10, 0.5, 0.5, 0.5, 1.0);
-    }
+
+            }
+
 
     // Weitere Hilfsmethoden und Funktionen können hier hinzugefügt werden
 }

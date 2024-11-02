@@ -75,7 +75,7 @@ public class DiscordBot extends ListenerAdapter {
         EmbedBuilder seasonEmbed = new EmbedBuilder();
         seasonEmbed.setTitle("Freaky Season");
         seasonEmbed.setDescription("Fortschritt der aktuellen Season:");
-        String progress = ":heart: :black_heart: :black_heart: :black_heart: :black_heart:";
+        String progress = ":black_heart: :black_heart: :black_heart: :black_heart: :black_heart:";
         seasonEmbed.addField("Aktueller Fortschritt", progress, false);
         seasonEmbed.setColor(0x9B59B6); // Lila Farbe für diesen Bereich
 
@@ -105,7 +105,14 @@ public class DiscordBot extends ListenerAdapter {
             System.err.println("Konnte den Discord-Kanal nicht finden.");
         }
     }
-
+    public void sendMessageToDiscordStartInfo(String message) {
+        TextChannel channel = jda.getTextChannelById("1046919237081518220"); // Ersetzen Sie YOUR_CHANNEL_ID mit der tatsächlichen ID
+        if (channel != null) {
+            channel.sendMessage(message).queue();
+        } else {
+            System.err.println("Konnte den Discord-Kanal nicht finden.");
+        }
+    }
 
 
     public static int getEventProbability() {
@@ -136,6 +143,34 @@ public class DiscordBot extends ListenerAdapter {
         channel.sendMessage(message).queue();
     }
 
+    //HCFW DOCKER
+    public void announceEventWithTimer(String initiatorName, String eventDescription) {
+        String channelId = "1046919237081518220"; // ID des Info-Kanals
+        TextChannel channel = jda.getTextChannelById(channelId);
+
+        if (channel == null) {
+            System.err.println("Konnte den Discord-Kanal nicht finden.");
+            return;
+        }
+
+        // Formatierte Nachricht mit dem Event-Countdown
+        EmbedBuilder eventEmbed = new EmbedBuilder();
+        eventEmbed.setTitle("HCFW Event!");
+        eventEmbed.setDescription("Nutzt die Gelegenheit und killt Zombies, um die geheimnisvolle Koordinate zu finden.");
+        //eventEmbed.addField("Event-Initiator", initiatorName, false);
+        eventEmbed.addField("Event-Beschreibung", eventDescription, false);
+        eventEmbed.addField("Zeit bis zum Ablauf der Koordinaten", "<t:" + (System.currentTimeMillis() / 1000 + 3600) + ":R>", false); // Discord-Timer auf 1 Stunde setzen
+        eventEmbed.setColor(0x1ABC9C); // Eine auffällige Farbe für das Embed
+
+        // Verwenden eines ScheduledExecutorService für die Verzögerung
+        ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
+        scheduler.schedule(() -> {
+            channel.sendMessageEmbeds(eventEmbed.build()).queue();
+        }, 3, TimeUnit.MINUTES); // Verzögerung um 3 Minuten
+
+        // Scheduler nach der Ausführung herunterfahren
+        scheduler.shutdown();
+    }
 
 
 }

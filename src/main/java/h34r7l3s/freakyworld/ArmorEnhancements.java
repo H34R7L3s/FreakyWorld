@@ -1,5 +1,6 @@
 package h34r7l3s.freakyworld;
 
+//import io.th0rgal.oraxen.api.OraxenItems;
 import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.*;
 import org.bukkit.boss.BarColor;
@@ -13,6 +14,8 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.plugin.java.JavaPlugin;
+import org.bukkit.potion.PotionEffect;
+import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.util.Vector;
 
@@ -48,6 +51,12 @@ public class ArmorEnhancements implements Listener {
             @Override
             public void run() {
                 for (UUID uuid : playerBossBars.keySet()) {
+                    Player player = Bukkit.getPlayer(uuid);
+                    if (player == null || !player.isOnline()) {
+                        // Der Spieler ist offline, gehe zum nächsten Spieler in der Schleife
+                        continue;
+                    }
+
                     BossBar bossBar = playerBossBars.get(uuid);
                     if (bossBar.getColor() == BarColor.PURPLE) {
                         bossBar.setColor(BarColor.YELLOW);
@@ -104,7 +113,7 @@ public class ArmorEnhancements implements Listener {
     private final HashMap<UUID, Long> lastSneakTime = new HashMap<>();
     private final HashMap<UUID, Long> lastBoostTime = new HashMap<>();
     private final HashMap<UUID, Integer> availableBoosts = new HashMap<>();
-    private final long DOUBLE_CLICK_INTERVAL = 500; // 500ms or 0.5 seconds
+    private final long DOUBLE_CLICK_INTERVAL = 5000; // 500ms or 0.5 seconds
     private final long BOOST_COOLDOWN = 5000; // 5000ms or 5 seconds
     private final int MAX_BOOSTS = 2;
 
@@ -175,6 +184,10 @@ public class ArmorEnhancements implements Listener {
 
                 // Verringern Sie die verfügbaren Boosts um 1
                 availableBoosts.put(player.getUniqueId(), availableBoosts.get(player.getUniqueId()) - 1);
+
+                // Apply Slow Falling effect
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 500, 0)); // Dauer in Ticks, 100 Ticks = 5 Sekunden, Stärke 0
+
             }
 
         }
@@ -326,4 +339,48 @@ public class ArmorEnhancements implements Listener {
                 break;
         }
     }
+
+//Einzel Effekte der jew. Rüstungs-Sets:
+    //////  FIRE ///////////
+    ////////////////////////
+    //Feuerresistenz
+    // Wenn in Lava = Regeneration?
+    // Wenn im Nether/LAVA/FEUER dann...
+    // ÜBERLEGUNG: Passiver DMG EFFEKT? - verbrennen (Player, Hostile / Entitys(Mobs wie Pig, Sheep, usw))
+    // --- Feuerschutzring
+    // ENTITY_MOUNT Ghast
+
+    //////  Water ///////////
+    ////////////////////////
+    // Delfine Effekt
+    // Wenn in Wasser = Regeneration?
+    // Wenn im Wasser dann...
+    // -- Night Vision
+    // ÜBERLEGUNG: Passiver DMG EFFEKT? - ertrinken
+    // --- Wasserschutzring
+    // Wasseratmung / canBreatheUnderwater()
+    // ENTITY_MOUNT Delfin
+
+    //////  Stone ///////////
+    ////////////////////////
+    // Night Vision? // Haste?
+    // Wenn Block über Spieler gefunden = Regeneration?  <<<< Fraglich
+    // Wenn am Abbauen dann...
+    // ÜBERLEGUNG: Passiver DMG EFFEKT? - ersticken
+    // --- Giftwolke
+    // Sättigung dafür MINING_FATIGUE / INFESTED?
+    // ENTITY_MOUNT Silberfisch
+
+    //////  AIR ///////////
+    ////////////////////////
+    // Geschwindigkeit? // ELYTRA_GLIDE ?
+    // Wenn kein Block über Spieler gefunden = Regeneration?  <<<< Fraglich
+    // Wenn am Fliegen? / Wenn am Sprinten oder Springen dann....
+    // ÜBERLEGUNG: Passiver DMG EFFEKT? - true damage HURT_BERRY_BUSH
+    // --- Giftwolke
+    // Jump Boost // hasGravity()
+    // ENTITY_MOUNT Phantom
+
+
+
 }

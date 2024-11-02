@@ -1,5 +1,21 @@
 name: FreakyWorld
-version: '${1.1_0_1}'
+version: '${2.1_0_1}'
 main: h34r7l3s.freakyworld.FreakyWorld
-api-version: '1.20'
+api-version: '1.21'
 depend: [Oraxen]
+commands:
+  dragon:
+    description: Verwaltung des Drachen-Events.
+    usage: /<command> [annehmen|ablehnen]
+    permission: freakyworld.dragon
+    permission-message: You do not have permission to use this command.
+  gilde:
+    description: Ein Befehl zum Verwalten von Gilden.
+    usage: /<command>
+    permission: freakyworld.gilde
+    permission-message: You do not have permission to use this command.
+  portalwatcher:
+    description: Erstelle oder entferne den HCFW-Villager.
+    usage: /<command> [spawn|remove]
+    permission: freakyworld.portalwächter
+    permission-message: You do not have permission to use this command.

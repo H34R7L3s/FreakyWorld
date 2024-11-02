@@ -1,116 +1,85 @@
 package h34r7l3s.freakyworld;
 
+import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 
-import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 public class CategoryTaskHandler {
     private final FreakyWorld plugin;
     private final CategoryManager categoryManager;
+    private final CustomDatabaseManager customDatabaseManager;
     private final EventLogic eventLogic;
-    private final Map<Player, Map<String, Integer>> playerProgress; // Spielerfortschritt nach Kategorie
+    private final GuildManager guildManager;
 
-    public CategoryTaskHandler(FreakyWorld plugin, CategoryManager categoryManager, EventLogic eventLogic) {
+    public CategoryTaskHandler(FreakyWorld plugin, CategoryManager categoryManager, EventLogic eventLogic, CustomDatabaseManager customDatabaseManager, GuildManager guildManager) {
         this.plugin = plugin;
         this.categoryManager = categoryManager;
         this.eventLogic = eventLogic;
-        this.playerProgress = new HashMap<>();
+        this.customDatabaseManager = customDatabaseManager;
+        this.guildManager = guildManager;
     }
 
-    // In CategoryTaskHandler
+    public void handleItemSubmission(Player player, ItemStack clickedItem, String category, boolean isGuildSubmission) {
+        Material submittedMaterial = clickedItem.getType();
+        String requiredItem = categoryManager.getTasksForCategory(category).get(0); // Erwartetes Item für die Kategorie
 
-    // Überarbeitete Methode zur Item-Abgabe
-    public void handleItemSubmission(Player player, ItemStack item, String category) {
-        List<String> tasksForCategory = categoryManager.getTasksForCategory(category);
+        int totalItemCount = getItemCount(player, submittedMaterial); // Gesamtanzahl der relevanten Items im Inventar
 
-        if (!tasksForCategory.contains(item.getType().toString())) {
-            player.sendMessage("Dieses Item gehört nicht zur aktuellen Kategorie.");
-            return;
-        }
+        if (submittedMaterial.name().equalsIgnoreCase(requiredItem) && totalItemCount > 0) {
+            removeItems(player, submittedMaterial, totalItemCount); // Alle relevanten Items entfernen
 
-        int currentProgress = playerProgress
-                .computeIfAbsent(player, k -> new HashMap<>())
-                .getOrDefault(category, 0);
-
-        if (currentProgress >= tasksForCategory.size()) {
-            player.sendMessage("Du hast bereits alle Aufgaben in dieser Kategorie erfüllt.");
-            return;
-        }
-
-        String requiredItem = tasksForCategory.get(currentProgress);
-        if (item.getType().toString().equals(requiredItem)) {
-            int requiredAmount = Collections.frequency(tasksForCategory, requiredItem);
-
-            // Count how many of the required items the player has
-            int availableAmount = getItemCount(player, item);
-
-            if (availableAmount >= requiredAmount) {
-                // Remove the required items from the player's inventory
-                removeItemsFromInventory(player, item.getType(), requiredAmount);
-
-                currentProgress++;
-                playerProgress.get(player).put(category, currentProgress);
-
-                if (currentProgress == tasksForCategory.size()) {
-                    eventLogic.handleItemSubmission(player, item, category);
-                    player.sendMessage("Du hast alle Aufgaben in dieser Kategorie erfüllt.");
-                } else {
-                    player.sendMessage("Aufgabe erfüllt! Sammle das nächste Item.");
-                }
+            if (isGuildSubmission) {
+                // Punkte zur Gilde hinzufügen
+                customDatabaseManager.updateGuildScore(guildManager.getPlayerGuild(player.getName()).getName(), category, totalItemCount);
+                player.sendMessage("§aDu hast " + totalItemCount + " " + submittedMaterial.name() + " für deine Gilde abgegeben.");
             } else {
-                player.sendMessage("Du hast nicht genug Items. Benötigte Menge: " + requiredAmount);
+                // Punkte zum Spieler hinzufügen
+                customDatabaseManager.updatePlayerScore(player.getUniqueId(), category, totalItemCount);
+                player.sendMessage("§aDu hast " + totalItemCount + " " + submittedMaterial.name() + " abgegeben und Punkte in der Kategorie " + category + " gesammelt.");
             }
+
         } else {
-            player.sendMessage("Falsches Item abgegeben. Versuche es erneut.");
+            player.sendMessage("§cDas abgegebene Item entspricht nicht den Anforderungen oder du hast nicht genug davon.");
         }
     }
 
-    private int getItemCount(Player player, ItemStack item) {
-        int count = 0;
 
-        for (ItemStack inventoryItem : player.getInventory().getContents()) {
-            if (inventoryItem != null && inventoryItem.getType() == item.getType()) {
-                count += inventoryItem.getAmount();
-            }
-        }
 
-        return count;
-    }
 
-    private void removeItemsFromInventory(Player player, Material material, int amount) {
-        ItemStack[] contents = player.getInventory().getContents();
 
-        for (int i = 0; i < contents.length && amount > 0; i++) {
-            ItemStack stack = contents[i];
+    private void removeItems(Player player, Material material, int amountToRemove) {
+        Inventory inventory = player.getInventory();
+        int amountRemaining = amountToRemove;
 
-            if (stack != null && stack.getType() == material) {
-                int stackAmount = stack.getAmount();
+        for (ItemStack item : inventory.getContents()) {
+            if (item != null && item.getType() == material) {
+                int itemAmount = item.getAmount();
 
-                if (stackAmount <= amount) {
-                    player.getInventory().setItem(i, new ItemStack(Material.AIR));
-                    amount -= stackAmount;
+                if (itemAmount > amountRemaining) {
+                    item.setAmount(itemAmount - amountRemaining);
+                    break;
                 } else {
-                    stack.setAmount(stackAmount - amount);
-                    amount = 0;
+                    inventory.remove(item);
+                    amountRemaining -= itemAmount;
+                    if (amountRemaining <= 0) break;
                 }
             }
         }
-
         player.updateInventory();
     }
 
 
-
-
-
-
-
-    public void resetPlayerProgress(Player player) {
-        playerProgress.remove(player);
+    private int getItemCount(Player player, Material material) {
+        int count = 0;
+        for (ItemStack item : player.getInventory().getContents()) {
+            if (item != null && item.getType() == material) {
+                count += item.getAmount();
+            }
+        }
+        return count;
     }
 }

@@ -1,19 +1,21 @@
 package h34r7l3s.freakyworld;
 
 import org.bukkit.inventory.ItemStack;
-import java.sql.Connection;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+
+import javax.sql.DataSource;
+import java.sql.*;
 import java.util.Base64;
 
 public class ItemManager {
-    private Connection dbConnection;
+    private DataSource dataSource;
 
-    public ItemManager(Connection dbConnection) {
-        this.dbConnection = dbConnection;
-        createItemsTable(); // Erstellen Sie die Tabelle für Gegenstände in der Datenbank
+    public ItemManager(DataSource dataSource) {
+        this.dataSource = dataSource;
+        createItemsTable(); // Create items table in the database
+    }
+
+    private Connection getConnection() throws SQLException {
+        return dataSource.getConnection();
     }
 
     private void createItemsTable() {
@@ -23,7 +25,7 @@ public class ItemManager {
                 "item_data TEXT" +
                 ")";
 
-        try (Statement statement = dbConnection.createStatement()) {
+        try (Connection connection = getConnection(); Statement statement = connection.createStatement()) {
             statement.execute(createTableSQL);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -33,7 +35,7 @@ public class ItemManager {
     public void saveItem(ItemStack item, String guildName) {
         String insertSQL = "INSERT INTO guild_items (guild_name, item_data) VALUES (?, ?)";
 
-        try (PreparedStatement preparedStatement = dbConnection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(insertSQL, Statement.RETURN_GENERATED_KEYS)) {
             preparedStatement.setString(1, guildName);
             String itemData = serializeItemStack(item);
             preparedStatement.setString(2, itemData);
@@ -46,7 +48,7 @@ public class ItemManager {
     public ItemStack loadItem(int itemId) {
         String selectSQL = "SELECT item_data FROM guild_items WHERE id = ?";
 
-        try (PreparedStatement preparedStatement = dbConnection.prepareStatement(selectSQL)) {
+        try (Connection connection = getConnection(); PreparedStatement preparedStatement = connection.prepareStatement(selectSQL)) {
             preparedStatement.setInt(1, itemId);
             ResultSet resultSet = preparedStatement.executeQuery();
             if (resultSet.next()) {
@@ -75,7 +77,6 @@ public class ItemManager {
         return null;
     }
 
-
     public ItemStack deserializeItemStack(String itemData) {
         if (itemData == null) {
             return null;
@@ -90,7 +91,4 @@ public class ItemManager {
 
         return null;
     }
-
-
-
 }

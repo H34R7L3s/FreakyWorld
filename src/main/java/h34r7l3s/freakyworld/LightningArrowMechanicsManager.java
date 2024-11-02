@@ -1,6 +1,7 @@
 package h34r7l3s.freakyworld;
 
 
+import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Arrow;
 import org.bukkit.event.EventHandler;
@@ -35,12 +36,16 @@ public class LightningArrowMechanicsManager implements Listener {
 
             if (arrowItem.hasItemMeta()) {
                 //System.out.println("Arrow has item meta.");
-                String displayName = arrowItem.getItemMeta().getDisplayName();
-                //System.out.println("Arrow Display Name: " + displayName);
+                //String displayName = arrowItem.getItemMeta().getDisplayName();
+
+
+                String displayName = String.valueOf(OraxenItems.getItemById("lightning_arrow").build());
+                 //arrowItem.getItemMeta().getDisplayName();
+                System.out.println("Arrow Display Name: " + displayName);
 
                 if (displayName.contains("Thors Pfeil")) {
                     System.out.println("An arrow has been shot by " + player.getName() + " from location: " + arrow.getLocation().toString());
-                    arrow.setMetadata("ThorArrow", new FixedMetadataValue(plugin, true));
+                    arrow.setMetadata("lightning_arrow", new FixedMetadataValue(plugin, true));
                     //System.out.println("Metadata set for arrow.");
                     lastShotLocation = arrow.getLocation();
                     System.out.println("Last shot location set to: " + lastShotLocation.toString());
@@ -58,7 +63,7 @@ public class LightningArrowMechanicsManager implements Listener {
         if (event.getEntity() instanceof Arrow) {
             Arrow arrow = (Arrow) event.getEntity();
 
-            if (arrow.hasMetadata("ThorArrow")) {
+            if (arrow.hasMetadata("lightning_arrow")) {
                 System.out.println("Arrow has ThorArrow metadata. This is our custom arrow!");
                 processArrowLanding(arrow);
             } else {

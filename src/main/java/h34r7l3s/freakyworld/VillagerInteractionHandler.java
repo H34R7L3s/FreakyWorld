@@ -1,25 +1,24 @@
 package h34r7l3s.freakyworld;
 
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.event.Event;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.inventory.ClickType;
-import org.bukkit.event.inventory.InventoryAction;
-import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.event.inventory.InventoryType;
-import org.bukkit.event.player.PlayerInteractEntityEvent;
+import com.comphenix.protocol.utility.ChatExtensions;
+import org.bukkit.*;
 import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
+import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.inventory.Inventory;
+import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
-import org.bukkit.inventory.meta.SkullMeta;
+import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.persistence.PersistentDataContainer;
 import org.bukkit.persistence.PersistentDataType;
+import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.*;
+import java.util.List;
+import java.util.UUID;
 
 public class VillagerInteractionHandler implements Listener {
 
@@ -27,221 +26,252 @@ public class VillagerInteractionHandler implements Listener {
     private final CategoryManager categoryManager;
     private final EventLogic eventLogic;
     private final CategoryTaskHandler categoryTaskHandler;
+    private final GuildManager guildManager;
 
-    public VillagerInteractionHandler(FreakyWorld plugin, CategoryManager categoryManager, EventLogic eventLogic) {
+    public VillagerInteractionHandler(FreakyWorld plugin, CategoryManager categoryManager, EventLogic eventLogic, GuildManager guildManager) {
         this.plugin = plugin;
         this.categoryManager = categoryManager;
         this.eventLogic = eventLogic;
-        this.categoryTaskHandler = plugin.getCategoryTaskHandler(); // Initialize categoryTaskHandler
+        this.categoryTaskHandler = plugin.getCategoryTaskHandler();
+        this.guildManager = guildManager;
+        plugin.getServer().getPluginManager().registerEvents(this, plugin);
     }
 
     @EventHandler
     public void onPlayerInteractWithVillager(PlayerInteractEntityEvent event) {
-        if (!(event.getRightClicked() instanceof Villager)) {
-            return;
-        }
+        if (!(event.getRightClicked() instanceof Villager)) return;
 
         Villager villager = (Villager) event.getRightClicked();
-        if (villager.getCustomName() != null && villager.getCustomName().equals("Quest Villager")) {
+        PersistentDataContainer data = villager.getPersistentDataContainer();
+        NamespacedKey key = new NamespacedKey(plugin, "quest_villager");
+
+        if (data.has(key, PersistentDataType.STRING) && "bazar_villager".equals(data.get(key, PersistentDataType.STRING))) {
             Player player = event.getPlayer();
             openVillagerGUI(player);
         }
     }
 
-
     private void openVillagerGUI(Player player) {
-        Inventory gui = Bukkit.createInventory(player, 27, "Quest Villager");
+        Inventory gui = Bukkit.createInventory(player, 9, "Quest Auswahl");
 
-        // Schöner Rahmen aus Glasscheiben
-        ItemStack glassPane = new ItemStack(Material.GLASS_PANE);
-        ItemMeta glassMeta = glassPane.getItemMeta();
-        glassMeta.setDisplayName(" ");
-        glassPane.setItemMeta(glassMeta);
+        // Zeigt die verbleibende Zeit bis zur nächsten Belohnung an
+        ItemStack timeItem = new ItemStack(Material.CLOCK);
+        ItemMeta timeMeta = timeItem.getItemMeta();
+        timeMeta.setDisplayName(ChatColor.GOLD + "Zeit bis zur nächsten Belohnung");
+        timeMeta.setLore(List.of("","",ChatColor.YELLOW + "Nächste Belohnung in: ", ChatColor.DARK_AQUA + plugin.getVillagerCategoryManager().formatTimeUntilNextReward()));
+        timeItem.setItemMeta(timeMeta);
+        gui.setItem(0, timeItem);
 
-        for (int i = 0; i < 9; i++) {
-            gui.setItem(i, glassPane); // Obere Reihe
-            gui.setItem(i + 18, glassPane); // Untere Reihe
+        // Belohnungen für den Spieler anzeigen
+        List<ItemStack> rewards = plugin.getVillagerCategoryManager().getStoredRewardsForPlayer(player.getUniqueId());
+        if (!rewards.isEmpty()) {
+            ItemStack rewardItem = new ItemStack(Material.CHEST);
+            ItemMeta meta = rewardItem.getItemMeta();
+            meta.setDisplayName("Belohnungen abholen");
+            meta.setLore(List.of( ChatColor.LIGHT_PURPLE +  "Klicke hier, um deine gespeicherten Belohnungen abzuholen."));
+            rewardItem.setItemMeta(meta);
+            gui.setItem(7, rewardItem);
+        } else {
+            // Debug: Keine Belohnungen gefunden
+            player.sendMessage("Es wurden keine Belohnungen für dich gefunden.");
         }
 
-        for (int i = 1; i < 3; i++) {
-            gui.setItem(i * 9, glassPane); // Linke Spalte
-            gui.setItem(i * 9 + 8, glassPane); // Rechte Spalte
-        }
-
-        // Ermitteln Sie die aktuelle Kategorie aus dem CategoryManager
         String currentCategory = plugin.getVillagerCategoryManager().getCurrentCategory();
+        Material requiredMaterial = Material.matchMaterial(categoryManager.getTasksForCategory(currentCategory).get(0));
 
-        // Kategoriebeschreibung aus dem CategoryManager
-        String categoryDescription = getCategoryItemName(currentCategory); // Verwenden Sie getCategoryItemName
-
-        ItemStack categoryItem = new ItemStack(Material.DIAMOND_PICKAXE); // Beispiel: Pickaxe für Steinsammeln
-        ItemMeta categoryMeta = categoryItem.getItemMeta();
-        categoryMeta.setDisplayName(categoryDescription);
-        categoryItem.setItemMeta(categoryMeta);
-
-        // Führenden Spielerkopf aus dem aktualisierten getPlayerHeadOfLeadingPlayer verwenden
-        ItemStack leadingPlayerHead = getPlayerHeadOfLeadingPlayer(currentCategory);
-        ItemMeta headMeta = leadingPlayerHead.getItemMeta();
-        headMeta.setDisplayName("Führender Spieler");
-        leadingPlayerHead.setItemMeta(headMeta);
-
-        // Legen Sie die Elemente in die GUI fest
-        gui.setItem(10, categoryItem); // Kategoriebeschreibung
-        gui.setItem(13, leadingPlayerHead); // Führender Spielerkopf
-
-        // Aufgaben-Items in die GUI einfügen
-        int taskSlot = 19; // Beginnen Sie ab Slot 19 für Aufgaben-Items
-
-        for (String task : categoryManager.getTasksForCategory(currentCategory)) {
-            // Hier können Sie die Aufgaben-Items erstellen und anpassen
-            ItemStack taskItem = createTaskItem(task, currentCategory);
-            gui.setItem(taskSlot, taskItem);
-            taskSlot++;
+        if (player.hasMetadata("quest1Accepted")) {
+            ItemStack soloSubmissionSlot = new ItemStack(requiredMaterial);
+            ItemMeta soloMeta = soloSubmissionSlot.getItemMeta();
+            soloMeta.setDisplayName("Abgabe für Solo-Quest");
+            soloMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Jeder Spieler sammelt für sich!"));
+            soloSubmissionSlot.setItemMeta(soloMeta);
+            gui.setItem(4, soloSubmissionSlot);
         }
 
-        // Abgabe-Knopf hinzufügen
-        ItemStack submitButton = new ItemStack(Material.GREEN_DYE); // Beispiel: Verwenden Sie grüne Farbe für den Abgabe-Knopf
-        ItemMeta submitButtonMeta = submitButton.getItemMeta();
-        submitButtonMeta.setDisplayName("Abgeben");
-        submitButton.setItemMeta(submitButtonMeta);
-        gui.setItem(26, submitButton); // Abgabe-Knopf
+        if (player.hasMetadata("quest2Accepted")) {
+            ItemStack guildSubmissionSlot = new ItemStack(requiredMaterial);
+            ItemMeta guildMeta = guildSubmissionSlot.getItemMeta();
+            guildMeta.setDisplayName("Abgabe für Gilden-Quest");
+            guildMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Die Gilde sammelt gemeinsam."));
+            guildSubmissionSlot.setItemMeta(guildMeta);
+            gui.setItem(5, guildSubmissionSlot);
+        }
 
-        // GUI anzeigen
+        ItemStack leaderBoard = createLeaderBoardItem(currentCategory);
+        gui.setItem(8, leaderBoard);
+
+        ItemStack quest1Item = new ItemStack(Material.PAPER);
+        ItemMeta quest1Meta = quest1Item.getItemMeta();
+        quest1Meta.setDisplayName("Grundversorgung");
+        quest1Meta.setLore(List.of(ChatColor.GOLD + "Beschaffe: " + ChatColor.DARK_GREEN + categoryManager.getTasksForCategory(currentCategory).get(0), ChatColor.YELLOW + "Klicke hier, um diese Quest anzunehmen."));
+        quest1Item.setItemMeta(quest1Meta);
+        gui.setItem(1, quest1Item);
+
+        ItemStack quest2Item = new ItemStack(Material.PAPER);
+        ItemMeta quest2Meta = quest2Item.getItemMeta();
+        quest2Meta.setDisplayName("Gilden Quest");
+        quest2Meta.setLore(List.of(ChatColor.GOLD + "Gilden-Mitglieder sammeln gemeinsam Items für ihre Gilde.", ChatColor.YELLOW + "Klicke hier, um diese Quest anzunehmen."));
+        quest2Item.setItemMeta(quest2Meta);
+        gui.setItem(2, quest2Item);
+
         player.openInventory(gui);
+        startLeaderboardUpdater(player, gui);
     }
 
 
+    private void startLeaderboardUpdater(Player player, Inventory gui) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (player.getOpenInventory().getTopInventory().equals(gui)) {
+                    // Aktualisiere das Item, das die verbleibende Wartezeit anzeigt
+                    ItemStack timeItem = gui.getItem(0); // Das Zeit-Item ist an Position 0
+                    ItemMeta timeMeta = timeItem.getItemMeta();
+                    timeMeta.setLore(List.of("",ChatColor.YELLOW + "Nächste Belohnung in: ", ChatColor.DARK_AQUA + plugin.getVillagerCategoryManager().formatTimeUntilNextReward()));
 
-
-
-    private ItemStack createTaskItem(String taskDescription, String category) {
-        ItemStack taskItem = new ItemStack(Material.BOOK); // Beispiel: Verwenden Sie ein Buch als Aufgaben-Item
-        ItemMeta taskMeta = taskItem.getItemMeta();
-        taskMeta.setDisplayName(taskDescription);
-
-        // Lore für die Aufgabe hinzufügen
-        List<String> lore = new ArrayList<>();
-        lore.add("Sammle so viele " + getCategoryItemName(category) + " wie möglich,");
-        lore.add("um Glorreichen Reichtum zu erlangen.");
-        taskMeta.setLore(lore);
-
-        taskItem.setItemMeta(taskMeta);
-        return taskItem;
-    }
-
-    private String getCategoryItemName(String category) {
-        List<String> items = categoryManager.getTasksForCategory(category);
-
-        if (!items.isEmpty()) {
-            return items.get(0); // Nehmen Sie das erste Item in der Kategorie als Namen
-        }
-
-        return "Unbekanntes Item"; // Fallback, falls keine Items in der Kategorie vorhanden sind
-    }
-
-
-
-    private void handleItemSubmission(Player player, ItemStack item, String category) {
-        // Führen Sie die Abgabe-Logik hier durch
-        // Dies könnte das Entfernen des abgegebenen Items und das Aktualisieren von Punkten usw. umfassen
-        // Verwenden Sie Ihren vorhandenen Code für die Abgabe-Logik
-        categoryTaskHandler.handleItemSubmission(player, item, category);
-    }
-
-
-    private ItemStack getPlayerHeadOfLeadingPlayer(String category) {
-        // Erstellen Sie eine Map zur Speicherung der führenden Spieler für jede Kategorie
-        Map<String, UUID> leadingPlayers = new HashMap<>();
-
-        // Schleife durch alle Kategorien und ermitteln Sie die führenden Spieler
-        for (String categoryName : categoryManager.getCategories()) {
-            UUID leadingPlayerUUID = eventLogic.getLeadingPlayerForCategory(categoryName);
-
-            if (leadingPlayerUUID != null) {
-                leadingPlayers.put(categoryName, leadingPlayerUUID);
+                    timeItem.setItemMeta(timeMeta);
+                    player.updateInventory();
+                } else {
+                    this.cancel(); // Stop the task if the player closes the inventory
+                }
             }
-        }
-
-        // Überprüfen Sie, ob die angegebene Kategorie einen führenden Spieler hat
-        if (leadingPlayers.containsKey(category)) {
-            UUID leadingPlayerUUID = leadingPlayers.get(category);
-            Player leadingPlayer = Bukkit.getPlayer(leadingPlayerUUID);
-
-            if (leadingPlayer != null) {
-                ItemStack playerHead = new ItemStack(Material.PLAYER_HEAD, 1);
-                SkullMeta meta = (SkullMeta) playerHead.getItemMeta();
-                meta.setOwningPlayer(leadingPlayer);
-                playerHead.setItemMeta(meta);
-                return playerHead;
-            }
-        }
-
-        // Wenn keine führenden Spieler für die Kategorie gefunden wurden, verwenden Sie ein Standard-Item
-        ItemStack defaultHead = new ItemStack(Material.PLAYER_HEAD, 1);
-        SkullMeta meta = (SkullMeta) defaultHead.getItemMeta();
-        meta.setDisplayName("X");
-        defaultHead.setItemMeta(meta);
-        return defaultHead;
+        }.runTaskTimer(plugin, 0L, 20L); // Update every second
     }
+
+
+    private ItemStack createLeaderBoardItem(String category) {
+        ItemStack leaderBoard = new ItemStack(Material.PLAYER_HEAD);
+        ItemMeta meta = leaderBoard.getItemMeta();
+
+        UUID leadingPlayerUUID = eventLogic.getLeadingPlayerForCategory(category);
+        if (leadingPlayerUUID != null) {
+            OfflinePlayer leadingPlayer = Bukkit.getOfflinePlayer(leadingPlayerUUID); // Verwenden Sie OfflinePlayer, um sicherzustellen, dass auch abgemeldete Spieler unterstützt werden
+
+            meta.setDisplayName(ChatColor.GOLD + "Top Spieler: " + category );
+            List<String> lore = List.of(
+                    ChatColor.YELLOW + "Statistik:",
+                    "",
+                    ChatColor.DARK_GREEN + "" + leadingPlayer.getName(),
+                    ChatColor.LIGHT_PURPLE +"Punkte: " + ChatColor.GOLD + eventLogic.getPlayerScoreForCategory(leadingPlayerUUID, category)
+            );
+            meta.setLore(lore);
+
+            if (meta instanceof org.bukkit.inventory.meta.SkullMeta) {
+                ((org.bukkit.inventory.meta.SkullMeta) meta).setOwningPlayer(leadingPlayer);
+            }
+        } else {
+            meta.setDisplayName("Kein führender Spieler");
+            meta.setLore(List.of("Es gibt derzeit keinen führenden Spieler", "in der Kategorie " + category + "."));
+        }
+
+        leaderBoard.setItemMeta(meta);
+        return leaderBoard;
+    }
+
+
+    private String formatTime(long seconds) {
+        long minutes = seconds / 60;
+        long secs = seconds % 60;
+        return String.format("%02d:%02d", minutes, secs);
+    }
+
+
 
 
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
-        if (event.getClickedInventory() == null) return;
+        if (!(event.getWhoClicked() instanceof Player)) return;
 
-        Inventory inventory = event.getClickedInventory();
-        if (inventory.getHolder() instanceof Villager) {
-            Villager villager = (Villager) inventory.getHolder();
-            if ("Quest Villager".equals(villager.getCustomName())) {
-                event.setCancelled(true);
-                event.setResult(Event.Result.DENY);
+        InventoryView view = event.getView();
+        Player player = (Player) event.getWhoClicked();
+        ItemStack clickedItem = event.getCurrentItem();
 
-                Player player = (Player) event.getWhoClicked();
-                ItemStack clickedItem = event.getCurrentItem();
-                if (clickedItem != null && event.getSlotType() != InventoryType.SlotType.OUTSIDE) {
-                    String currentCategory = plugin.getVillagerCategoryManager().getCurrentCategory();
+        if ("Quest Auswahl".equals(view.getTitle())) {
+            event.setCancelled(true);
 
-                    if (event.getSlot() == 26) {
-                        // Der Spieler hat auf den Abgabe-Knopf geklickt
-                        ItemStack submitButton = new ItemStack(Material.GREEN_DYE); // Das Abgabe-Item
-                        ItemMeta submitButtonMeta = submitButton.getItemMeta();
-                        submitButtonMeta.setDisplayName("Abgeben");
-                        submitButton.setItemMeta(submitButtonMeta);
+            if (clickedItem == null || clickedItem.getType() == Material.AIR) return;
 
-                        // Überprüfen, ob der Spieler das Abgabe-Item in der Hand hält
-                        if (player.getInventory().getItemInMainHand().isSimilar(submitButton)) {
-                            handleItemSubmission(player, null, currentCategory);
-                        } else {
-                            player.sendMessage("Du musst das Abgabe-Item in der Hand halten.");
-                        }
+            String displayName = clickedItem.getItemMeta().getDisplayName();
+            String category = plugin.getVillagerCategoryManager().getCurrentCategory();
+
+            if ("Abgabe für Solo-Quest".equals(displayName)) {
+                if (player.hasMetadata("quest1Accepted")) {
+                    categoryTaskHandler.handleItemSubmission(player, clickedItem, category, false);
+                } else {
+                    player.sendMessage("Du musst die Quest 1 annehmen, bevor du Items abgeben kannst.");
+                }
+                player.closeInventory();
+            } else if ("Abgabe für Gilden-Quest".equals(displayName)) {
+                if (guildManager.isPlayerInGuild(player.getName())) {
+                    if (player.hasMetadata("quest2Accepted")) {
+                        categoryTaskHandler.handleItemSubmission(player, clickedItem, category, true);
                     } else {
-                        // Der Spieler hat auf ein Aufgaben-Item geklickt
-                        for (String task : categoryManager.getTasksForCategory(currentCategory)) {
-                            ItemStack taskItem = createTaskItem(task, currentCategory);
-                            if (taskItem.isSimilar(clickedItem)) {
-                                handleItemSubmission(player, clickedItem, currentCategory);
-                                break;
+                        player.sendMessage("Du musst die Gilden-Quest annehmen, bevor du Items abgeben kannst.");
+                    }
+                } else {
+                    player.sendMessage("Du musst Mitglied einer Gilde sein, um diese Quest anzunehmen.");
+                }
+                player.closeInventory();
+            } else if ("Belohnungen abholen".equals(displayName)) {
+                boolean hasRewards = false;
+
+                // Eigene Belohnungen abholen
+                List<ItemStack> playerRewards = plugin.getVillagerCategoryManager().getStoredRewardsForPlayer(player.getUniqueId());
+                if (!playerRewards.isEmpty()) {
+                    for (ItemStack reward : playerRewards) {
+                        player.getInventory().addItem(reward);
+                    }
+                    plugin.getVillagerCategoryManager().clearStoredRewardsForPlayer(player.getUniqueId());
+                    player.sendMessage("Du hast alle gespeicherten Belohnungen abgeholt.");
+                    hasRewards = true;
+                } else {
+                    player.sendMessage("Du hast keine gespeicherten Belohnungen.");
+                }
+
+                // Gildenbelohnungen abholen, falls der Spieler ein Gildenleiter ist
+                Guild playerGuild = guildManager.getPlayerGuild(player.getName());
+                if (playerGuild != null) {
+                    UUID guildLeaderUUID = guildManager.getGuildLeader(playerGuild.getName());
+                    if (guildLeaderUUID != null && guildLeaderUUID.equals(player.getUniqueId())) {
+                        List<ItemStack> guildRewards = plugin.getVillagerCategoryManager().getStoredRewardsForPlayer(guildLeaderUUID);
+                        if (!guildRewards.isEmpty()) {
+                            for (ItemStack reward : guildRewards) {
+                                player.getInventory().addItem(reward);
                             }
+                            plugin.getVillagerCategoryManager().clearStoredRewardsForPlayer(guildLeaderUUID);
+                            player.sendMessage("Du hast alle gespeicherten Belohnungen für deine Gilde abgeholt.");
+                            hasRewards = true;
+                        } else {
+                            player.sendMessage("Deine Gilde wurde gut entlohnt.");
                         }
                     }
                 }
+
+                if (!hasRewards) {
+                    player.sendMessage("Es gibt keine Belohnungen zum Abholen.");
+                }
+
+                player.closeInventory();
+            }
+            else {
+                // Quest 1 oder Quest 2 annehmen
+                if ("Grundversorgung".equals(displayName)) {
+                    player.setMetadata("quest1Accepted", new FixedMetadataValue(plugin, true));
+                    player.sendMessage("Du hast die Quest Grundversorgung angenommen.");
+                } else if ("Gilden Quest".equals(displayName)) {
+                    if (guildManager.isPlayerInGuild(player.getName())) {
+                        player.setMetadata("quest2Accepted", new FixedMetadataValue(plugin, true));
+                        player.sendMessage("Du hast die Gilden Quest angenommen.");
+                    } else {
+                        player.sendMessage("Du musst Mitglied einer Gilde sein, um diese Quest anzunehmen.");
+                    }
+                }
+                player.closeInventory();
             }
         }
     }
 
 
-    private boolean shouldPlayerSubmitItem(Player player, ItemStack item, String category) {
-        // Hier können Sie die Logik hinzufügen, um zu überprüfen, ob der Spieler das Item abgeben sollte.
-        // Zum Beispiel könnten Sie überprüfen, ob das Item eine gültige Aufgabe in der aktuellen Kategorie ist.
-        // Sie können dies mithilfe Ihrer CategoryManager-Klasse tun.
 
-        List<String> tasksForCategory = categoryManager.getTasksForCategory(category);
-
-        if (tasksForCategory.contains(item.getType().toString())) {
-            return true; // Das Item ist für die Abgabe geeignet
-        }
-
-        return false; // Das Item ist nicht für die Abgabe geeignet
-    }
 
 }

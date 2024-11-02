@@ -17,6 +17,7 @@ import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerChatEvent;
 import org.bukkit.event.player.PlayerCommandPreprocessEvent;
 import org.bukkit.event.player.PlayerInteractAtEntityEvent;
+import org.bukkit.event.player.PlayerInteractEntityEvent;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.metadata.MetadataValue;
 import org.bukkit.metadata.Metadatable;
@@ -138,7 +139,7 @@ public class MyVillager implements Listener {
     private BossBar eventBossBar;
     public void createCustomVillager() {
         World world = Bukkit.getWorld("world");
-        Location location = new Location(world, -42, 69, 4);
+        Location location = new Location(world, -59, 14, -54);
         Villager dave = (Villager) world.spawnEntity(location, EntityType.VILLAGER);
         dave.setCustomName("Dave");
         dave.setCustomNameVisible(true);
@@ -164,28 +165,31 @@ public class MyVillager implements Listener {
 
 
     @EventHandler
-    public void onPlayerInteractAtEntity2(PlayerInteractAtEntityEvent event) {
-        if (event.getRightClicked().getType() == EntityType.VILLAGER) {
+    public void onPlayerInteractEntity2(PlayerInteractEntityEvent event) {
+        if (event.getRightClicked() instanceof Villager) {
             Villager villager = (Villager) event.getRightClicked();
-            Location location = villager.getLocation();
+            Location daveLocation = new Location(villager.getWorld(), -59, 14, -54);
             Player player = event.getPlayer();
 
-            if (villager.getCustomName() != null && villager.getCustomName().equals("Dave") && location.getBlockX() == -42 && location.getBlockY() == 69 && location.getBlockZ() == 4) {
-                event.setCancelled(true); // Verhindert, dass weitere Interaktionen ausgelöst werden
+            // Überprüfe, ob der Villager "Dave" ist und an der erwarteten Position steht
+            if ("Dave".equals(ChatColor.stripColor(villager.getCustomName())) && villager.getLocation().equals(daveLocation)) {
+                event.setCancelled(true); // Verhindert weitere Interaktionen
                 villager.setAI(false);
                 villager.setInvulnerable(true);
+
                 if (isEventActive) {
                     player.sendMessage(ChatColor.RED + "Es läuft bereits ein Event. Bitte warte, bis es vorbei ist.");
                     return;
                 }
 
                 if (playerEventInfoMap.containsKey(player.getUniqueId())) {
-                    player.sendMessage(ChatColor.RED + "Du hast bereits Eventinformationen eingegeben / beende die Eingabe. Kein zurück mehr.");
+                    player.sendMessage(ChatColor.RED + "Du hast bereits Eventinformationen eingegeben. Keine weiteren Änderungen möglich.");
                     return;
                 }
 
                 playerEventInfoMap.put(player.getUniqueId(), new EventInfo(player.getUniqueId()));
-                player.sendMessage(ChatColor.YELLOW + "Wann gehts los? (in Minuten):");
+                player.sendMessage(ChatColor.YELLOW + "Wann geht es los? (in Minuten):");
+                player.sendMessage(ChatColor.YELLOW + "(Tippe Abbruch zum beenden)");
             }
         }
     }
@@ -198,6 +202,16 @@ public class MyVillager implements Listener {
 
         if (playerEventInfoMap.containsKey(playerUUID)) {
             EventInfo eventInfo = playerEventInfoMap.get(playerUUID);
+
+            String message = event.getMessage();
+
+            // Prüfen, ob der Spieler "Abbruch" eingegeben hat
+            if (message.equalsIgnoreCase("Abbruch")) {
+                playerEventInfoMap.remove(playerUUID);
+                player.sendMessage(ChatColor.RED + "Eventerstellung abgebrochen.");
+                event.setCancelled(true);
+                return;
+            }
 
             try {
                 int inputMinutes = Integer.parseInt(event.getMessage());
