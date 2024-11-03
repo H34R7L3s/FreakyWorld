@@ -693,55 +693,50 @@ public class ArmorEnhancements implements Listener {
 
 
     /////
-    //////
-    ////////Sky Rüstung
-// Constants for Sky Armor control
+    ////// Sky Rüstung
+    // Sky Armor-specific boost and glide mechanics
+    // Sky Armor-specific glide mechanics
     private final Map<UUID, Long> cloudWalkerCooldowns = new HashMap<>();
     private static final long CLOUD_WALKER_COOLDOWN = 5000; // 5 seconds cooldown
     private static final int GLIDE_DURATION = 800; // Glide duration in ticks
     private static final int DESCENT_HOLD_DURATION = 50; // 2.5 seconds in ticks
-    //private static final int MAX_BOOSTS = 2; // Maximum boosts
 
-    // Track shifts, boosts, and airborne status for Sky Armor players
-    private final Map<UUID, Integer> airborneTime = new HashMap<>();
+    // Track airborne status and shift hold for descent activation
     private final Map<UUID, Long> shiftHoldStartTime = new HashMap<>();
-    //private final Map<UUID, Integer> availableBoosts = new HashMap<>(); // Boosts per player
 
     @EventHandler
     public void onPlayerJumpSkyRivals(PlayerJumpEvent event) {
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
 
+        // Activate Sky Armor glide mechanics if wearing Sky Armor
         if (isWearingFullArmor(player, ArmorType.SKY)) {
             long currentTime = System.currentTimeMillis();
 
-            // Respect cooldown
+            // Respect cooldown before initiating another glide
             if (cloudWalkerCooldowns.containsKey(playerId) && currentTime - cloudWalkerCooldowns.get(playerId) < CLOUD_WALKER_COOLDOWN) {
                 return;
             }
 
-            // Activate gliding and initiate boost chain
-            initiateSkyGlideBoost(player);
+            // Start gliding with Riptide effect
+            initiateSkyGlide(player);
             cloudWalkerCooldowns.put(playerId, currentTime); // Set cooldown
         }
     }
 
-    private void initiateSkyGlideBoost(Player player) {
-        UUID playerId = player.getUniqueId();
+    private void initiateSkyGlide(Player player) {
+        // Start Riptide visual effect and enter gliding mode
+        player.setRiptiding(true); // Activate Riptide effect for animation
+        player.setGliding(true); // Enter glide mode for smooth control
+        spawnCloudTrailParticles(player.getLocation()); // Visual trail effect
 
-        // Set initial forward boost
-        Vector direction = player.getLocation().getDirection().normalize().multiply(1.5).setY(0.8);
-        player.setVelocity(direction);
-        player.setGliding(true);
+        // Play sound to enhance feedback
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PHANTOM_FLAP, 1.0f, 1.0f);
-        spawnCloudTrailParticles(player.getLocation());
+
+        // Slow Falling for smooth glide experience
         player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, GLIDE_DURATION, 1, true, false, false));
 
-        // Initialize boost count if not set
-        availableBoosts.putIfAbsent(playerId, MAX_BOOSTS);
-        int boostsRemaining = availableBoosts.get(playerId);
-
-        // Listen for reboost or Riptide descent
+        // Listen for Shift hold to trigger descent after gliding
         new BukkitRunnable() {
             int ticksElapsed = 0;
 
@@ -749,75 +744,40 @@ public class ArmorEnhancements implements Listener {
             public void run() {
                 ticksElapsed++;
 
+                // Stop if the player lands
                 if (player.isOnGround()) {
-                    resetBoost(player); // Reset on ground contact
+                    player.setRiptiding(false); // Stop Riptide animation on landing
+                    player.removePotionEffect(PotionEffectType.SLOW_FALLING);
                     this.cancel();
                     return;
                 }
 
-                // Check if Shift is held for descent after all boosts used
-                if (player.isSneaking() && boostsRemaining == 0 && ticksElapsed >= DESCENT_HOLD_DURATION) {
+                // Check if Shift is held long enough for descent
+                if (player.isSneaking() && ticksElapsed >= DESCENT_HOLD_DURATION) {
                     activateRiptideDescent(player);
                     this.cancel();
-                    return;
-                }
-
-                // Handle reboost in air on Shift-Shift (if available)
-                if (boostsRemaining > 0 && detectDoubleShift(player)) {
-                    Vector newBoostDirection = player.getLocation().getDirection().normalize().multiply(1.5).setY(0.8);
-                    player.setVelocity(newBoostDirection); // Apply additional boost in air
-                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PHANTOM_FLAP, 1.0f, 1.2f);
-                    spawnCloudTrailParticles(player.getLocation());
-
-                    // Decrease boosts and reset cooldown if none remain
-                    availableBoosts.put(playerId, boostsRemaining - 1);
-                    if (availableBoosts.get(playerId) == 0) {
-                        cloudWalkerCooldowns.put(playerId, System.currentTimeMillis());
-                    }
                 }
             }
         }.runTaskTimer(plugin, 0L, 5L); // Check every 5 ticks
     }
 
     private void activateRiptideDescent(Player player) {
+        // End gliding mode and start Riptide descent animation
         player.setGliding(false);
+        player.setRiptiding(true); // Visual Riptide descent effect
         player.removePotionEffect(PotionEffectType.SLOW_FALLING);
 
-        // Sharp downward pull with Riptide effect
+        // Sharp downward boost for Riptide descent
         player.setVelocity(new Vector(0, -2.5, 0));
-        player.playEffect(EntityEffect.HURT); // Riptide spin effect
+        player.playEffect(EntityEffect.HURT); // Spin effect during descent
         player.getWorld().playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 1.0f);
         spawnFallTrailParticles(player.getLocation());
 
-        // Reset boosts for the next glide sequence
-        resetBoost(player);
+        // Reset cooldown for the next glide
+        cloudWalkerCooldowns.put(player.getUniqueId(), System.currentTimeMillis());
     }
 
-    // Reset boosts and cooldown
-    private void resetBoost(Player player) {
-        UUID playerId = player.getUniqueId();
-        availableBoosts.put(playerId, MAX_BOOSTS);
-        cloudWalkerCooldowns.put(playerId, System.currentTimeMillis());
-    }
-
-    // Check for double shift
-    private boolean detectDoubleShift(Player player) {
-        UUID playerId = player.getUniqueId();
-        long currentTime = System.currentTimeMillis();
-
-        // Track the double shift timing
-        if (shiftHoldStartTime.containsKey(playerId)) {
-            long lastShift = shiftHoldStartTime.get(playerId);
-            if (currentTime - lastShift <= 300) { // Adjust timing for double shift
-                shiftHoldStartTime.remove(playerId); // Reset
-                return true; // Double shift detected
-            }
-        }
-        shiftHoldStartTime.put(playerId, currentTime);
-        return false;
-    }
-
-    // Particles for gliding trail
+    // Cloud particle trail for gliding
     private void spawnCloudTrailParticles(Location location) {
         for (int i = 0; i < 10; i++) {
             Location particleLoc = location.clone().add(
@@ -829,7 +789,7 @@ public class ArmorEnhancements implements Listener {
         }
     }
 
-    // Particles for Riptide descent
+    // Particles for Riptide descent trail
     private void spawnFallTrailParticles(Location location) {
         for (int i = 0; i < 15; i++) {
             Location particleLoc = location.clone().add(
