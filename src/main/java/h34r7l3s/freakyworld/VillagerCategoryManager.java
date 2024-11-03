@@ -104,11 +104,11 @@ public class VillagerCategoryManager {
 
         // Wähle 2 zufällige Items aus der gewählten Kategorie
         List<String> randomItems = chooseRandomItemsFromCategory(this.currentCategory, 2);
-        plugin.getLogger().info("Heutige Kategorie: " + this.currentCategory + " - Zufällige Items: " + randomItems);
+        plugin.getLogger().info("Kategorie: " + this.currentCategory + " - Items: " + randomItems);
 
         // Erzeuge die Event-Beschreibung mit der Kategorie und den Items
-        String eventDescription = "Heutige Kategorie: **" + this.currentCategory + "**\n" +
-                "Zufällige Items zum Sammeln: **" + String.join(", ", randomItems) + "**";
+        String eventDescription = "Aktuelle Kategorie: **" + this.currentCategory + "**\n" +
+                "Sammle: **" + String.join(", ", randomItems) + "**";
 
         // Event über Discord senden
         plugin.getDiscordBot().announceEventWithTimer("Event Manager", eventDescription, "Zeit verbleibend: ",1800);

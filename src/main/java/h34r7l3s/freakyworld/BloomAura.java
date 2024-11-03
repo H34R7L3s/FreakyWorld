@@ -1,12 +1,10 @@
 package h34r7l3s.freakyworld;
 
 
-import org.bukkit.Color;
+import org.bukkit.*;
 import io.th0rgal.oraxen.api.OraxenItems;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Particle;
 import org.bukkit.block.Block;
+import org.bukkit.block.BlockState;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -19,8 +17,7 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.Bukkit;
-import org.bukkit.Tag;
+
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -181,7 +178,7 @@ public class BloomAura implements Listener {
                     Block block = location.clone().add(x, y, z).getBlock();
                     Material blockType = block.getType();
 
-                    // Check for Ageable blocks (e.g., wheat, carrots, potatoes)
+                    // Accelerate Ageable crops (e.g., wheat, carrots, potatoes)
                     if (block.getBlockData() instanceof org.bukkit.block.data.Ageable) {
                         org.bukkit.block.data.Ageable ageable = (org.bukkit.block.data.Ageable) block.getBlockData();
                         if (ageable.getAge() < ageable.getMaximumAge()) {
@@ -189,26 +186,53 @@ public class BloomAura implements Listener {
                             block.setBlockData(ageable);
                         }
                     }
-                    // Check for Saplings (e.g., oak, birch, spruce, etc.)
-                    else if (blockType == Material.OAK_SAPLING || blockType == Material.BIRCH_SAPLING ||
-                            blockType == Material.SPRUCE_SAPLING || blockType == Material.JUNGLE_SAPLING ||
-                            blockType == Material.ACACIA_SAPLING || blockType == Material.DARK_OAK_SAPLING) {
-                        block.setType(blockType);
+
+                    // Simulate bonemeal effect for saplings
+                    else if (isSapling(blockType)) {
+                        simulateBoneMeal(block);
                     }
-                    // Check for Bamboo and Bamboo Saplings
+
+                    // Bamboo and Bamboo Saplings - simulate bonemeal effect
                     else if (blockType == Material.BAMBOO || blockType == Material.BAMBOO_SAPLING) {
-                        block.setType(blockType);
+                        simulateBoneMeal(block);
                     }
-                    // Check for Cactus or Sugar Cane (place above air)
-                    else if ((blockType == Material.CACTUS || blockType == Material.SUGAR_CANE) &&
-                            block.getRelative(0, 1, 0).getType() == Material.AIR) {
-                        block.getRelative(0, 1, 0).setType(blockType);
+
+                    // Cactus and Sugar Cane - add another layer
+                    else if (blockType == Material.CACTUS || blockType == Material.SUGAR_CANE) {
+                        Block above = block.getRelative(0, 1, 0);
+                        if (above.getType() == Material.AIR) {
+                            above.setType(blockType);
+                        }
                     }
-                    // Add more checks for other plant-like blocks as needed
+
+                    // Handle other plants and growth triggers
+                    else if (blockType == Material.MELON_STEM || blockType == Material.PUMPKIN_STEM) {
+                        simulateBoneMeal(block);
+                    }
+
+                    // Apply additional plant types as needed here
                 }
             }
         }
     }
+
+    // Checks if a block is a sapling
+    private boolean isSapling(Material blockType) {
+        return blockType == Material.OAK_SAPLING || blockType == Material.BIRCH_SAPLING ||
+                blockType == Material.SPRUCE_SAPLING || blockType == Material.JUNGLE_SAPLING ||
+                blockType == Material.ACACIA_SAPLING || blockType == Material.DARK_OAK_SAPLING;
+    }
+
+    // Simulate the effect of bonemeal
+    private void simulateBoneMeal(Block block) {
+        BlockState state = block.getState();
+        // Trigger a growth stage if possible
+        state.update(true, false);
+        block.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, block.getLocation(), 10, 0.5, 0.5, 0.5, 0.1);
+        block.getWorld().playSound(block.getLocation(), Sound.ITEM_BONE_MEAL_USE, 0.4f, 1.0f);
+    }
+
+
 
 
     private boolean isNearWater(Location location) {
