@@ -77,7 +77,7 @@ public class DamageApplicationListener implements Listener {
     private void applySlowingEffect(Entity target, double effectDuration) {
         // Logik für das Verlangsamen/Einfrieren des Ziels
         if (target instanceof LivingEntity) {
-            ((LivingEntity) target).addPotionEffect(new PotionEffect(PotionEffectType.SLOW, (int) (effectDuration * 20), 1)); // Verlangsamen
+            ((LivingEntity) target).addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, (int) (effectDuration * 20), 1)); // Verlangsamen
         }
     }
 }

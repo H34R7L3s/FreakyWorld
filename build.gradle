@@ -27,7 +27,7 @@ repositories {
 
 dependencies {
     compileOnly("io.th0rgal:oraxen:1.181.0")
-    compileOnly "io.papermc.paper:paper-api:1.20.1-R0.1-SNAPSHOT"
+    compileOnly "io.papermc.paper:paper-api:1.21.1-R0.1-SNAPSHOT"
     implementation group: 'net.dv8tion', name: 'JDA', version: '5.0.0-beta.17'
     implementation 'org.yaml:snakeyaml:2.2'
     // Fügen Sie die Abhängigkeit zum SQLite-JDBC-Treiber hinzu

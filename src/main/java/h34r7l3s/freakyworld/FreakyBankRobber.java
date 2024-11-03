@@ -48,7 +48,7 @@ public class FreakyBankRobber implements Listener {
             bankRobberVillager.setCustomName(VILLAGER_NAME);
             bankRobberVillager.setCustomNameVisible(true);
             bankRobberVillager.setAI(false); // Disable AI to prevent movement
-            bankRobberVillager.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 255, false, false)); // Prevent movement
+            bankRobberVillager.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, Integer.MAX_VALUE, 255, false, false)); // Prevent movement
             bankRobberVillager.setInvulnerable(true); // Make the villager unkillable
 
             // Kleidung und Effekte für den Villager
@@ -484,7 +484,7 @@ public class FreakyBankRobber implements Listener {
             // Ensure villager account exists
             plugin.getLogger().info("Ensuring villager account exists...");
             try (PreparedStatement stmt = connection.prepareStatement(
-                    "INSERT IGNORE INTO bank_robber_data (uuid, villager_account, bonus) VALUES ('villager', 0, 0)")) {
+                    "INSERT INTO bank_robber_data (uuid, villager_account, bonus) VALUES ('villager', 0, 0)")) {
                 int rowsAffected = stmt.executeUpdate();
                 if (rowsAffected > 0) {
                     plugin.getLogger().info("Villager account inserted into bank_robber_data table.");

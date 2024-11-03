@@ -161,7 +161,7 @@ public class FreakyDragon implements Listener {
                                         random.nextInt(10) - 5
                                 );
 
-                                world.spawnParticle(Particle.SMOKE_LARGE, targetLocation, 20, 1.0, 0.5, 1.0, 0.1);
+                                world.spawnParticle(Particle.LARGE_SMOKE, targetLocation, 20, 1.0, 0.5, 1.0, 0.1);
                                 world.playSound(targetLocation, Sound.ENTITY_ENDER_DRAGON_GROWL, 1.0f, 0.5f);
 
                                 new BukkitRunnable() {
@@ -239,7 +239,7 @@ public class FreakyDragon implements Listener {
                                                 beamLocation.getZ() + offsetZ
                                         );
 
-                                        world.spawnParticle(Particle.REDSTONE, particleLocation, 20,
+                                        world.spawnParticle(Particle.DUST, particleLocation, 20,
                                                 new Particle.DustOptions(Color.RED, 3.5f)); // Mehr Partikel für intensiveren Effekt
                                     }
 
@@ -322,13 +322,13 @@ public class FreakyDragon implements Listener {
                     Location particleLocation = location.clone().add(x, yOffset * 0.5, z);
 
                     // Auffällige Partikel (grün, gelb, violett) zur visuellen Warnung
-                    world.spawnParticle(Particle.REDSTONE, particleLocation, 15,
+                    world.spawnParticle(Particle.DUST, particleLocation, 15,
                             new Particle.DustOptions(Color.GREEN, 2.8f));
-                    world.spawnParticle(Particle.REDSTONE, particleLocation, 15,
+                    world.spawnParticle(Particle.DUST, particleLocation, 15,
                             new Particle.DustOptions(Color.PURPLE, 2.8f));
-                    world.spawnParticle(Particle.REDSTONE, particleLocation, 15,
+                    world.spawnParticle(Particle.DUST, particleLocation, 15,
                             new Particle.DustOptions(Color.YELLOW, 2.8f));
-                    world.spawnParticle(Particle.SPELL_WITCH, particleLocation, 10, 0.2, 0.2, 0.2, 0.1);
+                    world.spawnParticle(Particle.WITCH, particleLocation, 10, 0.2, 0.2, 0.2, 0.1);
                 }
 
                 angleStep += 15;
@@ -408,13 +408,13 @@ public class FreakyDragon implements Listener {
                     Location particleLocation = location.clone().add(x, yOffset * 0.5, z);
 
                     // Erzeuge grüne, violette und gelbe Partikel
-                    world.spawnParticle(Particle.REDSTONE, particleLocation, 10,
+                    world.spawnParticle(Particle.DUST, particleLocation, 10,
                             new Particle.DustOptions(Color.GREEN, 2.5f));
-                    world.spawnParticle(Particle.REDSTONE, particleLocation, 10,
+                    world.spawnParticle(Particle.DUST, particleLocation, 10,
                             new Particle.DustOptions(Color.PURPLE, 2.5f));
-                    world.spawnParticle(Particle.REDSTONE, particleLocation, 10,
+                    world.spawnParticle(Particle.DUST, particleLocation, 10,
                             new Particle.DustOptions(Color.YELLOW, 2.5f));
-                    world.spawnParticle(Particle.SPELL_WITCH, particleLocation, 15, 0.2, 0.2, 0.2, 0.1);
+                    world.spawnParticle(Particle.WITCH, particleLocation, 15, 0.2, 0.2, 0.2, 0.1);
                 }
 
                 angleStep += 15;
@@ -431,7 +431,7 @@ public class FreakyDragon implements Listener {
         dragon.setHealth(1000);
 
         // Basic abilities for easy mode
-        dragon.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, 1));
+        dragon.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 1));
 
         // Spawn supporting mobs
         spawnSupportingMobs(1, EntityType.GHAST);
@@ -444,7 +444,7 @@ public class FreakyDragon implements Listener {
 
         // Advanced abilities for hard mode
         dragon.getAttribute(Attribute.GENERIC_ARMOR).setBaseValue(40.0);
-        dragon.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, 3));
+        dragon.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 3));
         dragon.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 2));
 
         // Spawn more challenging supporting mobs
@@ -712,7 +712,7 @@ public class FreakyDragon implements Listener {
                 // 2D blockface center
                 .map(loc -> loc.add(0.5, 0, 0.5))
                 // Spawn crystals
-                .forEach(loc -> world.spawnEntity(loc, EntityType.ENDER_CRYSTAL));
+                .forEach(loc -> world.spawnEntity(loc, EntityType.END_CRYSTAL));
 
 
         battle.initiateRespawn();

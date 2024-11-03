@@ -218,7 +218,7 @@ public class GameLoop implements Listener {
             rankingVillager.setCustomName("FreakyWorld");
             rankingVillager.setCustomNameVisible(true);
             rankingVillager.setAI(false); // Disable AI to prevent movement
-            rankingVillager.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, Integer.MAX_VALUE, 255, false, false)); // Prevent movement
+            rankingVillager.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, Integer.MAX_VALUE, 255, false, false)); // Prevent movement
             rankingVillager.setInvulnerable(true); // Make the villager unkillable
             startRankingVillagerLookTask();
         } else {
@@ -1391,10 +1391,10 @@ public class GameLoop implements Listener {
                     player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, level - 1, false, false));
                     break;
                 case "Stärke":
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, level - 1, false, false));
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, level - 1, false, false));
                     break;
                 case "Haste":
-                    player.addPotionEffect(new PotionEffect(PotionEffectType.FAST_DIGGING, Integer.MAX_VALUE, level - 1, false, false));
+                    player.addPotionEffect(new PotionEffect(PotionEffectType.HASTE, Integer.MAX_VALUE, level - 1, false, false));
                     break;
                 // Add more abilities and their effects as needed
             }
@@ -1679,8 +1679,8 @@ public class GameLoop implements Listener {
             player.playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.5f); // Donner
 
             // Partikeleffekte hinzufügen (optional)
-            player.getWorld().spawnParticle(Particle.SMOKE_LARGE, player.getLocation(), 50, 1, 1, 1, 0.1);
-            player.getWorld().spawnParticle(Particle.SPELL_WITCH, player.getLocation(), 30, 1, 1, 1, 0.1);
+            player.getWorld().spawnParticle(Particle.LARGE_SMOKE, player.getLocation(), 50, 1, 1, 1, 0.1);
+            player.getWorld().spawnParticle(Particle.WITCH, player.getLocation(), 30, 1, 1, 1, 0.1);
 
         } catch (SQLException e) {
             e.printStackTrace();
@@ -1988,7 +1988,7 @@ public class GameLoop implements Listener {
                 if (!player.isOnline() || playerIntroProgress.get(player.getUniqueId()) >= 2) return;
                 showTitle(player, welcomeMessage2, 20, 60, 20);
                 player.playSound(player.getLocation(), Sound.UI_TOAST_CHALLENGE_COMPLETE, 1.0f, 1.0f);
-                player.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, player.getLocation(), 30, 1, 1, 1, 0.1);
+                player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation(), 30, 1, 1, 1, 0.1);
                 playerIntroProgress.put(player.getUniqueId(), 2);
             }
         }.runTaskLater(plugin, 180L);
@@ -1999,7 +1999,7 @@ public class GameLoop implements Listener {
                 if (!player.isOnline() || playerIntroProgress.get(player.getUniqueId()) >= 3) return;
                 showTitle(player, welcomeMessage3, 20, 60, 20);
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
-                player.getWorld().spawnParticle(Particle.TOTEM, player.getLocation(), 30, 1, 1, 1, 0.1);
+                player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, player.getLocation(), 30, 1, 1, 1, 0.1);
                 playerIntroProgress.put(player.getUniqueId(), 3);
             }
         }.runTaskLater(plugin, 240L);
@@ -2010,8 +2010,8 @@ public class GameLoop implements Listener {
                 if (!player.isOnline() || playerIntroProgress.get(player.getUniqueId()) >= 4) return;
                 showTitle(player, welcomeMessage4, 20, 60, 20);
                 player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1.0f, 1.0f);
-                player.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, player.getLocation(), 50, 1, 1, 1, 0.1);
-                player.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, player.getLocation(), 50, 1, 1, 1, 0.1);
+                player.getWorld().spawnParticle(Particle.FIREWORK, player.getLocation(), 50, 1, 1, 1, 0.1);
+                player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation(), 50, 1, 1, 1, 0.1);
                 playerIntroProgress.put(player.getUniqueId(), 4);
             }
         }.runTaskLater(plugin, 300L);
@@ -2093,11 +2093,11 @@ public class GameLoop implements Listener {
 
     private void triggerLandingEffects(Player player) {
         player.getWorld().createExplosion(player.getLocation(), 0, false); // Sonic Boom effect
-        player.getWorld().spawnParticle(Particle.EXPLOSION_HUGE, player.getLocation(), 1);
-        player.getWorld().spawnParticle(Particle.FIREWORKS_SPARK, player.getLocation(), 100, 1, 1, 1, 0.1);
+        player.getWorld().spawnParticle(Particle.SONIC_BOOM, player.getLocation(), 1);
+        player.getWorld().spawnParticle(Particle.FIREWORK, player.getLocation(), 100, 1, 1, 1, 0.1);
         player.getWorld().spawnParticle(Particle.CLOUD, player.getLocation(), 100, 1, 1, 1, 0.1);
         player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation(), 100, 1, 1, 1, 0.1);
-        player.getWorld().spawnParticle(Particle.SPELL_WITCH, player.getLocation(), 100, 1, 1, 1, 0.1);
+        player.getWorld().spawnParticle(Particle.WITCH, player.getLocation(), 100, 1, 1, 1, 0.1);
 
         player.playSound(player.getLocation(), Sound.ENTITY_GENERIC_EXPLODE, 1.0f, 1.0f);
         player.playSound(player.getLocation(), Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);

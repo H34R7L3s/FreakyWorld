@@ -1479,7 +1479,7 @@ public class CustomVillagerTrader implements Listener {
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_TRADE, 1.0f, 1.0f);
                 player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_CELEBRATE, 1.0f, 1.0f);
                 player.playSound(player.getLocation(), Sound.ENTITY_STRIDER_HAPPY, 1.0f, 1.0f);
-                player.getWorld().spawnParticle(Particle.SMOKE_LARGE, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
+                player.getWorld().spawnParticle(Particle.LARGE_SMOKE, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
 
                 // Optionale Chatnachricht, die weniger im Fokus steht
                 player.sendMessage(ChatColor.GOLD + "Meisterhändler: " + ChatColor.WHITE + "Willkommen zurück, Abenteurer!");
@@ -1491,7 +1491,7 @@ public class CustomVillagerTrader implements Listener {
                         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
                         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_WORK_TOOLSMITH, 1.0f, 1.0f);
                         player.playSound(player.getLocation(), Sound.ENTITY_VILLAGER_WORK_WEAPONSMITH, 1.0f, 1.0f);
-                        player.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
+                        player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, player.getLocation().add(0, 1, 0), 30, 0.5, 0.5, 0.5, 0.1);
                     }
                 }.runTaskLater(plugin, 20L); // Zusätzliche Effekte nach 1 Sekunde
 

@@ -402,9 +402,11 @@ public class HCFW implements Listener, CommandExecutor {
         if (tippedArrow instanceof TippedArrow) {
             TippedArrow ta = (TippedArrow) tippedArrow;
             if (difficultyLevel >= 80) {
-                ta.setBasePotionData(new PotionData(PotionType.INSTANT_DAMAGE, true, true));
+                PotionType type = PotionType.HARMING;
+
+                ta.setBasePotionType(PotionType.STRONG_HARMING);
             } else {
-                ta.setBasePotionData(new PotionData(PotionType.INSTANT_DAMAGE));
+                ta.setBasePotionType(PotionType.HARMING);
             }
         }
     }
@@ -883,18 +885,18 @@ public void startBlazeSpawnTimer() {
         int maxRegeneration = 1; // Maximal erlaubte Regeneration
 
         if (difficultyLevel >= 30 && difficultyLevel < 40) {
-            zombie.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, Math.min(maxStrength, 0)));
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, Math.min(maxStrength, 0)));
         } else if (difficultyLevel >= 40 && difficultyLevel < 60) {
-            zombie.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, Math.min(maxStrength, 1)));
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, Math.min(maxStrength, 1)));
         } else if (difficultyLevel >= 60 && difficultyLevel < 80) {
-            zombie.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, Math.min(maxStrength, 2)));
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, Math.min(maxStrength, 2)));
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, Math.min(maxSpeed, 0)));
         } else if (difficultyLevel >= 80 && difficultyLevel < 90) {
-            zombie.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, Math.min(maxStrength, 3)));
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, Math.min(maxStrength, 3)));
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, Math.min(maxSpeed, 1)));
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, Integer.MAX_VALUE, Math.min(maxRegeneration, 0)));
         } else if (difficultyLevel >= 90) {
-            zombie.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, Integer.MAX_VALUE, Math.min(maxStrength, 4)));
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, Math.min(maxStrength, 4)));
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, Math.min(maxSpeed, 2)));
             zombie.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, Integer.MAX_VALUE, Math.min(maxRegeneration, 1)));
         }
@@ -936,7 +938,7 @@ public void startBlazeSpawnTimer() {
                     zombie.teleport(randomPlayer.getLocation());
 
                     // Füge Slowness-Effekt hinzu
-                    zombie.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 20 * 30, 10));
+                    zombie.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 20 * 30, 10));
 
                     // Setze den Cooldown für den aktuellen Zombie
                     zombieCooldowns.put(zombieUUID, System.currentTimeMillis() + cooldownDuration);
@@ -1071,7 +1073,7 @@ public void startBlazeSpawnTimer() {
             plugin.getDiscordBot().announceEventWithTimer("Event Manager", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!");
 
             // Partikeleffekt für inaktives Event (Rot)
-            world.spawnParticle(Particle.REDSTONE, eventLocation.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
+            world.spawnParticle(Particle.DUST, eventLocation.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
 
             break; // Geeignete Position gefunden, Schleife beenden
         }
@@ -1175,9 +1177,9 @@ public void startBlazeSpawnTimer() {
         World world = location.getWorld();
 
         // Partikeleffekte
-        world.spawnParticle(Particle.SMOKE_LARGE, location, 50, 1.0, 1.0, 1.0, 0.1);
-        world.spawnParticle(Particle.FIREWORKS_SPARK, location, 30, 1.0, 1.0, 1.0, 0.1);
-        world.spawnParticle(Particle.ENCHANTMENT_TABLE, location, 100, 1.0, 1.0, 1.0, 1);
+        world.spawnParticle(Particle.LARGE_SMOKE, location, 50, 1.0, 1.0, 1.0, 0.1);
+        world.spawnParticle(Particle.FIREWORK, location, 30, 1.0, 1.0, 1.0, 0.1);
+        world.spawnParticle(Particle.ENCHANT, location, 100, 1.0, 1.0, 1.0, 1);
 
         // Soundeffekte
         world.playSound(location, Sound.BLOCK_BELL_USE, 1.0F, 1.0F);
@@ -1194,7 +1196,7 @@ public void startBlazeSpawnTimer() {
                     return;
                 }
 
-                world.spawnParticle(Particle.VILLAGER_HAPPY, location, 20, 0.5, 0.5, 0.5, 0);
+                world.spawnParticle(Particle.HAPPY_VILLAGER, location, 20, 0.5, 0.5, 0.5, 0);
                 world.playSound(location, Sound.ENTITY_ILLUSIONER_CAST_SPELL, 1.0F, 0.5F);
                 count++;
             }
@@ -1273,23 +1275,23 @@ public void startBlazeSpawnTimer() {
 
         // Konfigurationen für verschiedene Schwierigkeitsgrade oder Event-Wahrscheinlichkeiten hinzufügen
         zombieConfigurations.add(new ZombieConfiguration(new ItemStack(Material.GOLDEN_HELMET, 1),
-                Arrays.asList(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 600, 4),
+                Arrays.asList(new PotionEffect(PotionEffectType.STRENGTH, 600, 4),
                         new PotionEffect(PotionEffectType.SPEED, 600, 3))));
 
         zombieConfigurations.add(new ZombieConfiguration(new ItemStack(Material.DIAMOND_HELMET, 1),
-                Arrays.asList(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 600, 6),
+                Arrays.asList(new PotionEffect(PotionEffectType.STRENGTH, 600, 6),
                         new PotionEffect(PotionEffectType.SPEED, 600, 3))));
 
         zombieConfigurations.add(new ZombieConfiguration(new ItemStack(Material.NETHERITE_HELMET, 1),
-                Arrays.asList(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 600, 8),
+                Arrays.asList(new PotionEffect(PotionEffectType.STRENGTH, 600, 8),
                         new PotionEffect(PotionEffectType.SPEED, 600, 4))));
 
         zombieConfigurations.add(new ZombieConfiguration(new ItemStack(Material.CHAINMAIL_HELMET, 1),
-                Arrays.asList(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 600, 3),
+                Arrays.asList(new PotionEffect(PotionEffectType.STRENGTH, 600, 3),
                         new PotionEffect(PotionEffectType.SPEED, 600, 2))));
 
         zombieConfigurations.add(new ZombieConfiguration(new ItemStack(Material.LEATHER_HELMET, 1),
-                Arrays.asList(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 600, 2))));
+                Arrays.asList(new PotionEffect(PotionEffectType.STRENGTH, 600, 2))));
 
 
     }
@@ -1307,7 +1309,7 @@ public void startBlazeSpawnTimer() {
             equipZombieWithConfiguration(zombie, randomConfiguration);
             giveZombieSpecialAbilities(zombie, difficultyLevel);
             spawnBlazesBasedOnProbability();
-            zombie.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, Integer.MAX_VALUE, 6));
+            zombie.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, Integer.MAX_VALUE, 6));
         }
     }
 
@@ -1449,13 +1451,13 @@ public void startBlazeSpawnTimer() {
 
     private void endEventVisuals(Location location) {
         World world = location.getWorld();
-        world.spawnParticle(Particle.FIREWORKS_SPARK, location, 200, 1, 1, 1);
+        world.spawnParticle(Particle.FIREWORK, location, 200, 1, 1, 1);
         world.playSound(location, Sound.ENTITY_FIREWORK_ROCKET_BLAST, 1.0F, 1.0F);
 
         plugin.getLogger().info("Event-Visuals werden beendet!"); // Debugging-Nachricht
 
         // Partikeleffekt für inaktives Event (Rot)
-        world.spawnParticle(Particle.REDSTONE, location.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
+        world.spawnParticle(Particle.DUST, location.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
     }
 
     // Abteilung Warden
@@ -1893,7 +1895,7 @@ public void startBlazeSpawnTimer() {
         Location ritualLocation = findRitualLocation(world, null); // Initialisieren Sie ritualLocation
 
         for (Entity entity : world.getEntities()) {
-            if (entity.getType() == EntityType.DROPPED_ITEM) {
+            if (entity.getType() == EntityType.ITEM) {
                 Item item = (Item) entity;
                 ItemStack itemStack = item.getItemStack();
                 if (itemStack != null && itemStack.getType() == Material.EXPERIENCE_BOTTLE) {
@@ -2315,7 +2317,7 @@ public void startBlazeSpawnTimer() {
 
                 blaze.getWorld().spawnParticle(Particle.END_ROD, endX, endY, endZ, 1, 0, 0, 0, 0);
                 blaze.getWorld().spawnParticle(Particle.SOUL_FIRE_FLAME, endX, endY, endZ, 1, 0, 0, 0, 0);
-                blaze.getWorld().spawnParticle(Particle.SMOKE_LARGE, endX, endY, endZ, 1, 0, 0, 0, 0);
+                blaze.getWorld().spawnParticle(Particle.LARGE_SMOKE, endX, endY, endZ, 1, 0, 0, 0, 0);
             }
 
             // Heilen Sie den Wither, wenn mindestens ein Blaze lebt
@@ -2359,7 +2361,7 @@ public void startBlazeSpawnTimer() {
         }
 
         for (Entity entity : world.getEntities()) {
-            if (entity.getType() == EntityType.DROPPED_ITEM) {
+            if (entity.getType() == EntityType.ITEM) {
                 Item item = (Item) entity;
                 ItemStack itemStack = item.getItemStack();
                 if (itemStack != null && itemStack.getType() == Material.EXPERIENCE_BOTTLE) {

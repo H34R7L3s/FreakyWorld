@@ -351,7 +351,7 @@ public class ArmorEnhancements implements Listener {
 
                 break;
             case WATER:
-                loc.getWorld().spawnParticle(Particle.WATER_DROP, loc, 10, offsetX, offsetY, offsetZ, 0.05);
+                loc.getWorld().spawnParticle(Particle.DRIPPING_WATER, loc, 10, offsetX, offsetY, offsetZ, 0.05);
                 applyAquaRegeneration(player);
                 applyWaterWalking(player);
                 applyHydrationBoost(player);
@@ -360,7 +360,7 @@ public class ArmorEnhancements implements Listener {
 
                 break;
             case STONE:
-                loc.getWorld().spawnParticle(Particle.BLOCK_CRACK, loc, 10, offsetX, offsetY, offsetZ, 0.05, Material.STONE.createBlockData());
+                loc.getWorld().spawnParticle(Particle.DUST, loc, 10, offsetX, offsetY, offsetZ, 0.05, Material.STONE.createBlockData());
 
 
                 break;
@@ -435,20 +435,20 @@ public class ArmorEnhancements implements Listener {
 
     private void spawnHealingParticles(Location location) {
         location.getWorld().spawnParticle(Particle.FLAME, location, 20, 0.5, 1.0, 0.5, 0.1);
-        location.getWorld().spawnParticle(Particle.SMOKE_LARGE, location, 10, 0.3, 0.6, 0.3, 0.1);
+        location.getWorld().spawnParticle(Particle.LARGE_SMOKE, location, 10, 0.3, 0.6, 0.3, 0.1);
     }
 
     // 2. Angriffsschub durch Feuer
     private void applyFireBoost(Player player) {
         if (player.getFireTicks() > 0) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 100, 1, true, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 100, 1, true, false));
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 1, true, false));
             spawnFireBoostParticles(player.getLocation());
         }
     }
 
     private void spawnFireBoostParticles(Location location) {
-        location.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, location, 5, 1.0, 1.0, 1.0, 0.1);
+        location.getWorld().spawnParticle(Particle.EXPLOSION, location, 5, 1.0, 1.0, 1.0, 0.1);
         location.getWorld().spawnParticle(Particle.LAVA, location, 15, 0.5, 1.0, 0.5, 0.1);
     }
 
@@ -474,7 +474,7 @@ public class ArmorEnhancements implements Listener {
     private void applyLavaSpeedBoost(Player player) {
         if (player.getLocation().getBlock().getType() == Material.LAVA) {
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 100, 1, true, false));
-            player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 100, 1, true, false));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 100, 1, true, false));
             spawnLavaSpeedBoostParticles(player.getLocation());
         }
     }
@@ -514,7 +514,7 @@ public class ArmorEnhancements implements Listener {
     private void displayFireAura(Player player) {
         Location location = player.getLocation().add(0, 1, 0);
         player.getWorld().spawnParticle(Particle.FLAME, location, 10, 0.5, 0.5, 0.5, 0.05);
-        player.getWorld().spawnParticle(Particle.SMOKE_NORMAL, location, 5, 0.3, 0.3, 0.3, 0.01);
+        player.getWorld().spawnParticle(Particle.SMOKE, location, 5, 0.3, 0.3, 0.3, 0.01);
     }
 
     //////
@@ -553,8 +553,8 @@ public class ArmorEnhancements implements Listener {
 
     private void spawnWaterParticles(Location location) {
         World world = location.getWorld();
-        world.spawnParticle(Particle.WATER_BUBBLE, location, 20, 0.5, 1, 0.5, 0.05); // Blasen-Effekt
-        world.spawnParticle(Particle.WATER_SPLASH, location, 15, 0.5, 0.5, 0.5, 0.1); // Spritz-Effekt
+        world.spawnParticle(Particle.BUBBLE, location, 20, 0.5, 1, 0.5, 0.05); // Blasen-Effekt
+        world.spawnParticle(Particle.SPLASH, location, 15, 0.5, 0.5, 0.5, 0.1); // Spritz-Effekt
     }
     private void applyWaterBreathing(Player player) {
         if (player.getLocation().getBlock().isLiquid()) {
@@ -577,7 +577,7 @@ public class ArmorEnhancements implements Listener {
     }
 
     private void spawnWaterSplashParticles(Location location) {
-        location.getWorld().spawnParticle(Particle.WATER_SPLASH, location, 30, 1, 1, 1, 0.1);
+        location.getWorld().spawnParticle(Particle.SPLASH, location, 30, 1, 1, 1, 0.1);
     }
     private void applyHydrationBoost(Player player) {
         if (player.getLocation().getBlock().isLiquid()) {
@@ -587,7 +587,7 @@ public class ArmorEnhancements implements Listener {
 
     private void applyRainEmpowerment(Player player) {
         if (player.getWorld().hasStorm()) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.INCREASE_DAMAGE, 200, 0, true, true, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, 200, 0, true, true, true));
             player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 200, 0, true, true, true));
             player.addPotionEffect(new PotionEffect(PotionEffectType.REGENERATION, 200, 0, true, true, true));
         }
@@ -604,7 +604,7 @@ public class ArmorEnhancements implements Listener {
     }
 
     private void spawnBubbleShieldParticles(Location location) {
-        location.getWorld().spawnParticle(Particle.WATER_BUBBLE, location, 40, 1, 1, 1, 0.1);
+        location.getWorld().spawnParticle(Particle.BUBBLE, location, 40, 1, 1, 1, 0.1);
     }
 
     //////
@@ -623,7 +623,7 @@ public class ArmorEnhancements implements Listener {
     }
 
     private void spawnStoneParticles(Location location) {
-        location.getWorld().spawnParticle(Particle.BLOCK_CRACK, location, 20, 0.5, 1, 0.5, Material.STONE.createBlockData());
+        location.getWorld().spawnParticle(Particle.DUST, location, 20, 0.5, 1, 0.5, Material.STONE.createBlockData());
     }
     @EventHandler
     public void onPlayerFall(EntityDamageEvent event) {
@@ -639,10 +639,10 @@ public class ArmorEnhancements implements Listener {
     private void createEarthquake(Location location) {
         World world = location.getWorld();
         world.playSound(location, Sound.ENTITY_WITHER_BREAK_BLOCK, 1.0f, 0.8f);
-        world.spawnParticle(Particle.BLOCK_CRACK, location, 30, 2, 0.5, 2, Material.COBBLESTONE.createBlockData());
+        world.spawnParticle(Particle.DUST, location, 30, 2, 0.5, 2, Material.COBBLESTONE.createBlockData());
         for (Entity entity : world.getNearbyEntities(location, 5, 5, 5)) {
             if (entity instanceof LivingEntity && !(entity instanceof Player)) {
-                ((LivingEntity) entity).addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 60, 2)); // Gegner werden verlangsamt
+                ((LivingEntity) entity).addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 2)); // Gegner werden verlangsamt
             }
         }
     }
@@ -652,14 +652,14 @@ public class ArmorEnhancements implements Listener {
             Player player = (Player) event.getEntity();
             if (isWearingFullArmor(player, ArmorType.STONE)) {
                 // Temporäre Rüstungsschicht hinzufügen
-                player.addPotionEffect(new PotionEffect(PotionEffectType.DAMAGE_RESISTANCE, 100, 1, true, true, true));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.RESISTANCE, 100, 1, true, true, true));
                 spawnRockArmorParticles(player.getLocation());
             }
         }
     }
 
     private void spawnRockArmorParticles(Location location) {
-        location.getWorld().spawnParticle(Particle.BLOCK_CRACK, location, 20, 1.0, 1.0, 1.0, Material.STONE.createBlockData());
+        location.getWorld().spawnParticle(Particle.DUST, location, 20, 1.0, 1.0, 1.0, Material.STONE.createBlockData());
     }
 
 
@@ -669,7 +669,7 @@ public class ArmorEnhancements implements Listener {
             Player player = (Player) event.getEntity();
             if (isWearingFullArmor(player, ArmorType.STONE)) {
                 //player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 200, 0, true, true, true)); // Erhöhte Stabilität
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 200, 1, true, true, true));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 200, 1, true, true, true));
             }
         }
     }
@@ -680,14 +680,14 @@ public class ArmorEnhancements implements Listener {
             Player player = (Player) event.getEntity();
             LivingEntity attacker = (LivingEntity) event.getDamager();
             if (isWearingFullArmor(player, ArmorType.STONE) && new Random().nextInt(4) == 0) { // 25% Chance
-                attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOW, 60, 1)); // Gegner wird verlangsamt
+                attacker.addPotionEffect(new PotionEffect(PotionEffectType.SLOWNESS, 60, 1)); // Gegner wird verlangsamt
                 spawnPetrifyEffect(attacker.getLocation());
             }
         }
     }
 
     private void spawnPetrifyEffect(Location location) {
-        location.getWorld().spawnParticle(Particle.SMOKE_LARGE, location, 20, 0.5, 1, 0.5, 0.1);
+        location.getWorld().spawnParticle(Particle.LARGE_SMOKE, location, 20, 0.5, 1, 0.5, 0.1);
         location.getWorld().playSound(location, Sound.BLOCK_STONE_BREAK, 1.0f, 0.8f);
     }
 
@@ -808,7 +808,7 @@ public class ArmorEnhancements implements Listener {
     public void onPlayerJumpSky(PlayerJumpEvent event) {
         Player player = event.getPlayer();
         if (isWearingFullArmor(player, ArmorType.SKY)) {
-            player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 100, 2, true, true));
+            player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 100, 2, true, true));
             //player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 100, 1, true, true));
             spawnFeatherParticles(player.getLocation());
         }
@@ -831,7 +831,7 @@ public class ArmorEnhancements implements Listener {
     }
 
     private void spawnSkyEmbraceParticles(Location location) {
-        location.getWorld().spawnParticle(Particle.SNOWBALL, location, 15, 0.5, 0.5, 0.5, 0.1);
+        location.getWorld().spawnParticle(Particle.ITEM_SNOWBALL, location, 15, 0.5, 0.5, 0.5, 0.1);
     }
 
     @EventHandler
@@ -844,18 +844,18 @@ public class ArmorEnhancements implements Listener {
     }
 
     private void spawnAirTrailParticles(Location location) {
-        location.getWorld().spawnParticle(Particle.SPELL, location, 5, 0.2, 0.2, 0.2, 0.02);
+        location.getWorld().spawnParticle(Particle.SPIT, location, 5, 0.2, 0.2, 0.2, 0.02);
     }
 
     public void activateTempestWrath(Player player) {
         //player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PHANTOM_SWOOP, 1.0f, 1.0f);
-        player.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, player.getLocation(), 1);
+        player.getWorld().spawnParticle(Particle.EFFECT, player.getLocation(), 1);
 
         for (Entity entity : player.getNearbyEntities(5, 5, 5)) {
             if (entity instanceof LivingEntity && !(entity instanceof Player)) {
                 LivingEntity target = (LivingEntity) entity;
                 target.setVelocity(target.getLocation().toVector().subtract(player.getLocation().toVector()).normalize().multiply(1.8));
-                target.addPotionEffect(new PotionEffect(PotionEffectType.CONFUSION, 60, 1)); // Verwirrt Feinde für kurze Zeit
+                target.addPotionEffect(new PotionEffect(PotionEffectType.NAUSEA, 60, 1)); // Verwirrt Feinde für kurze Zeit
             }
         }
     }

@@ -331,11 +331,11 @@ public class QuestVillager implements Listener {
 
             // Verzauberungen für Schwert und Rüstung hinzufügen
             if (material == Material.DIAMOND_SWORD) {
-                meta.addEnchant(Enchantment.DAMAGE_ALL, 1, true); // Schärfe 1
+                meta.addEnchant(Enchantment.SHARPNESS, 1, true); // Schärfe 1
             } else if (material == Material.IRON_HELMET || material == Material.IRON_CHESTPLATE ||
                     material == Material.IRON_LEGGINGS || material == Material.IRON_BOOTS) {
                 // Beispiel für eine zufällige Verzauberung
-                meta.addEnchant(Enchantment.PROTECTION_ENVIRONMENTAL, 1, true);
+                meta.addEnchant(Enchantment.PROTECTION, 1, true);
             }
 
             item.setItemMeta(meta);
@@ -346,7 +346,7 @@ public class QuestVillager implements Listener {
             PotionMeta potionMeta = (PotionMeta) item.getItemMeta();
             if (potionMeta != null) {
                 // Beispiel: Erstellen eines Heiltranks
-                potionMeta.setBasePotionData(new PotionData(PotionType.INSTANT_HEAL));
+                potionMeta.setBasePotionType(PotionType.HEALING);
                 item.setItemMeta(potionMeta);
             }
         }

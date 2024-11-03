@@ -145,7 +145,7 @@ public class VampireVillager implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                world.spawnParticle(Particle.ENCHANTMENT_TABLE, villager.getLocation().add(0, 1, 0), 30, 0.5, 1.0, 0.5, 0);
+                world.spawnParticle(Particle.ENCHANT, villager.getLocation().add(0, 1, 0), 30, 0.5, 1.0, 0.5, 0);
                 world.playSound(villager.getLocation(), Sound.AMBIENT_CAVE, 0.5f, 1.0f);
             }
         }.runTaskTimer(gameLoop.getPlugin(), 0L, 60L);
@@ -494,17 +494,17 @@ public class VampireVillager implements Listener {
     private Enchantment detectEnchantmentFromCategory(String category) {
         switch (category) {
             case "Schutz":
-                return Enchantment.PROTECTION_ENVIRONMENTAL;
+                return Enchantment.PROTECTION;
             case "Schärfe":
-                return Enchantment.DAMAGE_ALL;
+                return Enchantment.SHARPNESS;
             case "Unzerbrechlich":
-                return Enchantment.DURABILITY;
+                return Enchantment.UNBREAKING;
             case "Effizienz":
-                return Enchantment.DIG_SPEED;
+                return Enchantment.EFFICIENCY;
             case "Glück":
-                return Enchantment.LOOT_BONUS_BLOCKS;
+                return Enchantment.FORTUNE;
             case "Plünderung":
-                return Enchantment.LOOT_BONUS_MOBS;
+                return Enchantment.LOOTING;
             default:
                 return null;
         }
@@ -688,23 +688,23 @@ public class VampireVillager implements Listener {
 
 
     private Enchantment detectEnchantmentFromTitle(String title) {
-        if (title.contains("Schutz")) return Enchantment.PROTECTION_ENVIRONMENTAL;
-        if (title.contains("Schärfe")) return Enchantment.DAMAGE_ALL;
-        if (title.contains("Unzerbrechlich")) return Enchantment.DURABILITY;
-        if (title.contains("Effizienz")) return Enchantment.DIG_SPEED;
-        if (title.contains("Glück")) return Enchantment.LOOT_BONUS_BLOCKS;
-        if (title.contains("Plünderung")) return Enchantment.LOOT_BONUS_MOBS;
+        if (title.contains("Schutz")) return Enchantment.PROTECTION;
+        if (title.contains("Schärfe")) return Enchantment.SHARPNESS;
+        if (title.contains("Unzerbrechlich")) return Enchantment.UNBREAKING;
+        if (title.contains("Effizienz")) return Enchantment.EFFICIENCY;
+        if (title.contains("Glück")) return Enchantment.FORTUNE;
+        if (title.contains("Plünderung")) return Enchantment.LOOTING;
         return null;
     }
 
     // Hilfsmethode zur Detektion der Reliktkategorie basierend auf dem Enchantment
     private String detectRelicCategoryFromEnchantment(Enchantment enchantment) {
-        if (enchantment.equals(Enchantment.PROTECTION_ENVIRONMENTAL)) return "Schutz";
-        if (enchantment.equals(Enchantment.DAMAGE_ALL)) return "Schärfe";
-        if (enchantment.equals(Enchantment.DURABILITY)) return "Unzerbrechlich";
-        if (enchantment.equals(Enchantment.DIG_SPEED)) return "Effizienz";
-        if (enchantment.equals(Enchantment.LOOT_BONUS_BLOCKS)) return "Glück";
-        if (enchantment.equals(Enchantment.LOOT_BONUS_MOBS)) return "Plünderung";
+        if (enchantment.equals(Enchantment.PROTECTION)) return "Schutz";
+        if (enchantment.equals(Enchantment.SHARPNESS)) return "Schärfe";
+        if (enchantment.equals(Enchantment.UNBREAKING)) return "Unzerbrechlich";
+        if (enchantment.equals(Enchantment.EFFICIENCY)) return "Effizienz";
+        if (enchantment.equals(Enchantment.FORTUNE)) return "Glück";
+        if (enchantment.equals(Enchantment.LOOTING)) return "Plünderung";
         return null;
     }
     // Hilfsmethode, um das passende Relikt im Inventar des Spielers zu finden

@@ -629,7 +629,7 @@ public class GameLoopHCFW implements Listener {
     }
 
     private void spawnParticles(Location loc) {
-        loc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc, 100, 1, 1, 1, 0.1);
+        loc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc, 100, 1, 1, 1, 0.1);
         loc.getWorld().playSound(loc, Sound.ENTITY_WITHER_SPAWN, 1.0f, 1.0f);
     }
 
@@ -738,7 +738,7 @@ public class GameLoopHCFW implements Listener {
         );
         droppedItem.setVelocity(velocity);
         world.playSound(loc, Sound.ENTITY_EXPERIENCE_ORB_PICKUP, 1.0f, 1.0f);
-        world.spawnParticle(Particle.CRIT_MAGIC, loc, 10, 0.5, 0.5, 0.5, 0.1);
+        world.spawnParticle(Particle.CRIT, loc, 10, 0.5, 0.5, 0.5, 0.1);
 
         Bukkit.getLogger().info("Item dropped at: " + loc.toString() + " Item: " + item.getType().toString());
     }

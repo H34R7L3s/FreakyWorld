@@ -118,7 +118,7 @@ public class VampirZepter implements Listener {
                 if (isSafeLocation(checkLocation)) {
                     Location teleportLocation = checkLocation.setDirection(player.getLocation().getDirection());
                     player.teleport(teleportLocation);
-                    player.getWorld().spawnParticle(Particle.SMOKE_LARGE, teleportLocation, 30, 0.3, 0.3, 0.3, 0.02);
+                    player.getWorld().spawnParticle(Particle.LARGE_SMOKE, teleportLocation, 30, 0.3, 0.3, 0.3, 0.02);
                     return true; // Rückgabe von true, wenn die Teleportation erfolgreich war
                 }
             }
@@ -156,7 +156,7 @@ public class VampirZepter implements Listener {
                 if (randomValue < healingProbability) {
                     // Direktes Spawnen von Partikeln an der Position des Opfers
                     DustOptions redstoneOptions = new DustOptions(Color.RED, 1); // Farbe Rot
-                    victim.getWorld().spawnParticle(Particle.REDSTONE, victim.getLocation(), 11, redstoneOptions);
+                    victim.getWorld().spawnParticle(Particle.DUST, victim.getLocation(), 11, redstoneOptions);
                     victim.getWorld().spawnParticle(Particle.FLAME, victim.getLocation(), 5);
                     victim.getWorld().spawnParticle(Particle.LAVA, victim.getLocation(), 7);
                     victim.getWorld().spawnParticle(Particle.DRAGON_BREATH, victim.getLocation(), 22);
@@ -233,12 +233,12 @@ public class VampirZepter implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                location1.getWorld().spawnParticle(Particle.REDSTONE, location1, 11, new Particle.DustOptions(Color.RED, 1));
+                location1.getWorld().spawnParticle(Particle.DUST, location1, 11, new Particle.DustOptions(Color.RED, 1));
                 location1.getWorld().spawnParticle(Particle.FLAME, location1, 5);
                 location1.getWorld().spawnParticle(Particle.LAVA, location1, 7);
                 location1.getWorld().spawnParticle(Particle.DRAGON_BREATH, location1, 22);
 
-                location2.getWorld().spawnParticle(Particle.REDSTONE, location2, 11, new Particle.DustOptions(Color.RED, 1));
+                location2.getWorld().spawnParticle(Particle.DUST, location2, 11, new Particle.DustOptions(Color.RED, 1));
                 location2.getWorld().spawnParticle(Particle.FLAME, location2, 5);
                 location2.getWorld().spawnParticle(Particle.LAVA, location2, 7);
                 location2.getWorld().spawnParticle(Particle.DRAGON_BREATH, location2, 22);
@@ -263,7 +263,7 @@ public class VampirZepter implements Listener {
             // Verzögertes Spawnen der Partikel entlang des Pfads
             Bukkit.getScheduler().runTaskLater(plugin, () -> {
                 DustOptions redstoneOptions = new DustOptions(Color.RED, 1); // Farbe Rot und Größe 1
-                particleLocation.getWorld().spawnParticle(Particle.REDSTONE, particleLocation, 12, redstoneOptions);
+                particleLocation.getWorld().spawnParticle(Particle.DUST, particleLocation, 12, redstoneOptions);
 
                 start.getWorld().spawnParticle(Particle.FLAME, particleLocation, 4); // Erhöhte Anzahl
                 start.getWorld().spawnParticle(Particle.LAVA, particleLocation, 2); // Erhöhte Anzahl
@@ -314,7 +314,7 @@ public class VampirZepter implements Listener {
 
         // Check if itemId is not null before comparing it
         if (itemId != null && itemId.equals("vampir") && event.getAction() == Action.LEFT_CLICK_AIR) {
-            player.getWorld().spawnParticle(Particle.EXPLOSION_NORMAL, player.getLocation().add(0, 1, 0), 10);
+            player.getWorld().spawnParticle(Particle.EXPLOSION, player.getLocation().add(0, 1, 0), 10);
         }
     }
 
@@ -325,8 +325,8 @@ public class VampirZepter implements Listener {
                 for (Player player : Bukkit.getOnlinePlayers()) {
                     String itemId = OraxenItems.getIdByItem(player.getInventory().getItemInMainHand());
                     if (itemId != null && itemId.equals("vampir")) {
-                        player.getWorld().spawnParticle(Particle.SPELL_WITCH, player.getLocation().add(0, 1, 0), 10);
-                        player.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, player.getLocation().add(0, 2, 0), 10);
+                        player.getWorld().spawnParticle(Particle.WITCH, player.getLocation().add(0, 1, 0), 10);
+                        player.getWorld().spawnParticle(Particle.ENCHANT, player.getLocation().add(0, 2, 0), 10);
                         player.getWorld().spawnParticle(Particle.PORTAL, player.getLocation().add(0, 1, 0), 5);
                     }
                 }
@@ -449,14 +449,14 @@ public class VampirZepter implements Listener {
 
     private void orchestrateEffects(Player player) {
         // Hier eine Auswahl an Effekten und Sounds, die für ein episches Ritual sorgen
-        player.getWorld().spawnParticle(Particle.SPELL_WITCH, player.getLocation(), 30, 0.5, 1, 0.5, 0.05);
+        player.getWorld().spawnParticle(Particle.WITCH, player.getLocation(), 30, 0.5, 1, 0.5, 0.05);
         player.getWorld().spawnParticle(Particle.FLAME, player.getLocation(), 20, 0.5, 1, 0.5, 0.05);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ELDER_GUARDIAN_CURSE, SoundCategory.PLAYERS, 1.0F, 0.5F);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ILLUSIONER_MIRROR_MOVE, SoundCategory.PLAYERS, 1.0F, 1.0F);
 
 
         // Weitere Partikel- und Soundeffekte, die das Ritual verstärken
-        player.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, player.getLocation().add(0, 1, 0), 50, 1, 1, 1, 0.1);
+        player.getWorld().spawnParticle(Particle.ENCHANT, player.getLocation().add(0, 1, 0), 50, 1, 1, 1, 0.1);
         player.getWorld().spawnParticle(Particle.END_ROD, player.getLocation().add(0, 1, 0), 30, 1, 1, 1, 0.05);
         player.getWorld().spawnParticle(Particle.ELECTRIC_SPARK, player.getLocation(), 40, 1, 1, 1, 0.05);
 
@@ -1120,16 +1120,16 @@ public class VampirZepter implements Listener {
             double waveOffset = Math.sin(i + pulseDistance) * 0.5;
 
             // Hauptpartikellinie
-            world.spawnParticle(Particle.REDSTONE, particleLocation.add(0, waveOffset, 0), 1, primaryDustOptions);
+            world.spawnParticle(Particle.DUST, particleLocation.add(0, waveOffset, 0), 1, primaryDustOptions);
 
             // Sekundäre Partikellinie für pulsierende Effekte
             if (pulseEffect && i % 5 == 0) {
-                world.spawnParticle(Particle.REDSTONE, particleLocation, 1, secondaryDustOptions);
+                world.spawnParticle(Particle.DUST, particleLocation, 1, secondaryDustOptions);
             }
 
             // Endeffekte an beiden Enden
             if (i == 0 || i == points) {
-                world.spawnParticle(Particle.EXPLOSION_NORMAL, particleLocation, 1);
+                world.spawnParticle(Particle.EXPLOSION, particleLocation, 1);
             }
         }
 
@@ -1204,9 +1204,9 @@ public class VampirZepter implements Listener {
                     Location innerParticleLocation = new Location(center.getWorld(), innerX, center.getY(), innerZ);
 
                     Particle.DustOptions chosenDustOptions = i % 20 == 0 ? transitionDustOptions : dustOptions;
-                    center.getWorld().spawnParticle(Particle.REDSTONE, particleLocation, 1, chosenDustOptions);
+                    center.getWorld().spawnParticle(Particle.DUST, particleLocation, 1, chosenDustOptions);
                     if(i % 10 == 0) {
-                        center.getWorld().spawnParticle(Particle.REDSTONE, innerParticleLocation, 1, innerDustOptions);
+                        center.getWorld().spawnParticle(Particle.DUST, innerParticleLocation, 1, innerDustOptions);
                     }
                 }
 
@@ -1222,7 +1222,7 @@ public class VampirZepter implements Listener {
                         }
                     });
                     center.getWorld().playSound(center, Sound.ENTITY_ENDER_DRAGON_FLAP, 1.0F, 0.5F); // Mächtiger Flügelschlag-Sound
-                    center.getWorld().spawnParticle(Particle.EXPLOSION_LARGE, center, 1); // Explosionspartikel
+                    center.getWorld().spawnParticle(Particle.EXPLOSION, center, 2); // Explosionspartikel
                 }
 
                 angle += 5; // Schnellere Drehbewegung für mehr Dynamik
@@ -1251,7 +1251,7 @@ public class VampirZepter implements Listener {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 6000, 1));
 
                 // Sprungkraft für kurze Zeit
-                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP, 6000, 1));
+                player.addPotionEffect(new PotionEffect(PotionEffectType.JUMP_BOOST, 6000, 1));
 
                 // Weitere gewünschte Effekte hier hinzufügen
 
@@ -1336,17 +1336,17 @@ public class VampirZepter implements Listener {
         ItemStack sword = player.getInventory().getItemInMainHand();
         ItemMeta meta = sword.getItemMeta();
 
-        if (meta != null && meta.hasEnchant(Enchantment.DAMAGE_ALL)) {
+        if (meta != null && meta.hasEnchant(Enchantment.SHARPNESS)) {
             if (currentKills >= killsRequiredForNextLevel) {
                 swordLevel++; // Erhöhe das Level um 1
-                meta.addEnchant(Enchantment.DAMAGE_ALL, Math.min(swordLevel, 100), true);
+                meta.addEnchant(Enchantment.SHARPNESS, Math.min(swordLevel, 100), true);
                 sword.setItemMeta(meta);
                 player.sendMessage(ChatColor.GREEN + "Deine Klinge der Dunkelheit ist jetzt Level " + swordLevel + "!");
                 dbManager.updatePlayerData(playerUUID, currentKills, swordLevel);
             }
         } else {
             // Initial setze Schärfe I, wenn noch keine Verzauberung vorhanden ist
-            meta.addEnchant(Enchantment.DAMAGE_ALL, 1, true);
+            meta.addEnchant(Enchantment.SHARPNESS, 1, true);
             sword.setItemMeta(meta);
             player.sendMessage(ChatColor.GREEN + "Deine Klinge der Dunkelheit hat jetzt Schärfe I!");
             dbManager.updatePlayerData(playerUUID, currentKills, 1);
@@ -1437,8 +1437,8 @@ public class VampirZepter implements Listener {
         Location playerLocation = player.getLocation();
 
         // Dunkle Partikel- und Soundeffekte auslösen
-        world.spawnParticle(Particle.SMOKE_NORMAL, playerLocation, 50, 0.5, 0.5, 0.5, 0.1);
-        world.spawnParticle(Particle.SPELL_WITCH, playerLocation, 25, 0.5, 0.5, 0.5, 0.1);
+        world.spawnParticle(Particle.SMOKE, playerLocation, 50, 0.5, 0.5, 0.5, 0.1);
+        world.spawnParticle(Particle.WITCH, playerLocation, 25, 0.5, 0.5, 0.5, 0.1);
         world.spawnParticle(Particle.PORTAL, playerLocation, 10, 0.5, 0.5, 0.5, 0.1);
         world.playSound(playerLocation, Sound.ENTITY_WITHER_AMBIENT, SoundCategory.PLAYERS, 0.5f, 1.0f);
     }
@@ -1452,7 +1452,7 @@ public class VampirZepter implements Listener {
         World world = player.getWorld();
         Location victimLocation = victim.getLocation();
         world.spawnParticle(Particle.SOUL_FIRE_FLAME, victimLocation, 30, 0.5, 0.5, 0.5, 0.1);
-        world.spawnParticle(Particle.ENCHANTMENT_TABLE, victimLocation, 15, 0.5, 0.5, 0.5, 0.1);
+        world.spawnParticle(Particle.ENCHANT, victimLocation, 15, 0.5, 0.5, 0.5, 0.1);
         world.playSound(victimLocation, Sound.ENTITY_ENDER_DRAGON_FLAP, SoundCategory.HOSTILE, 1.0f, 1.0f);
     }
 
@@ -1465,7 +1465,7 @@ public class VampirZepter implements Listener {
         int speedLevel = getPlayerSpeedLevel(player);
         int slowDuration = baseDuration + getAdditionalDuration(player);
 
-        PotionEffect slow = new PotionEffect(PotionEffectType.SLOW, slowDuration, 0, false, true);
+        PotionEffect slow = new PotionEffect(PotionEffectType.SLOWNESS, slowDuration, 0, false, true);
         victim.addPotionEffect(slow, true);
 
         PotionEffect speed = new PotionEffect(PotionEffectType.SPEED, slowDuration, speedLevel - 1, false, true);
@@ -1614,7 +1614,7 @@ public class VampirZepter implements Listener {
 
         // Visuelle Effekte zur Markierung der Verwandlung
         world.spawnParticle(Particle.HEART, location, 15, 0.5, 0.5, 0.5, 0.1);
-        world.spawnParticle(Particle.VILLAGER_HAPPY, location, 30, 1, 1, 1, 0.2);
+        world.spawnParticle(Particle.HAPPY_VILLAGER, location, 30, 1, 1, 1, 0.2);
         world.playSound(location, Sound.ENTITY_VILLAGER_YES, 1.0f, 1.0f);
     }
 
@@ -1650,7 +1650,7 @@ public class VampirZepter implements Listener {
                 player.setLevel(currentXP - usedXP);
 
                 // Visuelle Effekte und Sound beim Aufladen
-                player.getWorld().spawnParticle(Particle.CRIT_MAGIC, player.getLocation(), 40, 1, 1, 1, 0.3);
+                player.getWorld().spawnParticle(Particle.CRIT, player.getLocation(), 40, 1, 1, 1, 0.3);
                 player.getWorld().playSound(player.getLocation(), Sound.ITEM_TOTEM_USE, 1.0f, 1.0f);
                 player.sendMessage(ChatColor.GOLD + "Deine Klinge ist aufgeladen mit " + usedXP + " XP-Punkten!");
 
@@ -1704,7 +1704,7 @@ public class VampirZepter implements Listener {
                     // Nachricht und Effekte beim besonderen Angriff
                     player.sendMessage(ChatColor.GREEN + "Dein Angriff hat Schätze aus dem Gegner herausgeholt!");
                     world.spawnParticle(Particle.CRIT, targetLocation, 30, 1, 1, 1, 0.2);
-                    world.spawnParticle(Particle.TOTEM, targetLocation, 10);
+                    world.spawnParticle(Particle.TOTEM_OF_UNDYING, targetLocation, 10);
                     world.playSound(targetLocation, Sound.ENTITY_WITHER_DEATH, 1.0f, 1.0f);
                 } else {
                     // Normale visuelle Effekte bei nicht aufgeladenem Angriff
@@ -1766,12 +1766,12 @@ public class VampirZepter implements Listener {
         Location loc = player.getLocation().add(x, 1.5, z);
 
         // Enchantment- und End Rod-Partikel
-        player.getWorld().spawnParticle(Particle.ENCHANTMENT_TABLE, loc, 10, 0.2, 0.2, 0.2, 0.1);
+        player.getWorld().spawnParticle(Particle.ENCHANT, loc, 10, 0.2, 0.2, 0.2, 0.1);
         player.getWorld().spawnParticle(Particle.END_ROD, loc, 5, 0.2, 0.2, 0.2, 0.05);
 
         // "Geld"-Partikel: Goldglitzer und grüne Wellen
-        player.getWorld().spawnParticle(Particle.TOTEM, loc, 5, 0.3, 0.3, 0.3, 0.05);
-        player.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc, 5, 0.3, 0.3, 0.3, 0.1);
+        player.getWorld().spawnParticle(Particle.TOTEM_OF_UNDYING, loc, 5, 0.3, 0.3, 0.3, 0.05);
+        player.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc, 5, 0.3, 0.3, 0.3, 0.1);
 
         // Schwebende goldene Partikel über dem Spieler
         Location topLoc = player.getLocation().add(0, 2.5, 0);

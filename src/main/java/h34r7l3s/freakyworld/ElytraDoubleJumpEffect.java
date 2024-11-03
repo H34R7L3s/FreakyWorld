@@ -49,7 +49,7 @@ public class ElytraDoubleJumpEffect implements Listener {
     }
     private void createDarkMysteriousParticles(Player player) {
         // Angepasste Partikeleffekte
-        player.getWorld().spawnParticle(Particle.SMOKE_NORMAL, player.getLocation(), 20, 0.5, 0.5, 0.5, 0.05);
+        player.getWorld().spawnParticle(Particle.SMOKE, player.getLocation(), 20, 0.5, 0.5, 0.5, 0.05);
 
             }
 
