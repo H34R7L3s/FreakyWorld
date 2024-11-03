@@ -700,60 +700,75 @@ public class ArmorEnhancements implements Listener {
     private static final long CLOUD_WALKER_COOLDOWN = 5000; // 5 Sekunden Abklingzeit
     private static final int CLOUD_WALKER_BOOST_DURATION = 40; // 2 Sekunden Boost-Dauer in Ticks
     private static final int GLIDE_DURATION = 80; // Gleitdauer nach dem Boost in Ticks (4 Sekunden)
+    private static final int AIR_TIME_THRESHOLD = 30; // Anzahl Ticks (1,5 Sekunden) bevor der Boost aktiviert wird
 
-    // Event-Handler für den Luft-Boost
+    private final Map<UUID, Integer> airborneTime = new HashMap<>();
+
     @EventHandler
     public void onPlayerAirborne(PlayerMoveEvent event) {
         Player player = event.getPlayer();
         UUID playerId = player.getUniqueId();
 
-        // Prüfen, ob der Spieler die Sky-Rüstung trägt und in der Luft ist
-        if (isWearingFullArmor(player, ArmorType.SKY) && player.getLocation().subtract(0, 3, 0).getBlock().getType() == Material.AIR) {
-            long currentTime = System.currentTimeMillis();
+        // Prüfen, ob der Spieler die Sky-Rüstung trägt
+        if (isWearingFullArmor(player, ArmorType.SKY)) {
+            if (!player.isOnGround()) {
+                // Zählt die Zeit, die der Spieler in der Luft ist
+                int timeInAir = airborneTime.getOrDefault(playerId, 0) + 1;
+                airborneTime.put(playerId, timeInAir);
 
-            // Abklingzeit-Prüfung
-            if (cloudWalkerCooldowns.containsKey(playerId)) {
-                long lastUse = cloudWalkerCooldowns.get(playerId);
-                if (currentTime - lastUse < CLOUD_WALKER_COOLDOWN) {
-                    return; // Abklingzeit aktiv, Effekt nicht erneut starten
+                // Prüfen, ob der Spieler lange genug in der Luft ist und Abklingzeit beendet ist
+                if (timeInAir >= AIR_TIME_THRESHOLD && !cloudWalkerCooldowns.containsKey(playerId)) {
+                    long currentTime = System.currentTimeMillis();
+
+                    // Abklingzeit-Prüfung
+                    if (cloudWalkerCooldowns.containsKey(playerId)) {
+                        long lastUse = cloudWalkerCooldowns.get(playerId);
+                        if (currentTime - lastUse < CLOUD_WALKER_COOLDOWN) {
+                            return;
+                        }
+                    }
+
+                    // Cloud Walker Boost aktivieren
+                    activateCloudWalkerBoost(player);
+                    cloudWalkerCooldowns.put(playerId, currentTime);
                 }
+            } else {
+                airborneTime.remove(playerId); // Spieler auf dem Boden -> Zähler zurücksetzen
             }
-
-            // Cloud Walker Boost aktivieren
-            activateCloudWalkerBoost(player);
-            cloudWalkerCooldowns.put(playerId, currentTime); // Abklingzeit setzen
         }
     }
 
     private void activateCloudWalkerBoost(Player player) {
-        // Boost-Effekt starten und Richtung festlegen
+        // Startet den Boost und setzt die Richtung
         Vector direction = player.getLocation().getDirection().normalize().multiply(1.5).setY(0.8);
-        player.setVelocity(direction); // Boost in Richtung des Blickwinkels
+        player.setVelocity(direction); // Boost in Blickrichtung des Spielers
 
         // Aktiviert die Gleit-Animation (wie Elytra)
         player.setGliding(true);
         player.getWorld().playSound(player.getLocation(), Sound.ENTITY_LIGHTNING_BOLT_THUNDER, 1.0f, 0.5f);
         spawnCloudTrailParticles(player.getLocation());
 
-        // 1. Schritt: Nach 2 Sekunden endet der Boost, und die Gleitphase beginnt
+        // 1. Schritt: Nach 2 Sekunden endet der Boost und die Gleitphase beginnt
         new BukkitRunnable() {
             @Override
             public void run() {
-                player.setGliding(true); // Gleitmodus aktivieren, wenn Boost endet
+                player.setGliding(true); // Gleitmodus aktivieren
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, GLIDE_DURATION, 1, true, false, false));
             }
         }.runTaskLater(plugin, CLOUD_WALKER_BOOST_DURATION);
 
-        // 2. Schritt: Gleitphase beenden und Fall mit Trident-Riptide-Animation beginnen
+        // 2. Schritt: Gleitphase beenden und Trident-Riptide-Falleffekt auslösen
         new BukkitRunnable() {
             @Override
             public void run() {
-                player.removePotionEffect(PotionEffectType.SLOW_FALLING); // Gleit-Effekt entfernen
-                player.setGliding(false); // Gleitmodus beenden
+                player.removePotionEffect(PotionEffectType.SLOW_FALLING);
+                player.setGliding(false);
+
                 //player.setRiptiding(true);
-                // Setzt den Abwärts-Fall-Effekt wie bei Trident-Riptide
-                player.setVelocity(new Vector(0, -1.5, 0)); // Starker Fall nach unten
-                player.playEffect(EntityEffect.HURT); // Animation für Rotationseffekt
+
+                // Spieler in die rotierende Riptide-Animation versetzen
+                player.setVelocity(new Vector(0, -1.5, 0)); // Beschleunigter Fall nach unten
+                player.playEffect(EntityEffect.HURT); // Effekt für rotierende Bewegung
                 player.getWorld().playSound(player.getLocation(), Sound.ITEM_TRIDENT_RIPTIDE_3, 1.0f, 1.0f);
                 spawnFallTrailParticles(player.getLocation());
             }
@@ -783,6 +798,7 @@ public class ArmorEnhancements implements Listener {
             location.getWorld().spawnParticle(Particle.SWEEP_ATTACK, particleLoc, 3, 0.2, 0.2, 0.2, 0.01);
         }
     }
+
 
 
 
