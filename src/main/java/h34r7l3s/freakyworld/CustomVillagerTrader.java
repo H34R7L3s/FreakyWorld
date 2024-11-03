@@ -170,7 +170,7 @@ public class CustomVillagerTrader implements Listener {
             world.spawnParticle(Particle.FLAME, smithLocation.add(0, 1, 0), 20, 0.3, 0.3, 0.3, 0.05);
         }
         if (random.nextInt(100) < 50) { // 5% Chance für Schmelzeffekt
-            world.spawnParticle(Particle.SMOKE_LARGE, smithLocation.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.02);
+            world.spawnParticle(Particle.LARGE_SMOKE, smithLocation.add(0, 1, 0), 10, 0.2, 0.2, 0.2, 0.02);
             world.playSound(smithLocation, Sound.BLOCK_FURNACE_FIRE_CRACKLE, SoundCategory.BLOCKS, 0.6f, 0.9f);
         }
     }
