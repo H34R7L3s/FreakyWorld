@@ -731,10 +731,10 @@ public class ArmorEnhancements implements Listener {
         spawnCloudTrailParticles(player.getLocation()); // Visual trail effect
 
         // Play sound to enhance feedback
-        player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PHANTOM_FLAP, 1.0f, 1.0f);
+        //player.getWorld().playSound(player.getLocation(), Sound.ENTITY_PHANTOM_FLAP, 1.0f, 1.0f);
 
         // Slow Falling for smooth glide experience
-        player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, GLIDE_DURATION, 1, true, false, false));
+        //player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, GLIDE_DURATION, 1, true, false, false));
 
         // Listen for Shift hold to trigger descent after gliding
         new BukkitRunnable() {
@@ -765,7 +765,7 @@ public class ArmorEnhancements implements Listener {
         // End gliding mode and start Riptide descent animation
         player.setGliding(false);
         player.setRiptiding(true); // Visual Riptide descent effect
-        player.removePotionEffect(PotionEffectType.SLOW_FALLING);
+        //player.removePotionEffect(PotionEffectType.SLOW_FALLING);
 
         // Sharp downward boost for Riptide descent
         player.setVelocity(new Vector(0, -2.5, 0));
