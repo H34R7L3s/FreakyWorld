@@ -332,6 +332,10 @@ public class CustomVillagerTrader implements Listener {
         addUnlockableItem("forest_sofa", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2));
         addUnlockableItem("forest_wall_lamp", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2));
 
+        addUnlockableItem("tavernchandelier", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2));
+        addUnlockableItem("dyestation", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2));
+        addUnlockableItem("weaponrack", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2));
+
 
 
     }
