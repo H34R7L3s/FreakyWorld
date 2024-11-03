@@ -426,6 +426,7 @@ public final class FreakyWorld extends JavaPlugin {
 
 
 
+
     private List<Villager> guildMasters = new ArrayList<>();
     public void spawnGuildMasterVillager() {
         World world = Bukkit.getWorld("world"); // Stellen Sie sicher, dass diese Welt existiert

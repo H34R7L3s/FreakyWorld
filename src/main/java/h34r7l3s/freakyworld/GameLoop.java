@@ -1881,7 +1881,17 @@ public class GameLoop implements Listener {
         playerIntroProgress.put(playerId, 0);
 
         startIntro(player);
+        //sendOraxenPackToPlayer(player);
     }
+    private void sendOraxenPackToPlayer(Player player) {
+        Bukkit.getScheduler().runTask(plugin, () -> {
+            Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "oraxen pack send " + player.getName());
+            plugin.getLogger().info("Oraxen pack sent to player " + player.getName());
+        });
+    }
+
+
+
     private void startIntro(Player player) {
         UUID playerId = player.getUniqueId();
 
