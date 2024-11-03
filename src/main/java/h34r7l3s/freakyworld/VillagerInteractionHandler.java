@@ -79,24 +79,29 @@ public class VillagerInteractionHandler implements Listener {
         String currentCategory = plugin.getVillagerCategoryManager().getCurrentCategory();
         Material requiredMaterial = Material.matchMaterial(categoryManager.getTasksForCategory(currentCategory).get(0));
 
-        if (player.hasMetadata("quest1Accepted")) {
-            ItemStack soloSubmissionSlot = new ItemStack(requiredMaterial);
-            ItemMeta soloMeta = soloSubmissionSlot.getItemMeta();
-            soloMeta.setDisplayName("Abgabe für Solo-Quest");
-            soloMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Jeder Spieler sammelt für sich!"));
-            soloSubmissionSlot.setItemMeta(soloMeta);
-            gui.setItem(4, soloSubmissionSlot);
-        }
 
-        if (player.hasMetadata("quest2Accepted")) {
-            ItemStack guildSubmissionSlot = new ItemStack(requiredMaterial);
-            ItemMeta guildMeta = guildSubmissionSlot.getItemMeta();
-            guildMeta.setDisplayName("Abgabe für Gilden-Quest");
-            guildMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Die Gilde sammelt gemeinsam."));
-            guildSubmissionSlot.setItemMeta(guildMeta);
-            gui.setItem(5, guildSubmissionSlot);
-        }
 
+        if (requiredMaterial != null) {
+            if (player.hasMetadata("quest1Accepted")) {
+                ItemStack soloSubmissionSlot = new ItemStack(requiredMaterial);
+                ItemMeta soloMeta = soloSubmissionSlot.getItemMeta();
+                soloMeta.setDisplayName("Abgabe für Solo-Quest");
+                soloMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Jeder Spieler sammelt für sich!"));
+                soloSubmissionSlot.setItemMeta(soloMeta);
+                gui.setItem(4, soloSubmissionSlot);
+            }
+
+            if (player.hasMetadata("quest2Accepted")) {
+                ItemStack guildSubmissionSlot = new ItemStack(requiredMaterial);
+                ItemMeta guildMeta = guildSubmissionSlot.getItemMeta();
+                guildMeta.setDisplayName("Abgabe für Gilden-Quest");
+                guildMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Die Gilde sammelt gemeinsam."));
+                guildSubmissionSlot.setItemMeta(guildMeta);
+                gui.setItem(5, guildSubmissionSlot);
+            }
+        }else {
+            player.sendMessage(ChatColor.RED+"Es konnte kein Item Material gefunden werden.");
+        }
         ItemStack leaderBoard = createLeaderBoardItem(currentCategory);
         gui.setItem(8, leaderBoard);
 
@@ -116,6 +121,7 @@ public class VillagerInteractionHandler implements Listener {
 
         player.openInventory(gui);
         startLeaderboardUpdater(player, gui);
+
     }
 
 
