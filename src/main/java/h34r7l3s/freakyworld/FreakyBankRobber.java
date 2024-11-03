@@ -311,9 +311,30 @@ public class FreakyBankRobber implements Listener {
     //Phase 4 (complete)
 
 
-
+    // 4 Stunden = 1 Server Neustart Interval
+    // Zeitaufwand für BANKRAUB (Aktives Event)
+    // ohne Vorbereitungszeit == 1H
+    //
+    //
+    //
+    // Kundschaften, Zubehör beschaffen, Informationen eintreiben, Gegenstände stehlen (Vergleich Autos / Laster / Boot),
+    // Leute bestechen / quälen / töten,
+    //
+    // TNT, Minecart (mit TNT / mit Chest?), Boote (mit Chest?), Scaffholdings, Enderperlen, Spinennenetze, barrel, Dragon Breath, Paper / empty Maps / Books?,
+    // Repeater, Redstone, Resdstonetorch, Skulk-Sensor, Blaze Rod, Magma Cream,
+    //
+    //
+    // Tresor muss verteidigt werden (aufknacken)
+    // Spielergebunden: Nur wenn Gewisse Anzhal weiterer Spieler online sind
+    // Spieler gibt per Chat eine Kooridnate an (X Y Z)
+    // --> Um 5 Radius =) Lager / Rückzugsort
+    // wenn der Bankraub "abgeschlossen ist", nicht das Freaky XP erhält,
+    // sondern X Zeit am Rückzugzucksort verweilen / verteigen muss#
+    // Davon kommen
 
     private void startHeistEvent(Player player) {
+
+
         player.sendMessage(ChatColor.RED + "Du hast einen Bankraub gestartet!");
 
         new BukkitRunnable() {
