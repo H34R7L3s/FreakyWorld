@@ -5,6 +5,8 @@ import org.bukkit.*;
 import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockState;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -172,14 +174,15 @@ public class BloomAura implements Listener {
     }
 
     private void boostPlantGrowth(Location location) {
-        int boostedBlocks = 0; // Zählt die geboosteten Blöcke für Logging
+        int boostedBlocks = 0; // Counter for boosted blocks for logging
+
         for (double x = -BOOST_RADIUS; x <= BOOST_RADIUS; x++) {
             for (double y = -BOOST_RADIUS; y <= BOOST_RADIUS; y++) {
                 for (double z = -BOOST_RADIUS; z <= BOOST_RADIUS; z++) {
                     Block block = location.clone().add(x, y, z).getBlock();
                     Material blockType = block.getType();
 
-                    // Beschleunigt Wachstumsstufen (z. B. Weizen, Karotten, Kartoffeln)
+                    // Accelerate growth of ageable crops (wheat, carrots, potatoes, beetroot)
                     if (block.getBlockData() instanceof org.bukkit.block.data.Ageable) {
                         org.bukkit.block.data.Ageable ageable = (org.bukkit.block.data.Ageable) block.getBlockData();
                         if (ageable.getAge() < ageable.getMaximumAge()) {
@@ -188,48 +191,87 @@ public class BloomAura implements Listener {
                             boostedBlocks++;
                         }
                     }
-                    // Setzt ausgewachsenen Baum nach kurzer Verzögerung bei Saplings
+                    // Apply growth boost for saplings
                     else if (isSapling(blockType)) {
-                        growTreeWithDelay(block);
+                        growSapling(block);
                         boostedBlocks++;
                     }
-
-                    // Bambus und Zuckerrohr beschleunigen
+                    // Accelerate growth of bamboo
                     else if (blockType == Material.BAMBOO || blockType == Material.BAMBOO_SAPLING) {
                         growBamboo(block);
                         boostedBlocks++;
                     }
+                    // Accelerate growth of cactus and sugar cane
                     else if (blockType == Material.CACTUS || blockType == Material.SUGAR_CANE) {
                         growCactusOrSugarCane(block);
+                        boostedBlocks++;
+                    }
+                    // Accelerate growth of melon and pumpkin stems
+                    else if (blockType == Material.MELON_STEM || blockType == Material.PUMPKIN_STEM) {
+                        growStem(block);
                         boostedBlocks++;
                     }
                 }
             }
         }
+
         plugin.getLogger().info("Boosted blocks count: " + boostedBlocks);
     }
 
-    // Prüfen, ob Block ein Setzling ist
+    // Check if the block is a sapling
     private boolean isSapling(Material blockType) {
         return blockType == Material.OAK_SAPLING || blockType == Material.BIRCH_SAPLING ||
                 blockType == Material.SPRUCE_SAPLING || blockType == Material.JUNGLE_SAPLING ||
                 blockType == Material.ACACIA_SAPLING || blockType == Material.DARK_OAK_SAPLING;
     }
 
-    // Wächst einen Baum aus einem Setzling mit einer kurzen Verzögerung
-    private void growTreeWithDelay(Block saplingBlock) {
+    // Grow a sapling into a tree with a delay
+    private void growSapling(Block saplingBlock) {
         new BukkitRunnable() {
             @Override
             public void run() {
-                // Überprüfen, ob der Setzling noch da ist und dann Baum setzen
                 if (saplingBlock.getType() != Material.AIR && isSapling(saplingBlock.getType())) {
-                    saplingBlock.getWorld().generateTree(saplingBlock.getLocation(), getTreeType(saplingBlock.getType()));
+                    // Apply the tree growth directly
+                    TreeType treeType = getTreeType(saplingBlock.getType());
+                    saplingBlock.getWorld().generateTree(saplingBlock.getLocation(), treeType);
                 }
             }
-        }.runTaskLater(plugin, 20L); // Wartezeit von 1 Sekunde (20 Ticks)
+        }.runTaskLater(plugin, 20L); // 1-second delay (20 ticks)
     }
 
-    // Funktion zur Baumtyp-Bestimmung basierend auf dem Setzling-Typ
+    // Grow bamboo one block taller
+    private void growBamboo(Block bambooBlock) {
+        Block above = bambooBlock.getRelative(0, 1, 0);
+        if (above.getType() == Material.AIR) {
+            above.setType(Material.BAMBOO);
+            BlockData blockData = above.getBlockData();
+            if (blockData instanceof org.bukkit.block.data.Ageable) {
+                ((org.bukkit.block.data.Ageable) blockData).setAge(1);
+                above.setBlockData(blockData);
+            }
+        }
+    }
+
+    // Grow cactus or sugar cane by adding a block above
+    private void growCactusOrSugarCane(Block block) {
+        Block above = block.getRelative(0, 1, 0);
+        if (above.getType() == Material.AIR) {
+            above.setType(block.getType());
+        }
+    }
+
+    // Grow melon or pumpkin stem to full growth
+    private void growStem(Block stemBlock) {
+        if (stemBlock.getBlockData() instanceof org.bukkit.block.data.Ageable) {
+            org.bukkit.block.data.Ageable ageable = (org.bukkit.block.data.Ageable) stemBlock.getBlockData();
+            if (ageable.getAge() < ageable.getMaximumAge()) {
+                ageable.setAge(ageable.getMaximumAge());
+                stemBlock.setBlockData(ageable);
+            }
+        }
+    }
+
+    // Get the corresponding TreeType based on sapling type
     private TreeType getTreeType(Material saplingType) {
         switch (saplingType) {
             case OAK_SAPLING: return TreeType.TREE;
@@ -242,21 +284,7 @@ public class BloomAura implements Listener {
         }
     }
 
-    // Beschleunigt Bambuswachstum, indem direkt ein weiterer Bambusblock hinzugefügt wird
-    private void growBamboo(Block block) {
-        Block above = block.getRelative(0, 1, 0);
-        if (above.getType() == Material.AIR) {
-            above.setType(Material.BAMBOO);
-        }
-    }
 
-    // Cactus und Sugar Cane wachsen lassen, indem eine weitere Schicht hinzugefügt wird
-    private void growCactusOrSugarCane(Block block) {
-        Block above = block.getRelative(0, 1, 0);
-        if (above.getType() == Material.AIR) {
-            above.setType(block.getType());
-        }
-    }
 
 
 
