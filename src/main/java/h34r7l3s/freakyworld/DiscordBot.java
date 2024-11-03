@@ -144,7 +144,7 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     //HCFW DOCKER
-    public void announceEventWithTimer(String initiatorName, String eventDescription) {
+    public void announceEventWithTimer(String initiatorName, String eventDescription, String timeText, int timeInSeconds) {
         String channelId = "1046919237081518220"; // ID des Info-Kanals
         TextChannel channel = jda.getTextChannelById(channelId);
 
@@ -155,12 +155,12 @@ public class DiscordBot extends ListenerAdapter {
 
         // Formatierte Nachricht mit dem Event-Countdown
         EmbedBuilder eventEmbed = new EmbedBuilder();
-        eventEmbed.setTitle("HCFW Event!");
-        eventEmbed.setDescription("Nutzt die Gelegenheit und killt Zombies, um die geheimnisvolle Koordinate zu finden.");
-        //eventEmbed.addField("Event-Initiator", initiatorName, false);
+        eventEmbed.setTitle("Event!");
+        eventEmbed.setDescription("Nutzt die Gelegenheit und schnappt euch die Beute!");
+        eventEmbed.addField("Event-Initiator", initiatorName, false);
         eventEmbed.addField("Event-Beschreibung", eventDescription, false);
-        eventEmbed.addField("Zeit bis zum Ablauf der Koordinaten", "<t:" + (System.currentTimeMillis() / 1000 + 3600) + ":R>", false); // Discord-Timer auf 1 Stunde setzen
-        eventEmbed.setColor(0x1ABC9C); // Eine auffällige Farbe für das Embed
+        eventEmbed.addField(timeText, "<t:" + (System.currentTimeMillis() / 1000 + timeInSeconds) + ":R>", false); // Discord-Timer auf die angegebene Zeit setzen
+        eventEmbed.setColor(0x1ABC9C); // Auffällige Farbe für das Embed
 
         // Verwenden eines ScheduledExecutorService für die Verzögerung
         ScheduledExecutorService scheduler = Executors.newScheduledThreadPool(1);
@@ -171,6 +171,7 @@ public class DiscordBot extends ListenerAdapter {
         // Scheduler nach der Ausführung herunterfahren
         scheduler.shutdown();
     }
+
 
 
 }

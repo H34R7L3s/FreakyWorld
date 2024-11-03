@@ -105,6 +105,15 @@ public class VillagerCategoryManager {
         // Wähle 2 zufällige Items aus der gewählten Kategorie
         List<String> randomItems = chooseRandomItemsFromCategory(this.currentCategory, 2);
         plugin.getLogger().info("Heutige Kategorie: " + this.currentCategory + " - Zufällige Items: " + randomItems);
+
+        // Erzeuge die Event-Beschreibung mit der Kategorie und den Items
+        String eventDescription = "Heutige Kategorie: **" + this.currentCategory + "**\n" +
+                "Zufällige Items zum Sammeln: **" + String.join(", ", randomItems) + "**";
+
+        // Event über Discord senden
+        plugin.getDiscordBot().announceEventWithTimer("Event Manager", eventDescription, "Zeit verbleibend: ",1800);
+
+
     }
 
     public List<String> chooseRandomItemsFromCategory(String category, int itemCount) {
@@ -175,6 +184,10 @@ public class VillagerCategoryManager {
                 rewardAllPlayers();
 
                 lastRewardTime = System.currentTimeMillis() / 1000; // Setzt die Belohnungszeit zurück
+
+
+
+
             }
         }.runTaskTimer(plugin, 0, 20 * 60 * 30);
         //}.runTaskTimer(plugin, 0, 20 * 60 * 30);

@@ -36,7 +36,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.potion.PotionData;
+
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.potion.PotionType;
@@ -1070,7 +1070,7 @@ public void startBlazeSpawnTimer() {
             isEventCompleted = false;
             plugin.getLogger().info("Event initialized: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
         // Discord-Benachrichtigung über das neue Event senden
-            plugin.getDiscordBot().announceEventWithTimer("Event Manager", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!");
+            plugin.getDiscordBot().announceEventWithTimer("Event Manager", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!", 3600);
 
             // Partikeleffekt für inaktives Event (Rot)
             world.spawnParticle(Particle.DUST, eventLocation.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
