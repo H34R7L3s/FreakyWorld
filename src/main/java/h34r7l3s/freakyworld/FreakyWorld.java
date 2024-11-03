@@ -89,12 +89,16 @@ public final class FreakyWorld extends JavaPlugin {
         Bukkit.getPluginManager().registerEvents(new Listener() {
             @EventHandler
             public void onPlayerLogin(PlayerLoginEvent event) {
-                if (!allPluginsLoaded) {
+                Player player = event.getPlayer();
+                String bypassPermission = "freakyworld.earlyjoin"; // Define the permission needed to bypass the lock
+
+                if (!allPluginsLoaded && !player.hasPermission(bypassPermission)) {
                     event.disallow(PlayerLoginEvent.Result.KICK_OTHER, ChatColor.RED + "Server ist noch nicht bereit. Bitte versuche es gleich erneut.");
                 }
             }
         }, this);
     }
+
     // Methode, die prüft, ob alle Plugins geladen sind und dann den Befehl ausführt
     // Methode, die prüft, ob alle Plugins geladen sind und dann den Befehl ausführt
     private void waitForPluginsAndExecuteCommand() {
@@ -535,5 +539,50 @@ public final class FreakyWorld extends JavaPlugin {
     public GameLoop getGameLoop() {
         return gameLoop;
     }
+
+
+
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (command.getName().equalsIgnoreCase("serverlock")) {
+            if (!(sender instanceof Player)) {
+                sender.sendMessage(ChatColor.RED + "This command can only be used by players.");
+                return true;
+            }
+
+            Player player = (Player) sender;
+            String togglePermission = "freakyworld.earlyjoin"; // Define the permission required for toggling the lock
+
+            // Check if the player has the correct permission
+            if (!player.hasPermission(togglePermission)) {
+                player.sendMessage(ChatColor.RED + "You don't have permission to use this command.");
+                return true;
+            }
+
+            if (args.length != 1) {
+                player.sendMessage(ChatColor.YELLOW + "Usage: /serverlock <open|close>");
+                return true;
+            }
+
+            // Handle the "open" and "close" arguments
+            if (args[0].equalsIgnoreCase("open")) {
+                allPluginsLoaded = true; // Allow player login
+                player.sendMessage(ChatColor.GREEN + "Server is now open to players.");
+                getLogger().info("Server lock lifted by " + player.getName());
+            } else if (args[0].equalsIgnoreCase("close")) {
+                allPluginsLoaded = false; // Disallow player login
+                player.sendMessage(ChatColor.RED + "Server is now closed to players.");
+                getLogger().info("Server lock enabled by " + player.getName());
+            } else {
+                player.sendMessage(ChatColor.YELLOW + "Usage: /serverlock <open|close>");
+            }
+            return true;
+        }
+        return false;
+    }
+
+
+
 
 }

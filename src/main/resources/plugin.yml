@@ -19,3 +19,6 @@ commands:
     usage: /<command> [spawn|remove]
     permission: freakyworld.portalwächter
     permission-message: You do not have permission to use this command.
+  serverlock:
+    description: Toggles the server lock status to allow or disallow player login.
+    usage: /serverlock <open|close>
