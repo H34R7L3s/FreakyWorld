@@ -310,7 +310,6 @@ public class FreakyBankRobber implements Listener {
     //Phase 3 Durchführung + Flucht + Reward Cooldown
     //Phase 4 (complete)
 
-
     // 4 Stunden = 1 Server Neustart Interval
     // Zeitaufwand für BANKRAUB (Aktives Event)
     // ohne Vorbereitungszeit == 1H
@@ -323,15 +322,16 @@ public class FreakyBankRobber implements Listener {
     // TNT, Minecart (mit TNT / mit Chest?), Boote (mit Chest?), Scaffholdings, Enderperlen, Spinennenetze, barrel, Dragon Breath, Paper / empty Maps / Books?,
     // Repeater, Redstone, Resdstonetorch, Skulk-Sensor, Blaze Rod, Magma Cream,
     //
-    //
+    // Timer bei Aufbrauch + Spieler muss in Raduis bleiben, Wetter, Wachen?, Stiller Bankraub (Alarmierung der Spieler erst nach x Zeit vergangen, obwohl Bankraub bereits aktiv, Potential des
+    // scheiterns - früheres auffliegen möglich) Infiltration (still), gewaltsam (direkter Angriff), oder Überlistung der Wächter (z. B. mittels Lärm ablenken)
+    // Limitierung Werkzeuge??
     // Tresor muss verteidigt werden (aufknacken)
-    // Spielergebunden: Nur wenn Gewisse Anzhal weiterer Spieler online sind
+    // Spielergebunden: Nur wenn Gewisse Anzahl weiterer Spieler online sind
     // Spieler gibt per Chat eine Kooridnate an (X Y Z)
-    // --> Um 5 Radius =) Lager / Rückzugsort
+    // An dieser Koordiante wird im 5 Radius =) Lager / Rückzugsort erstellt & allen Teilnehmern des Bankraubs angezeigt.
     // wenn der Bankraub "abgeschlossen ist", nicht das Freaky XP erhält,
-    // sondern X Zeit am Rückzugzucksort verweilen / verteigen muss#
-    // Davon kommen
-
+    // sondern X Zeit am Rückzugzucksort verweilen / verteigen muss
+    // (Davon kommen)
     private void startHeistEvent(Player player) {
 
 
