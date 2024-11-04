@@ -1910,13 +1910,14 @@ public class VampirZepter implements Listener {
                     player.sendMessage(ChatColor.RED + "Das Ei ist abgelaufen!");
                     player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1, 1);
                     player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.0f, 1.0f);
+                    player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND, 0.5f, 1.0f);
                     cancel();
                     return;
                 }
 
                 // Spiele Tick-Sound jede Sekunde
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.5f, 1.0f);
-                player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_AIR, 0.5f, 1.0f);
+
                 countdown--;
             }
         };
@@ -1941,6 +1942,8 @@ public class VampirZepter implements Listener {
                 player.getInventory().addItem(new ItemStack(clickedItem.getType()));
                 player.getWorld().playEffect(player.getLocation(), Effect.SMOKE, 1);
                 player.getWorld().playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1, 1);
+                player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND, 0.5f, 1.0f);
+                player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1, 1);
 
                 // Beende den Timer und entferne GUI-Daten
                 if (guiTimers.containsKey(playerUUID)) {
