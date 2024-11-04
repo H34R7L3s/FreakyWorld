@@ -705,7 +705,7 @@ public class GameLoop implements Listener {
         }
         eventInventory.setItem(0, eventItem);
 
-        ItemStack comingSoonItem = OraxenItems.getItemById("runic_animated-shield").build(); // Beispiel-Oraxen-ID
+        ItemStack comingSoonItem = OraxenItems.getItemById("runic_animated-shield1").build(); // Beispiel-Oraxen-ID
         ItemMeta meta = comingSoonItem.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ChatColor.GOLD + "?????");

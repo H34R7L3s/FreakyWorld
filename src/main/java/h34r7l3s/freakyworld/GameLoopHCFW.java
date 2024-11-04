@@ -88,7 +88,7 @@ public class GameLoopHCFW implements Listener {
 
         Inventory hcfwInventory = Bukkit.createInventory(null, 9, "HCFW Events");
 
-        ItemStack comingSoonItem = OraxenItems.getItemById("runicanimated_hat").build(); // Beispiel-Oraxen-ID
+        ItemStack comingSoonItem = OraxenItems.getItemById("runicanimated_hat1").build(); // Beispiel-Oraxen-ID
         ItemMeta meta = comingSoonItem.getItemMeta();
         if (meta != null) {
             meta.setDisplayName(ChatColor.GOLD + "Dein Pfad zur Macht");
