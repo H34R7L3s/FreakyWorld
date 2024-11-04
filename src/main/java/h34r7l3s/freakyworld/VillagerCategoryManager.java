@@ -1,5 +1,6 @@
 package h34r7l3s.freakyworld;
 
+import io.th0rgal.oraxen.api.OraxenItems;
 import jdk.jfr.Category;
 import org.bukkit.*;
 import org.bukkit.entity.Villager;
@@ -49,7 +50,7 @@ public class VillagerCategoryManager {
         PersistentDataContainer data = this.villager.getPersistentDataContainer();
         data.set(key, PersistentDataType.STRING, "bazar_villager");
 
-        updateVillagerTaskDisplay();
+        //updateVillagerTaskDisplay();
         initializeVillagerLookTask();
     }
 
@@ -152,7 +153,10 @@ public class VillagerCategoryManager {
     }
 
     public void updateVillagerTaskDisplay() {
-        String taskMessage = ChatColor.YELLOW + "Aktuelle Aufgabe: " + ChatColor.LIGHT_PURPLE + getCurrentCategory();
+        String taskMessage =
+
+                ChatColor.GOLD + "Freaky Bazar ";
+        taskMessage +=        ChatColor.YELLOW + "Aktuelle Aufgabe: " + ChatColor.RED + getCurrentCategory();
         List<String> tasks = plugin.getCategoryManager().getTasksForCategory(getCurrentCategory());
 
         if (!tasks.isEmpty()) {
@@ -163,14 +167,16 @@ public class VillagerCategoryManager {
         if (leadingPlayer != null) {
             Player player = Bukkit.getPlayer(leadingPlayer);
             if (player != null) {
-                taskMessage += ChatColor.YELLOW + " - Führend: " + ChatColor.GOLD + player.getName();
+                taskMessage += ChatColor.YELLOW + " - Bester Spieler: " + ChatColor.LIGHT_PURPLE + player.getName();
             }
         }
 
         if (villager != null) {
             villager.setCustomName(taskMessage);
+            //villager.
         }
     }
+
 
     public void startDailyEvents() {
         new BukkitRunnable() {
@@ -186,13 +192,57 @@ public class VillagerCategoryManager {
                 lastRewardTime = System.currentTimeMillis() / 1000; // Setzt die Belohnungszeit zurück
 
 
-
+                // Startet den UI-Timer für die verbleibende Zeit
+                //startRewardTimerUpdater(); //ohne Spielerinteraktion
 
             }
         }.runTaskTimer(plugin, 0, 20 * 60 * 30);
         //}.runTaskTimer(plugin, 0, 20 * 60 * 30);
     }
+    // Methode zum dynamischen Abrufen der verbleibenden Zeit und Aktualisieren der UI
+    public void startRewardTimerUpdater() {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                long remainingTime = getRemainingTimeUntilReward();
 
+                // Wenn die Zeit abgelaufen ist, beende diesen Timer
+                if (remainingTime == 0) {
+                    this.cancel();
+                    return;
+                }
+
+                // Formatiere die verbleibende Zeit und aktualisiere die UI
+                String formattedTime = formatTimeUntilNextReward();
+                updateUITimer(formattedTime);
+            }
+        }.runTaskTimer(plugin, 0L, 20L); // Alle 20 Ticks (1 Sekunde)
+    }
+    // Methode zur Aktualisierung der UI mit der verbleibenden Zeit bis zur nächsten Belohnung
+    public void updateUITimer(String formattedTime) {
+        if (villager != null) {
+            String taskMessageS =
+
+                    ChatColor.GOLD + "Freaky Bazar \n" +
+                            ChatColor.YELLOW + "Aktuelle Aufgabe: " + ChatColor.RED + getCurrentCategory() +
+                            ChatColor.YELLOW + " - Zeit bis zur nächsten Belohnung: " + ChatColor.GREEN + formattedTime;
+
+            List<String> tasks = plugin.getCategoryManager().getTasksForCategory(getCurrentCategory());
+            if (!tasks.isEmpty()) {
+                taskMessageS += ChatColor.YELLOW + " - Sammle: " + ChatColor.DARK_GREEN + tasks.get(0);
+            }
+
+            UUID leadingPlayer = plugin.getEventLogic().getLeadingPlayerForCategory(getCurrentCategory());
+            if (leadingPlayer != null) {
+                Player player = Bukkit.getPlayer(leadingPlayer);
+                if (player != null) {
+                    taskMessageS += ChatColor.YELLOW + " - Bester Spieler: " + ChatColor.LIGHT_PURPLE + player.getName();
+                }
+            }
+
+            villager.setCustomName(taskMessageS);
+        }
+    }
 
 
     public void resetPlayerQuestStates() {
@@ -205,12 +255,24 @@ public class VillagerCategoryManager {
     }
 
 
+    // Berechnet die verbleibende Zeit und setzt lastRewardTime zurück, wenn die Zeit abgelaufen ist.
     public long getRemainingTimeUntilReward() {
         long currentTime = System.currentTimeMillis() / 1000; // Aktuelle Zeit in Sekunden
         long elapsedTime = currentTime - lastRewardTime;
         long timeUntilNextReward = rewardInterval - elapsedTime;
-        return timeUntilNextReward > 0 ? timeUntilNextReward : 0;
+
+        // Überprüfen, ob die Zeit abgelaufen ist
+        if (timeUntilNextReward <= 0) {
+            // Setzt lastRewardTime zurück, um den Countdown von vorne zu starten
+            lastRewardTime = currentTime;
+            return rewardInterval; // Startet den Countdown neu
+        }
+
+        return timeUntilNextReward;
     }
+
+
+
     public String formatTimeUntilNextReward() {
         long remainingSeconds = getRemainingTimeUntilReward();
         long minutes = remainingSeconds / 60;
@@ -219,17 +281,60 @@ public class VillagerCategoryManager {
     }
 
     public void rewardAllPlayers() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
+        // Spieler und ihre Punktestände sammeln
+        List<OfflinePlayer> allPlayers = Arrays.asList(Bukkit.getOfflinePlayers());
+        Map<UUID, Integer> playerScores = new HashMap<>();
+
+        for (OfflinePlayer player : allPlayers) {
             UUID playerUUID = player.getUniqueId();
             int playerScore = plugin.getEventLogic().getPlayerScoreForCategory(playerUUID, currentCategory);
 
-            if (playerScore > 0) {
-                ItemStack reward = new ItemStack(Material.DIAMOND, playerScore / 100);
-                plugin.getVillagerCategoryManager().storeRewardForPlayer(playerUUID, currentCategory, reward); // Hier wird die Belohnung gespeichert
-                player.sendMessage("§6Du hast für deine Teilnahme an der Kategorie " + currentCategory + " eine Belohnung erhalten!");
+            // Belohnt nur Spieler mit Score > 1
+            if (playerScore > 1) {
+                playerScores.put(playerUUID, playerScore);
             }
         }
+
+        // Belohnung an alle Spieler mit Score > 1 vergeben
+        for (Map.Entry<UUID, Integer> entry : playerScores.entrySet()) {
+            UUID playerUUID = entry.getKey();
+            int playerScore = entry.getValue();
+
+            // Verschiedene Belohnungen für unterschiedliche Punktestände
+            ItemStack reward;
+            if (playerScore >= 100) {
+                reward = OraxenItems.getItemById("gold").build(); // Höchste Belohnung für hohe Punkte
+            } else if (playerScore >= 50) {
+                reward = OraxenItems.getItemById("silber").build();
+            } else if (playerScore >= 20) {
+                reward = new ItemStack(Material.DIAMOND, Math.max(1, playerScore / 20));
+            } else if (playerScore >= 10) {
+                reward = new ItemStack(Material.EMERALD, Math.max(1, playerScore / 10));
+            } else {
+                reward = new ItemStack(Material.IRON_INGOT, Math.max(1, playerScore / 5));
+            }
+
+            // Falls die Menge 0 ist, wird die Belohnung nicht ausgegeben, um Fehler zu vermeiden
+            if (reward.getAmount() > 0) {
+                plugin.getVillagerCategoryManager().storeRewardForPlayer(playerUUID, currentCategory, reward);
+
+                // Wenn der Spieler online ist, Nachricht senden
+                Player onlinePlayer = Bukkit.getPlayer(playerUUID);
+                if (onlinePlayer != null) {
+                    onlinePlayer.sendMessage(ChatColor.GOLD + "Freaky, dass " + ChatColor.DARK_PURPLE + onlinePlayer.getName() +
+                            " schon einmal in der Kategorie " + currentCategory + " geholfen hat! \n " + ChatColor.GREEN + "Wir könnten weitere Ressourcen gebrauchen");
+                }
+            }
+        }
+
+        if (playerScores.isEmpty()) {
+            plugin.getLogger().info("Keine Belohnungen ausgestellt, da niemand mehr als 1 Punkt in der Kategorie " + currentCategory + " erreicht hat.");
+        }
     }
+
+
+
+
 
 
     public String getCurrentCategory() {

@@ -4,6 +4,7 @@ import com.comphenix.protocol.wrappers.EnumWrappers;
 import io.th0rgal.oraxen.api.OraxenItems;
 // Imports required for the guild management and inventory interaction
 import org.bukkit.event.inventory.InventoryClickEvent;
+import org.bukkit.event.inventory.InventoryCloseEvent;
 import org.bukkit.inventory.meta.ItemMeta;
 
 import java.lang.annotation.Target;
@@ -53,6 +54,7 @@ public class VampirZepter implements Listener {
     private final GameLoop gameLoop; // Eine Instanz von GameLoop, die beim Konstruktor übergeben wird
     private final QuestVillager questVillager;
     private final GuildManager guildManager;
+    private final List<ItemStack> spawnEggItems = new ArrayList<>();
 
     public VampirZepter(JavaPlugin plugin, DatabaseManager dbManager, GameLoop gameLoop,QuestVillager questVillager, GuildManager guildManager) {
         this.plugin = plugin;
@@ -61,6 +63,7 @@ public class VampirZepter implements Listener {
         this.gameLoop = gameLoop;
         this.questVillager = questVillager;
         this.guildManager = guildManager;
+        initializeSpawnEggList();
     }
 
     @EventHandler
@@ -1787,8 +1790,171 @@ public class VampirZepter implements Listener {
     }
 
 
+    //Eggmac Trading Funktion
+    // Austausch 1x Eggmac - gegen das gewünschte Spawn Item.
 
+    private final Map<UUID, Inventory> activeEggmacGUIs = new HashMap<>();
+    private final Map<UUID, BukkitRunnable> guiTimers = new HashMap<>();
+    private void initializeSpawnEggList() {
+        // Hinzufügen der gewünschten Spawn-Eier zur Liste
+        spawnEggItems.add(new ItemStack(Material.ZOMBIE_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.SKELETON_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.SPIDER_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.CREEPER_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.ENDERMAN_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.BLAZE_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.WITCH_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.SLIME_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.MAGMA_CUBE_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.GUARDIAN_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.PIGLIN_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.ZOMBIFIED_PIGLIN_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.HUSK_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.DROWNED_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.PHANTOM_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.VINDICATOR_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.EVOKER_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.SHULKER_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.COW_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.SHEEP_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.PIG_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.CHICKEN_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.RABBIT_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.HORSE_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.BEE_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.FOX_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.WOLF_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.CAT_SPAWN_EGG));
+    }
+    @EventHandler
+    public void onRightClickEggmac(PlayerInteractEvent event) {
+        Player player = event.getPlayer();
+        ItemStack heldItem = player.getInventory().getItemInMainHand();
+        String itemId = OraxenItems.getIdByItem(heldItem);
 
+        // Prüfen, ob das eggmac gehalten wird und mit Rechtsklick interagiert
+        if (itemId != null && itemId.equals("eggmac") &&
+                (event.getAction() == Action.RIGHT_CLICK_AIR || event.getAction() == Action.RIGHT_CLICK_BLOCK)) {
+
+            event.setCancelled(true); // Verhindert Standardaktionen
+            int nonDudCount = 6; // Anzahl der "Nicht-Nieten", anpassbar
+
+            // Erstelle eine einzigartige UUID und das GUI
+            UUID guiID = UUID.randomUUID();
+            Inventory eggmacGUI = createRandomEggmacGUI(nonDudCount);
+            activeEggmacGUIs.put(guiID, eggmacGUI);
+
+            // GUI dem Spieler öffnen
+            player.openInventory(eggmacGUI);
+            startGUIExpiryTimer(player, guiID, eggmacGUI);
+        }
+    }
+
+    private Inventory createRandomEggmacGUI(int nonDudCount) {
+        Inventory gui = Bukkit.createInventory(null, 18, ChatColor.LIGHT_PURPLE + "Wähle ein Spawn-Ei");
+
+        List<ItemStack> shuffledEggs = new ArrayList<>(spawnEggItems);
+        Collections.shuffle(shuffledEggs);
+
+        List<ItemStack> selectedEggs = shuffledEggs.subList(0, Math.min(nonDudCount, shuffledEggs.size()));
+
+        List<ItemStack> itemsToDisplay = new ArrayList<>(selectedEggs);
+        while (itemsToDisplay.size() < 18) {
+            itemsToDisplay.add(new ItemStack(Material.COBWEB));
+        }
+        Collections.shuffle(itemsToDisplay);
+
+        for (int i = 0; i < itemsToDisplay.size(); i++) {
+            gui.setItem(i, itemsToDisplay.get(i));
+        }
+
+        return gui;
+    }
+
+    private void startGUIExpiryTimer(Player player, UUID guiID, Inventory gui) {
+        BukkitRunnable task = new BukkitRunnable() {
+            int countdown = 20; // Ablaufzeit in Sekunden
+
+            @Override
+            public void run() {
+                if (countdown <= 0) {
+                    // Schließe das GUI und entferne das GUI von der aktiven Liste
+                    player.closeInventory();
+                    activeEggmacGUIs.remove(guiID);
+                    guiTimers.remove(guiID);
+                    player.sendMessage(ChatColor.RED + "Das Ei ist abgelaufen!");
+                    cancel();
+                    return;
+                }
+
+                // Spiele Tick-Sound jede Sekunde
+                player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.5f, 1.0f);
+                countdown--;
+            }
+        };
+
+        guiTimers.put(guiID, task);
+        task.runTaskTimer(plugin, 0, 20); // Startet das Ticken (1 Sekunde Interval)
+    }
+
+    @EventHandler
+    public void onInventoryClickEggmac(InventoryClickEvent event) {
+        Player player = (Player) event.getWhoClicked();
+        Inventory inventory = event.getClickedInventory();
+
+        // Prüfen, ob das geöffnete Inventar das Spawn-Ei-GUI ist
+        if (inventory != null && activeEggmacGUIs.containsValue(inventory)) {
+            event.setCancelled(true);
+            ItemStack clickedItem = event.getCurrentItem();
+
+            // Prüfen, ob das geklickte Item ein Spawn-Ei ist und keine Niete (Spinnennetz)
+            if (clickedItem != null && clickedItem.getType().toString().contains("SPAWN_EGG")) {
+                player.getInventory().addItem(new ItemStack(clickedItem.getType()));
+                player.getInventory().setItemInMainHand(null);
+                player.getWorld().playEffect(player.getLocation(), Effect.SMOKE, 1);
+                player.getWorld().playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1, 1);
+
+                // Beende den Timer und entferne GUI-Daten
+                UUID guiID = getGUIIDByInventory(inventory);
+                if (guiID != null) {
+                    guiTimers.get(guiID).cancel();
+                    guiTimers.remove(guiID);
+                    activeEggmacGUIs.remove(guiID);
+                }
+
+                player.closeInventory();
+            }
+        }
+    }
+
+    private UUID getGUIIDByInventory(Inventory inventory) {
+        return activeEggmacGUIs.entrySet().stream()
+                .filter(entry -> entry.getValue().equals(inventory))
+                .map(Map.Entry::getKey)
+                .findFirst()
+                .orElse(null);
+    }
+
+    @EventHandler
+    public void onInventoryClose(InventoryCloseEvent event) {
+        UUID guiID = getGUIIDByInventory(event.getInventory());
+        if (guiID != null) {
+            guiTimers.get(guiID).cancel();
+            guiTimers.remove(guiID);
+            activeEggmacGUIs.remove(guiID);
+        }
+    }
+
+    @EventHandler
+    public void onPlayerQuit(PlayerQuitEvent event) {
+        Player player = event.getPlayer();
+        activeEggmacGUIs.keySet().forEach(guiID -> {
+            if (guiTimers.containsKey(guiID)) {
+                guiTimers.get(guiID).cancel();
+                guiTimers.remove(guiID);
+            }
+        });
+    }
 }
 
 

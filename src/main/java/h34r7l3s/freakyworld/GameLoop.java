@@ -699,11 +699,25 @@ public class GameLoop implements Listener {
         ItemStack eventItem = new ItemStack(Material.ENDER_PEARL);
         ItemMeta eventMeta = eventItem.getItemMeta();
         if (eventMeta != null) {
-            eventMeta.setDisplayName(ChatColor.AQUA + "Ender Event");
-            eventMeta.setLore(Arrays.asList("Starte das Ender Event, um Belohnungen zu erhalten."));
+            eventMeta.setDisplayName(ChatColor.AQUA + "Drachen Event");
+            eventMeta.setLore(Arrays.asList("Starte das Drachen Event, um Belohnungen zu erhalten."));
             eventItem.setItemMeta(eventMeta);
         }
         eventInventory.setItem(0, eventItem);
+
+        ItemStack comingSoonItem = OraxenItems.getItemById("runic_animated-shield").build(); // Beispiel-Oraxen-ID
+        ItemMeta meta = comingSoonItem.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ChatColor.GOLD + "?????");
+            meta.setLore(Arrays.asList("" +
+                    "" +
+                    "Bald wirst du mehr erfahren..."));
+
+            comingSoonItem.setItemMeta(meta);
+        }
+        eventInventory.setItem(1, comingSoonItem);
+
+
 
         // Add more events similarly...
         player.openInventory(eventInventory);

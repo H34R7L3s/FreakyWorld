@@ -11,8 +11,10 @@ import org.bukkit.entity.Player;
 import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
+import org.bukkit.event.block.Action;
 import org.bukkit.event.inventory.InventoryClickEvent;
 import org.bukkit.event.player.PlayerInteractEntityEvent;
+import org.bukkit.event.player.PlayerInteractEvent;
 import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.InventoryView;
 import org.bukkit.inventory.ItemStack;
@@ -28,6 +30,7 @@ import java.util.*;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static javax.management.remote.JMXConnectorFactory.connect;
+import static org.bukkit.Bukkit.getServer;
 
 
 public class CustomVillagerTrader implements Listener {
@@ -410,8 +413,8 @@ public class CustomVillagerTrader implements Listener {
     }
 
     private void resetItems() {
-        initializeUnlockableItems();
-        Bukkit.broadcastMessage(ChatColor.GREEN + "Die Handelswaren des Meisterhändlers wurden erneuert!");
+        //initializeUnlockableItems();
+        Bukkit.broadcastMessage(ChatColor.GREEN + "Der Schmied braucht"+ChatColor.RED + "Hilfe!"+ ChatColor.GREEN + "Vermutlich sind die"+ ChatColor.GOLD+"  Rohstoffe knapp.");
     }
 
     private final List<String> smithTips = Arrays.asList(
@@ -1812,4 +1815,12 @@ class DatabaseManagerTrader {
         }
         return players;
     }
+
+    // Event für Rechtsklick mit eggmac
+    // Wird in VampirZepter gehandelt.
+
+
+
+
+
 }

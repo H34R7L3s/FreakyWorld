@@ -86,7 +86,7 @@ public class VillagerInteractionHandler implements Listener {
                 ItemStack soloSubmissionSlot = new ItemStack(requiredMaterial);
                 ItemMeta soloMeta = soloSubmissionSlot.getItemMeta();
                 soloMeta.setDisplayName("Abgabe für Solo-Quest");
-                soloMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Jeder Spieler sammelt für sich!"));
+                soloMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Belohnungen werden " +ChatColor.GREEN + player.getName() + ChatColor.YELLOW+ " gutgeschrieben."));
                 soloSubmissionSlot.setItemMeta(soloMeta);
                 gui.setItem(4, soloSubmissionSlot);
             }
@@ -95,7 +95,8 @@ public class VillagerInteractionHandler implements Listener {
                 ItemStack guildSubmissionSlot = new ItemStack(requiredMaterial);
                 ItemMeta guildMeta = guildSubmissionSlot.getItemMeta();
                 guildMeta.setDisplayName("Abgabe für Gilden-Quest");
-                guildMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Die Gilde sammelt gemeinsam."));
+
+                guildMeta.setLore(List.of(ChatColor.GOLD + "Gebe hier die gesammelten " + ChatColor.DARK_GREEN + requiredMaterial.name() + ChatColor.GOLD + " ab!", ChatColor.YELLOW + "Belohnungen werden " +ChatColor.GREEN + "deiner Gilde" + ChatColor.YELLOW+ " gutgeschrieben."));
                 guildSubmissionSlot.setItemMeta(guildMeta);
                 gui.setItem(5, guildSubmissionSlot);
             }
@@ -108,14 +109,14 @@ public class VillagerInteractionHandler implements Listener {
         ItemStack quest1Item = new ItemStack(Material.PAPER);
         ItemMeta quest1Meta = quest1Item.getItemMeta();
         quest1Meta.setDisplayName("Grundversorgung");
-        quest1Meta.setLore(List.of(ChatColor.GOLD + "Beschaffe: " + ChatColor.DARK_GREEN + categoryManager.getTasksForCategory(currentCategory).get(0), ChatColor.YELLOW + "Klicke hier, um diese Quest anzunehmen."));
+        quest1Meta.setLore(List.of(ChatColor.GOLD + "Beschaffe: " + ChatColor.DARK_GREEN + categoryManager.getTasksForCategory(currentCategory).get(0), ChatColor.YELLOW + "Klicke "+ChatColor.RED + "hier"+ChatColor.YELLOW +", um jetzt teilzunehmen."));
         quest1Item.setItemMeta(quest1Meta);
         gui.setItem(1, quest1Item);
 
         ItemStack quest2Item = new ItemStack(Material.PAPER);
         ItemMeta quest2Meta = quest2Item.getItemMeta();
         quest2Meta.setDisplayName("Gilden Quest");
-        quest2Meta.setLore(List.of(ChatColor.GOLD + "Gilden-Mitglieder sammeln gemeinsam Items für ihre Gilde.", ChatColor.YELLOW + "Klicke hier, um diese Quest anzunehmen."));
+        quest2Meta.setLore(List.of(ChatColor.GOLD + "Gilden-Mitglieder sammeln gemeinsam Items für ihre Gilde.", ChatColor.YELLOW + "Klicke "+ChatColor.RED + "hier"+ChatColor.YELLOW +", um jetzt teilzunehmen."));
         quest2Item.setItemMeta(quest2Meta);
         gui.setItem(2, quest2Item);
 
@@ -133,16 +134,18 @@ public class VillagerInteractionHandler implements Listener {
                     // Aktualisiere das Item, das die verbleibende Wartezeit anzeigt
                     ItemStack timeItem = gui.getItem(0); // Das Zeit-Item ist an Position 0
                     ItemMeta timeMeta = timeItem.getItemMeta();
-                    timeMeta.setLore(List.of("",ChatColor.YELLOW + "Nächste Belohnung in: ", ChatColor.DARK_AQUA + plugin.getVillagerCategoryManager().formatTimeUntilNextReward()));
+                    timeMeta.setLore(List.of("", ChatColor.YELLOW + "Nächste Belohnung in: ",
+                            ChatColor.DARK_AQUA + plugin.getVillagerCategoryManager().formatTimeUntilNextReward()));
 
                     timeItem.setItemMeta(timeMeta);
                     player.updateInventory();
                 } else {
-                    this.cancel(); // Stop the task if the player closes the inventory
+                    this.cancel(); // Stoppt die Aufgabe, wenn der Spieler das Inventar schließt
                 }
             }
-        }.runTaskTimer(plugin, 0L, 20L); // Update every second
+        }.runTaskTimer(plugin, 0L, 20L); // Aktualisiert jede Sekunde
     }
+
 
 
     private ItemStack createLeaderBoardItem(String category) {
@@ -157,8 +160,8 @@ public class VillagerInteractionHandler implements Listener {
             List<String> lore = List.of(
                     ChatColor.YELLOW + "Statistik:",
                     "",
-                    ChatColor.DARK_GREEN + "" + leadingPlayer.getName(),
-                    ChatColor.LIGHT_PURPLE +"Punkte: " + ChatColor.GOLD + eventLogic.getPlayerScoreForCategory(leadingPlayerUUID, category)
+                    ChatColor.LIGHT_PURPLE + "" + leadingPlayer.getName(),
+                    ChatColor.GOLD +"Punkte: " + ChatColor.DARK_GREEN + eventLogic.getPlayerScoreForCategory(leadingPlayerUUID, category)
             );
             meta.setLore(lore);
 
@@ -248,7 +251,7 @@ public class VillagerInteractionHandler implements Listener {
                             player.sendMessage("Du hast alle gespeicherten Belohnungen für deine Gilde abgeholt.");
                             hasRewards = true;
                         } else {
-                            player.sendMessage("Deine Gilde wurde gut entlohnt.");
+                            player.sendMessage("Deine Gilde wurde ebenfalls gut entlohnt.");
                         }
                     }
                 }

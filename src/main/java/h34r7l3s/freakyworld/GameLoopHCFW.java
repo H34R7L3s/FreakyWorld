@@ -88,18 +88,45 @@ public class GameLoopHCFW implements Listener {
 
         Inventory hcfwInventory = Bukkit.createInventory(null, 9, "HCFW Events");
 
+        ItemStack comingSoonItem = OraxenItems.getItemById("runicanimated_hat").build(); // Beispiel-Oraxen-ID
+        ItemMeta meta = comingSoonItem.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ChatColor.GOLD + "Dein Pfad zur Macht");
+            meta.setLore(Arrays.asList(
+                    ChatColor.DARK_GRAY + "» Bist du bereit, die Hardcore-Welt zu meistern?",
+                    ChatColor.DARK_GRAY + "  Hier regieren nur die Wagemutigsten.",
+                    "",
+                    ChatColor.GRAY + "» Erobere die gefährlichsten Gebiete, bezwinge",
+                    ChatColor.GRAY + "  die stärksten Gegner und beherrsche die Arena.",
+                    "",
+                    ChatColor.DARK_PURPLE + "» Wer dieses Menü freigeschaltet hat, kennt",
+                    ChatColor.DARK_PURPLE + "  den Weg zur wahren Macht.",
+                    ChatColor.DARK_PURPLE + "  Und für die Elite: Hier steuerst du alles.",
+                    "",
+                    ChatColor.DARK_AQUA + "» Tritt ein... wenn du es wagst."
+            ));
+            comingSoonItem.setItemMeta(meta);
+        }
+        hcfwInventory.setItem(1, comingSoonItem);
+
+
+
         ItemStack hcfwEventItem = new ItemStack(Material.ENDER_PEARL);
         ItemMeta hcfwEventMeta = hcfwEventItem.getItemMeta();
         if (hcfwEventMeta != null) {
-            hcfwEventMeta.setDisplayName(ChatColor.GREEN + "HCFW Event - Quick Warp");
+            hcfwEventMeta.setDisplayName(ChatColor.GREEN + "HCFW Event - "+ChatColor.RED +"Quick Warp");
             hcfwEventMeta.setLore(Arrays.asList(
+                    ChatColor.AQUA + "Starte sofort dein HCFW Abenteuer und farme Freaky XP.",
+                    //ChatColor.GREEN + "Ganz ohne Teleportkosten ;)",
                     ChatColor.YELLOW + "",
-                    ChatColor.YELLOW + "Starte dein HCFW Event und töte Mobs für Freaky XP.",
-                    ChatColor.AQUA + "Du wirst sofort in die HCFW teleportiert!"
+                    ChatColor.RED + "Bei klick wirst DU sofort in die HCFW teleportiert!!"
             ));
             hcfwEventItem.setItemMeta(hcfwEventMeta);
         }
-        hcfwInventory.setItem(4, hcfwEventItem);
+        if (playerItems >= 1000) {
+            hcfwInventory.setItem(4, hcfwEventItem);
+        }
+
 
 
         ItemStack specialEventItem = new ItemStack(Material.END_CRYSTAL);

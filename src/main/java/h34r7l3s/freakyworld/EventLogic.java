@@ -58,7 +58,7 @@ public class EventLogic {
         }
 
         if (leadingPlayerUUID != null) {
-            plugin.getLogger().info("Führender Spieler in Kategorie " + category + ": " + leadingPlayerUUID + " mit Score " + topScore);
+            //plugin.getLogger().info("Führender Spieler in Kategorie " + category + ": " + leadingPlayerUUID + " mit Score " + topScore);
         } else {
             plugin.getLogger().info("Kein führender Spieler in Kategorie " + category + " gefunden.");
         }

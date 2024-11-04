@@ -155,9 +155,10 @@ public class DiscordBot extends ListenerAdapter {
 
         // Formatierte Nachricht mit dem Event-Countdown
         EmbedBuilder eventEmbed = new EmbedBuilder();
-        eventEmbed.setTitle("Event!");
+        eventEmbed.setTitle("FreakyWorld Event!");
         eventEmbed.setDescription("Nutzt die Gelegenheit und schnappt euch die Beute!");
-        eventEmbed.addField("Event-Initiator", initiatorName, false);
+        eventEmbed.addField("", "", false);
+        //eventEmbed.addField("Event-Initiator", initiatorName, false);
         eventEmbed.addField("Event-Beschreibung", eventDescription, false);
         eventEmbed.addField(timeText, "<t:" + (System.currentTimeMillis() / 1000 + timeInSeconds) + ":R>", false); // Discord-Timer auf die angegebene Zeit setzen
         eventEmbed.setColor(0x1ABC9C); // Auffällige Farbe für das Embed

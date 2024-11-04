@@ -60,7 +60,7 @@ public class CustomDatabaseManager {
                 }
                 File databaseFile = new File(dataFolder, "game_system.db");
                 connection = DriverManager.getConnection("jdbc:sqlite:" + databaseFile.getPath());
-                plugin.getLogger().info("Datenbankverbindung erfolgreich wiederhergestellt.");
+                //plugin.getLogger().info("Datenbankverbindung erfolgreich wiederhergestellt.");
             } catch (SQLException e) {
                 throw new SQLException("Fehler beim Herstellen der Verbindung zur Datenbank: " + e.getMessage(), e);
             }
