@@ -1793,8 +1793,13 @@ public class VampirZepter implements Listener {
     //Eggmac Trading Funktion
     // Austausch 1x Eggmac - gegen das gewünschte Spawn Item.
 
+
     private final Map<UUID, Inventory> activeEggmacGUIs = new HashMap<>();
     private final Map<UUID, BukkitRunnable> guiTimers = new HashMap<>();
+    private final Map<UUID, List<ItemStack>> playerEggOptions = new HashMap<>();
+
+
+
     private void initializeSpawnEggList() {
         // Hinzufügen der gewünschten Spawn-Eier zur Liste
         spawnEggItems.add(new ItemStack(Material.ZOMBIE_SPAWN_EGG));
@@ -1826,11 +1831,19 @@ public class VampirZepter implements Listener {
         spawnEggItems.add(new ItemStack(Material.WOLF_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.CAT_SPAWN_EGG));
     }
+
     @EventHandler
     public void onRightClickEggmac(PlayerInteractEvent event) {
         Player player = event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
         ItemStack heldItem = player.getInventory().getItemInMainHand();
         String itemId = OraxenItems.getIdByItem(heldItem);
+
+        // Prüfen, ob der Spieler bereits eine aktive Session hat
+        if (activeEggmacGUIs.containsKey(playerUUID)) {
+            player.sendMessage(ChatColor.RED + "Du hast bereits ein aktives Ei!");
+            return;
+        }
 
         // Prüfen, ob das eggmac gehalten wird und mit Rechtsklick interagiert
         if (itemId != null && itemId.equals("eggmac") &&
@@ -1839,18 +1852,21 @@ public class VampirZepter implements Listener {
             event.setCancelled(true); // Verhindert Standardaktionen
             int nonDudCount = 6; // Anzahl der "Nicht-Nieten", anpassbar
 
-            // Erstelle eine einzigartige UUID und das GUI
-            UUID guiID = UUID.randomUUID();
-            Inventory eggmacGUI = createRandomEggmacGUI(nonDudCount);
-            activeEggmacGUIs.put(guiID, eggmacGUI);
+            // Verbrauch des eggmac
+            heldItem.setAmount(heldItem.getAmount() - 1);
+            player.getInventory().setItemInMainHand(heldItem.getAmount() > 0 ? heldItem : null);
+
+            // GUI mit zufälligen Eiern und Nieten erstellen
+            Inventory eggmacGUI = createRandomEggmacGUI(nonDudCount, playerUUID);
+            activeEggmacGUIs.put(playerUUID, eggmacGUI);
 
             // GUI dem Spieler öffnen
             player.openInventory(eggmacGUI);
-            startGUIExpiryTimer(player, guiID, eggmacGUI);
+            startGUIExpiryTimer(player, playerUUID);
         }
     }
 
-    private Inventory createRandomEggmacGUI(int nonDudCount) {
+    private Inventory createRandomEggmacGUI(int nonDudCount, UUID playerUUID) {
         Inventory gui = Bukkit.createInventory(null, 18, ChatColor.LIGHT_PURPLE + "Wähle ein Spawn-Ei");
 
         List<ItemStack> shuffledEggs = new ArrayList<>(spawnEggItems);
@@ -1864,6 +1880,9 @@ public class VampirZepter implements Listener {
         }
         Collections.shuffle(itemsToDisplay);
 
+        // Speichere die Auswahl für den Spieler
+        playerEggOptions.put(playerUUID, itemsToDisplay);
+
         for (int i = 0; i < itemsToDisplay.size(); i++) {
             gui.setItem(i, itemsToDisplay.get(i));
         }
@@ -1871,89 +1890,107 @@ public class VampirZepter implements Listener {
         return gui;
     }
 
-    private void startGUIExpiryTimer(Player player, UUID guiID, Inventory gui) {
+    private void startGUIExpiryTimer(Player player, UUID playerUUID) {
         BukkitRunnable task = new BukkitRunnable() {
             int countdown = 20; // Ablaufzeit in Sekunden
 
             @Override
             public void run() {
+                if (!activeEggmacGUIs.containsKey(playerUUID)) {
+                    cancel();
+                    return;
+                }
+
                 if (countdown <= 0) {
                     // Schließe das GUI und entferne das GUI von der aktiven Liste
                     player.closeInventory();
-                    activeEggmacGUIs.remove(guiID);
-                    guiTimers.remove(guiID);
+                    activeEggmacGUIs.remove(playerUUID);
+                    guiTimers.remove(playerUUID);
+                    playerEggOptions.remove(playerUUID);
                     player.sendMessage(ChatColor.RED + "Das Ei ist abgelaufen!");
+                    player.getWorld().playSound(player.getLocation(), Sound.ENTITY_ITEM_BREAK, 1, 1);
+                    player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1.0f, 1.0f);
                     cancel();
                     return;
                 }
 
                 // Spiele Tick-Sound jede Sekunde
                 player.playSound(player.getLocation(), Sound.BLOCK_NOTE_BLOCK_HAT, 0.5f, 1.0f);
+                player.playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_AIR, 0.5f, 1.0f);
                 countdown--;
             }
         };
 
-        guiTimers.put(guiID, task);
+        guiTimers.put(playerUUID, task);
         task.runTaskTimer(plugin, 0, 20); // Startet das Ticken (1 Sekunde Interval)
     }
 
     @EventHandler
     public void onInventoryClickEggmac(InventoryClickEvent event) {
         Player player = (Player) event.getWhoClicked();
-        Inventory inventory = event.getClickedInventory();
+        UUID playerUUID = player.getUniqueId();
+        Inventory inventory = event.getInventory();
 
         // Prüfen, ob das geöffnete Inventar das Spawn-Ei-GUI ist
-        if (inventory != null && activeEggmacGUIs.containsValue(inventory)) {
+        if (inventory != null && activeEggmacGUIs.get(playerUUID) == inventory) {
             event.setCancelled(true);
             ItemStack clickedItem = event.getCurrentItem();
 
             // Prüfen, ob das geklickte Item ein Spawn-Ei ist und keine Niete (Spinnennetz)
             if (clickedItem != null && clickedItem.getType().toString().contains("SPAWN_EGG")) {
                 player.getInventory().addItem(new ItemStack(clickedItem.getType()));
-                player.getInventory().setItemInMainHand(null);
                 player.getWorld().playEffect(player.getLocation(), Effect.SMOKE, 1);
                 player.getWorld().playSound(player.getLocation(), Sound.ITEM_MACE_SMASH_GROUND_HEAVY, 1, 1);
 
                 // Beende den Timer und entferne GUI-Daten
-                UUID guiID = getGUIIDByInventory(inventory);
-                if (guiID != null) {
-                    guiTimers.get(guiID).cancel();
-                    guiTimers.remove(guiID);
-                    activeEggmacGUIs.remove(guiID);
+                if (guiTimers.containsKey(playerUUID)) {
+                    guiTimers.get(playerUUID).cancel();
+                    guiTimers.remove(playerUUID);
                 }
+                activeEggmacGUIs.remove(playerUUID);
+                playerEggOptions.remove(playerUUID);
 
                 player.closeInventory();
             }
         }
     }
 
-    private UUID getGUIIDByInventory(Inventory inventory) {
-        return activeEggmacGUIs.entrySet().stream()
-                .filter(entry -> entry.getValue().equals(inventory))
-                .map(Map.Entry::getKey)
-                .findFirst()
-                .orElse(null);
-    }
-
     @EventHandler
     public void onInventoryClose(InventoryCloseEvent event) {
-        UUID guiID = getGUIIDByInventory(event.getInventory());
-        if (guiID != null) {
-            guiTimers.get(guiID).cancel();
-            guiTimers.remove(guiID);
-            activeEggmacGUIs.remove(guiID);
+        Player player = (Player) event.getPlayer();
+        UUID playerUUID = player.getUniqueId();
+        Inventory inventory = event.getInventory();
+
+        if (activeEggmacGUIs.get(playerUUID) == inventory) {
+            // GUI wurde geschlossen, aber Session bleibt aktiv
+            // Spieler kann GUI erneut öffnen, aber erhält dieselben Optionen
+            BukkitRunnable reopenTask = new BukkitRunnable() {
+                @Override
+                public void run() {
+                    if (activeEggmacGUIs.containsKey(playerUUID)) {
+                        player.openInventory(activeEggmacGUIs.get(playerUUID));
+                    } else {
+                        cancel();
+                    }
+                }
+            };
+            // Verzögerung, um eventuelle Konflikte zu vermeiden
+            reopenTask.runTaskLater(plugin, 1L);
         }
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         Player player = event.getPlayer();
-        activeEggmacGUIs.keySet().forEach(guiID -> {
-            if (guiTimers.containsKey(guiID)) {
-                guiTimers.get(guiID).cancel();
-                guiTimers.remove(guiID);
-            }
-        });
+        UUID playerUUID = player.getUniqueId();
+
+        // Beende alle laufenden Timer und entferne die Daten
+        if (guiTimers.containsKey(playerUUID)) {
+            guiTimers.get(playerUUID).cancel();
+            guiTimers.remove(playerUUID);
+        }
+        activeEggmacGUIs.remove(playerUUID);
+        playerEggOptions.remove(playerUUID);
     }
 }
 
