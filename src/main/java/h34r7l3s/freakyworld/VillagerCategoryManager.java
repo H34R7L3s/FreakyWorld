@@ -322,7 +322,7 @@ public class VillagerCategoryManager {
                 Player onlinePlayer = Bukkit.getPlayer(playerUUID);
                 if (onlinePlayer != null) {
                     onlinePlayer.sendMessage(ChatColor.GOLD + "Freaky, dass " + ChatColor.DARK_PURPLE + onlinePlayer.getName() +
-                            " schon einmal in der Kategorie " + currentCategory + " geholfen hat! \n " + ChatColor.GREEN + "Wir könnten weitere Ressourcen gebrauchen");
+                            ChatColor.GOLD +" schon einmal in der Kategorie "+ ChatColor.GREEN  + currentCategory +ChatColor.GOLD + " geholfen hat! \n " + ChatColor.GREEN + "Wir könnten weitere Ressourcen gebrauchen");
                 }
             }
         }

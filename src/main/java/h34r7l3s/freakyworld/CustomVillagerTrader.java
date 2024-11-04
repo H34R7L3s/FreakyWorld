@@ -414,7 +414,7 @@ public class CustomVillagerTrader implements Listener {
 
     private void resetItems() {
         //initializeUnlockableItems();
-        Bukkit.broadcastMessage(ChatColor.GREEN + "Der Schmied braucht"+ChatColor.RED + "Hilfe!"+ ChatColor.GREEN + "Vermutlich sind die"+ ChatColor.GOLD+"  Rohstoffe knapp.");
+        Bukkit.broadcastMessage(ChatColor.GREEN + "Der Schmied braucht"+ChatColor.RED + " Hilfe!"+ ChatColor.GREEN + "Vermutlich sind die"+ ChatColor.GOLD+"  Rohstoffe knapp.");
     }
 
     private final List<String> smithTips = Arrays.asList(
