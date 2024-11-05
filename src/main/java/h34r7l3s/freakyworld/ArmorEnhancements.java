@@ -7,10 +7,7 @@ import org.bukkit.block.Block;
 import org.bukkit.boss.BarColor;
 import org.bukkit.boss.BarStyle;
 import org.bukkit.boss.BossBar;
-import org.bukkit.entity.Entity;
-import org.bukkit.entity.LivingEntity;
-import org.bukkit.entity.Player;
-import org.bukkit.entity.Snowball;
+import org.bukkit.entity.*;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
@@ -21,6 +18,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerToggleFlightEvent;
 import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.inventory.meta.FireworkMeta;
 import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
@@ -728,6 +726,27 @@ public class ArmorEnhancements implements Listener {
         // Start Riptide visual effect and enter gliding mode
         player.setRiptiding(true); // Activate Riptide effect for animation
         player.setGliding(true); // Enter glide mode for smooth control
+        // direkter Boost == schlechtes Spielgefühl,
+        // da keine Kntrolle
+        Firework firework = (Firework) player.getWorld().spawnEntity(player.getLocation(), EntityType.FIREWORK_ROCKET);
+
+        // Stelle die Eigenschaften für das Level-1-Feuerwerk ein
+        FireworkMeta fireworkMeta = firework.getFireworkMeta();
+        fireworkMeta.addEffect(FireworkEffect.builder()
+                .with(FireworkEffect.Type.BALL)  // Einfacher Kugel-Effekt
+                .withColor(Color.WHITE)
+                .withFade(Color.GRAY)
+                .build());
+
+        fireworkMeta.setPower(1);
+        firework.setFireworkMeta(fireworkMeta);
+
+        //Velocity // ++ ViewPoint
+        player.setVelocity(player.getVelocity().add(new Vector(0, 0.5, 0)));
+
+
+        //erst wenn, dann
+        firework.detonate();
         spawnCloudTrailParticles(player.getLocation()); // Visual trail effect
 
         // Play sound to enhance feedback
@@ -748,6 +767,9 @@ public class ArmorEnhancements implements Listener {
                 if (player.isOnGround()) {
                     player.setRiptiding(false); // Stop Riptide animation on landing
                     player.removePotionEffect(PotionEffectType.SLOW_FALLING);
+
+
+
                     this.cancel();
                     return;
                 }

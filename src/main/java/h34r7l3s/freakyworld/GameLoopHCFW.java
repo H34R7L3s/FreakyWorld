@@ -503,7 +503,7 @@ public class GameLoopHCFW implements Listener {
 
         int itemsSubmitted = getPlayerItemsSubmitted(playerId);
         if (itemsSubmitted < 50000) {
-            player.sendMessage(ChatColor.RED + "Du musst mindestens 50.000 HCFW Punkte haben, um dieses Event zu starten.");
+            player.sendMessage(ChatColor.RED + "Du musst mindestens 50.000 HCFW Punkte haben, um diese Events zu starten.");
             return;
         }
 
