@@ -232,7 +232,9 @@ public class GameLoopHCFW implements Listener {
             player.sendMessage("Die HCFW-Welt ist nicht geladen.");
             return;
         }
-        Location hcfwLocation = new Location(hcfwWorld, 0, 100, 0);
+        //Spawn Location für SaveSpawn
+        Location hcfwLocation = hcfwWorld.getSpawnLocation();
+
         player.teleport(hcfwLocation);
         player.sendMessage("Du wurdest in die HCFW-Welt teleportiert! Töte Mobs für Freaky XP.");
     }
