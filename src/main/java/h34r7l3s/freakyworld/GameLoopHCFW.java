@@ -160,7 +160,7 @@ public class GameLoopHCFW implements Listener {
             event.setCancelled(true);
             if (event.getCurrentItem() == null) return;
 
-            if (event.getCurrentItem().getType() == Material.PAPER) {
+            if (event.getCurrentItem().getType() == Material.PIGLIN_HEAD) {
                 ItemMeta meta = event.getCurrentItem().getItemMeta();
                 if (meta != null && meta.hasDisplayName()) {
                     switch (meta.getDisplayName()) {
@@ -187,7 +187,7 @@ public class GameLoopHCFW implements Listener {
     private void openSpecialEventMenu(Player player) {
         Inventory specialEventInventory = Bukkit.createInventory(null, 9, "Wähle ein Event");
 
-        ItemStack version1 = new ItemStack(Material.PAPER);
+        ItemStack version1 = new ItemStack(Material.PIGLIN_HEAD);
         ItemMeta version1Meta = version1.getItemMeta();
         if (version1Meta != null) {
             version1Meta.setDisplayName("Event Version 1");
@@ -196,7 +196,7 @@ public class GameLoopHCFW implements Listener {
         }
         specialEventInventory.setItem(0, version1);
 
-        ItemStack version2 = new ItemStack(Material.PAPER);
+        ItemStack version2 = new ItemStack(Material.PIGLIN_HEAD);
         ItemMeta version2Meta = version2.getItemMeta();
         if (version2Meta != null) {
             version2Meta.setDisplayName("Event Version 2");
@@ -205,7 +205,7 @@ public class GameLoopHCFW implements Listener {
         }
         specialEventInventory.setItem(2, version2);
 
-        ItemStack version3 = new ItemStack(Material.PAPER);
+        ItemStack version3 = new ItemStack(Material.PIGLIN_HEAD);
         ItemMeta version3Meta = version3.getItemMeta();
         if (version3Meta != null) {
             version3Meta.setDisplayName("Event Version 3");
@@ -214,7 +214,7 @@ public class GameLoopHCFW implements Listener {
         }
         specialEventInventory.setItem(4, version3);
 
-        ItemStack version4 = new ItemStack(Material.PAPER);
+        ItemStack version4 = new ItemStack(Material.PIGLIN_HEAD);
         ItemMeta version4Meta = version4.getItemMeta();
         if (version4Meta != null) {
             version4Meta.setDisplayName("Event Version 4");
