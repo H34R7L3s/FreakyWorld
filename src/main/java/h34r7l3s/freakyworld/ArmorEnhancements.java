@@ -176,6 +176,8 @@ public class ArmorEnhancements implements Listener {
 
         }
     }
+
+    //globalJumpEffekt über alle Rüstungen Hinweg (Basic Skill)
     @EventHandler
     public void onPlayerJump(PlayerJumpEvent event) {
         Player player = event.getPlayer();
@@ -192,8 +194,9 @@ public class ArmorEnhancements implements Listener {
                 // Verringern Sie die verfügbaren Boosts um 1
                 availableBoosts.put(player.getUniqueId(), availableBoosts.get(player.getUniqueId()) - 1);
 
-                // Apply Slow Falling effect
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 500, 0)); // Dauer in Ticks, 100 Ticks = 5 Sekunden, Stärke 0
+
+
+                //player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 160, 0)); // Dauer in Ticks, 100 Ticks = 5 Sekunden, Stärke 0
 
             }
 
@@ -697,7 +700,7 @@ public class ArmorEnhancements implements Listener {
     private final Map<UUID, Long> cloudWalkerCooldowns = new HashMap<>();
     private static final long CLOUD_WALKER_COOLDOWN = 5000; // 5 seconds cooldown
     private static final int GLIDE_DURATION = 800; // Glide duration in ticks
-    private static final int DESCENT_HOLD_DURATION = 50; // 2.5 seconds in ticks
+    private static final int DESCENT_HOLD_DURATION = 2000; // 2.5 seconds in ticks
 
     // Track airborne status and shift hold for descent activation
     private final Map<UUID, Long> shiftHoldStartTime = new HashMap<>();
@@ -738,15 +741,23 @@ public class ArmorEnhancements implements Listener {
                 .withFade(Color.GRAY)
                 .build());
 
-        fireworkMeta.setPower(1);
+        fireworkMeta.setPower(2);
         firework.setFireworkMeta(fireworkMeta);
 
         //Velocity // ++ ViewPoint
-        player.setVelocity(player.getVelocity().add(new Vector(0, 0.5, 0)));
+        //player.setVelocity(player.getVelocity().add(new Vector(0, 2.5, 0)));
 
 
         //erst wenn, dann
-        firework.detonate();
+        // 2-Sekunden-Delay vor der Explosion des Feuerwerks
+        spawnCloudTrailParticles(player.getLocation());
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                firework.detonate();
+                spawnCloudTrailParticles(player.getLocation());// Detoniert das Feuerwerk nach 2 Sekunden
+            }
+        }.runTaskLater(plugin, 40L);
         spawnCloudTrailParticles(player.getLocation()); // Visual trail effect
 
         // Play sound to enhance feedback
@@ -766,7 +777,7 @@ public class ArmorEnhancements implements Listener {
                 // Stop if the player lands
                 if (player.isOnGround()) {
                     player.setRiptiding(false); // Stop Riptide animation on landing
-                    player.removePotionEffect(PotionEffectType.SLOW_FALLING);
+                    //player.removePotionEffect(PotionEffectType.SLOW_FALLING);
 
 
 
@@ -775,7 +786,8 @@ public class ArmorEnhancements implements Listener {
                 }
 
                 // Check if Shift is held long enough for descent
-                if (player.isSneaking() && ticksElapsed >= DESCENT_HOLD_DURATION) {
+                if (player.isSneaking() && player.isGliding() &&
+                        ticksElapsed >= DESCENT_HOLD_DURATION) {
                     activateRiptideDescent(player);
                     this.cancel();
                 }
