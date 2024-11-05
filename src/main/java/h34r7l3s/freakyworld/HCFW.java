@@ -1015,6 +1015,8 @@ public void startBlazeSpawnTimer() {
         World world = plugin.getServer().getWorld("hcfw");
         plugin.getLogger().info("Event initialized erreicht");
 
+
+        //--
         int maxAttempts = 500; // Maximale Anzahl von Versuchen, einen geeigneten Ort zu finden
         int attempt = 0;
         int searchRadius = 6000; // Der maximale Suchradius für zufällige Koordinaten
@@ -1023,6 +1025,16 @@ public void startBlazeSpawnTimer() {
             // Zufällige Koordinaten in einem großen Bereich generieren
             int x = new Random().nextInt(searchRadius * 2) - searchRadius;
             int z = new Random().nextInt(searchRadius * 2) - searchRadius;
+            Chunk chunk = world.getChunkAt(x >>4, z>>4);
+
+            if (!chunk.isLoaded()){
+                chunk.load();
+                attempt++;
+                continue;
+
+            }
+
+            //ggfs. Chunk hier noch nicht geladen?
             int y = world.getHighestBlockYAt(x, z);
 
             // Überprüfen, ob die Position in einem ungünstigen Biome ist oder in der Nähe von Bäumen oder Wasser liegt
@@ -1057,6 +1069,13 @@ public void startBlazeSpawnTimer() {
                 attempt++;
                 continue;
             }
+            //Position Check abgeschlossen,
+            //Frage: ist hier der Chunk bereits geladen
+            // ODER
+            // wird der Chunk bereits bei der highestblock Prüfung
+            // abgefragt?
+
+
 
             // Geeignete Position gefunden, Event initialisieren
             eventLocation = new Location(world, x, y + 2, z); // Etwas oberhalb des Bodens positionieren
@@ -1068,8 +1087,13 @@ public void startBlazeSpawnTimer() {
             isEventActive = false; // Das Event wird noch nicht aktiviert
             isEventInitialized = true;
             isEventCompleted = false;
+
+            // Fehler tritt vor diser Log ausgabe auf.
+            // d.h. es ist bereits sicher, dass der Fehler innerhalb dieser Methode
+            // oberhalb dieser Position liegen muss.
+
             plugin.getLogger().info("Event initialized: isEventActive=" + isEventActive + ", isEventInitialized=" + isEventInitialized + ", isEventCompleted=" + isEventCompleted);
-        // Discord-Benachrichtigung über das neue Event senden
+            // Discord-Benachrichtigung über das neue Event senden
             plugin.getDiscordBot().announceEventWithTimer("Event Manager", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!", 3600);
 
             // Partikeleffekt für inaktives Event (Rot)
@@ -1081,10 +1105,7 @@ public void startBlazeSpawnTimer() {
 
 
 
-
-
-
-//Freaky Raids
+    //Freaky Raids
     // Neue Funktionen ab hier, die das Event Raid System betreffen
 
     private int probabilityBooster = 0;
