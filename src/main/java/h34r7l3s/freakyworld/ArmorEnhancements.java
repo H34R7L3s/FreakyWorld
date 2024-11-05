@@ -196,7 +196,7 @@ public class ArmorEnhancements implements Listener {
 
 
 
-                //player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 160, 0)); // Dauer in Ticks, 100 Ticks = 5 Sekunden, Stärke 0
+                player.addPotionEffect(new PotionEffect(PotionEffectType.SLOW_FALLING, 90, 0)); // Dauer in Ticks, 100 Ticks = 5 Sekunden, Stärke 0
 
             }
 
@@ -699,11 +699,9 @@ public class ArmorEnhancements implements Listener {
     // Sky Armor-specific glide mechanics
     private final Map<UUID, Long> cloudWalkerCooldowns = new HashMap<>();
     private static final long CLOUD_WALKER_COOLDOWN = 5000; // 5 seconds cooldown
-    private static final int GLIDE_DURATION = 800; // Glide duration in ticks
-    private static final int DESCENT_HOLD_DURATION = 2000; // 2.5 seconds in ticks
 
-    // Track airborne status and shift hold for descent activation
-    private final Map<UUID, Long> shiftHoldStartTime = new HashMap<>();
+    private static final int DESCENT_HOLD_DURATION = 5000; // 2.5 seconds in ticks
+
 
     @EventHandler
     public void onPlayerJumpSkyRivals(PlayerJumpEvent event) {
@@ -784,7 +782,7 @@ public class ArmorEnhancements implements Listener {
                     this.cancel();
                     return;
                 }
-
+                // Needs Work
                 // Check if Shift is held long enough for descent
                 if (player.isSneaking() && player.isGliding() &&
                         ticksElapsed >= DESCENT_HOLD_DURATION) {
