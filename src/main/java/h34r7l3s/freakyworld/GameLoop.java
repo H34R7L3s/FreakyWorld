@@ -885,6 +885,8 @@ public class GameLoop implements Listener {
                 OraxenItems.getItemById("freakyworlds_willen").build()
         };
 
+
+
         ItemStack separator = new ItemStack(Material.BLACK_STAINED_GLASS_PANE);
         ItemMeta separatorMeta = separator.getItemMeta();
         if (separatorMeta != null) {
@@ -954,6 +956,26 @@ public class GameLoop implements Listener {
             }
             abilitiesInventory.setItem(41, resetButton);
         }
+
+        //Info Text einfügen Slot 50
+        ItemStack comingSoonItem = OraxenItems.getItemById("fairy_wing").build(); // Beispiel-Oraxen-ID
+        ItemMeta meta = comingSoonItem.getItemMeta();
+        if (meta != null) {
+            meta.setDisplayName(ChatColor.GOLD + "Text Erklärung Fähigkeiten");
+            meta.setLore(Arrays.asList("" +
+                    "blalbalbal" +
+                    "Bald wirst du mehr erfahren... dies und das du weißt doch" +
+                    "wie das so bei uns läft :^)"
+
+
+            ));
+
+            comingSoonItem.setItemMeta(meta);
+        }
+        abilitiesInventory.setItem(49, comingSoonItem);
+
+
+
 
         player.openInventory(abilitiesInventory);
     }
