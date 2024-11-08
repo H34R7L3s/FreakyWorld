@@ -22,3 +22,5 @@ commands:
   serverlock:
     description: Toggles the server lock status to allow or disallow player login.
     usage: /serverlock <open|close>
+    permission: freakyworld.serverlock
+    permission-message: You do not have permission to use this command.
