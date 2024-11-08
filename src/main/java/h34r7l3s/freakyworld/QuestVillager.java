@@ -21,7 +21,7 @@ import org.bukkit.inventory.meta.BookMeta;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.inventory.meta.PotionMeta;
 import org.bukkit.plugin.java.JavaPlugin;
-import org.bukkit.potion.PotionData;
+
 import org.bukkit.potion.PotionType;
 import io.th0rgal.oraxen.api.OraxenItems;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -448,39 +448,48 @@ public class QuestVillager implements Listener {
             // Erstellen der Seiteninhalte
             List<String> pages = new ArrayList<>();
 
-            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 4 - Überblick\n" + ChatColor.RESET +
-                    ChatColor.DARK_GRAY + "FreakyWorld FAQ im Discord\n" +
-                    "Keine zeitliche Begrenzung\n" +
-                    "Nether und End sofort geöffnet\n");
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Season 4 - Willkommen Freaks!\n\n" + ChatColor.RESET +
+                    ChatColor.DARK_GRAY + "Mein Name ist Hugo Heissluft.\n" +
+                    "Einige von euch kennen mich bereits,\n" +
+                    ChatColor.GOLD + "" + ChatColor.BOLD+"für alle neuen Herzlich Willkommen!\n");
 
-            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Freies Spielen\n" + ChatColor.RESET +
-                    "Keine Vorgaben für das Spiel\n" +
-                    "Vanilla-Spiel und Freaky Content\n" +
-                    "Alles startet bei Hugo\n");
+            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Erneut wagen wir einen Neustart \n" + ChatColor.RESET +
+                    ChatColor.DARK_GRAY+"und müssen in der HCFW unsere alte Heimat sichern und zurückerobern.\n" +
+                    "Wie ihr sehen könnt,\n" +
+                    "befinden wir uns bereits in einer neuen Welt.\n" +
+                    "");
+                    //Edit
 
-            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Hugo und die Kategorien\n" + ChatColor.RESET +
-                    "Schmiedekunst\n" +
-                    "Baukuenste\n" +
-                    "Wissenschaft\n" +
-                    "Kriegsführung\n" +
-                    "Selbstfindung\n" +
-                    "Reichtum\n" +
-                    "Unbekannt\n");
 
-            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Items abgeben\n" + ChatColor.RESET +
-                    "Hugo will viele Items\n" +
-                    "Mehr Items = Mehr freischalten\n" +
-                    "Freaky XP als Belohnung\n" +
-                    "Belohnung für 1.000 Items\n");
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Der Spawn ist bereits errichtet.\n" + ChatColor.RESET +
+                    ChatColor.DARK_GRAY+"Eure Aufgabe besteht darin, eine neue Stadt zu errichten.\n" +
+                    "Die Umgebung muss erneut aufgebaut werden.\n" +
+                    "Damit meine ich wirklich die DIREKTE Umgebung!\n" +
+                    "Der Spawn, Nein, gleich die gesamte Insel muss umgebaut werden!\n" +
+                    "Alle wesentlichen Bestandteile unserer beliebten Stadt fehlen aktuell wieder.\n" +
+                    "\n" +
+                    "Jedem steht es frei so zu bauen und spielen wie er möchte.\n");
 
-            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Schmied und Bank\n" + ChatColor.RESET +
-                    "Schmied benötigt Items\n" +
-                    "Freaky XP in Bank einzahlen\n");
+            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Es gibt ein paar Besonderheiten bei uns.\n" + ChatColor.RESET +
+                    "Angefangen bei MIR Hugo.\n" +
+                    "\n" +
+                    "Bei mir könnt ihr Items abgeben. \n" +
+                    "Diese sind nötig, nunja...\n"+
+                    ChatColor.YELLOW+"für wirklich viel.."
+            );
 
-            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Spielerfortschritt\n" + ChatColor.RESET +
-                    "Mehr Freaky Content = Mehr Fortschritt\n" +
-                    "Dynamische Welt\n" +
-                    "Jeder Spieler hat eigenen Fortschritt\n");
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Je mehr Items, um so mehr Freaky-XP bekommt ihr.\n" + ChatColor.RESET +
+                    "Wir haben auch andere Villager!\n" +
+                    "Wir haben einen Meisterschmied, einen Gildenmeister, Dave, einen Bazar Villager, den Uralten Wächter und FrekayWorld.\n"+
+                    "Und natürlich..."+ ChatColor.DARK_RED +" unsere ALTE WELT"+
+                    "\n"
+            +"Überall dort, braucht ihr vielleicht eure Freaky-XP.");
+
+            pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Tools und Rüstungen\n" + ChatColor.RESET +
+                    "Der Meisterschmied kann für euch nützliche Gegenstände herstellen.\n" +
+                    "Wenn ihr fleißig beim Wiederaufbau der Stadt mithelft,\n" +
+                    ChatColor.GOLD + "werdet ihr dafür wirklich gut entlohnt!\n"+
+                    ChatColor.RESET+"Eigentlich ist das auch nh ganz netter...");
 
             pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Entdeckung und Innovation\n" + ChatColor.RESET +
                     "Vieles muss von Spielern entdeckt werden\n");
