@@ -961,13 +961,22 @@ public class GameLoop implements Listener {
         ItemStack comingSoonItem = OraxenItems.getItemById("fairy_wing").build(); // Beispiel-Oraxen-ID
         ItemMeta meta = comingSoonItem.getItemMeta();
         if (meta != null) {
-            meta.setDisplayName(ChatColor.GOLD + "Text Erklärung Fähigkeiten");
-            meta.setLore(Arrays.asList("" +
-                    "blalbalbal" +
-                    "Bald wirst du mehr erfahren... dies und das du weißt doch" +
-                    "wie das so bei uns läft :^)"
-
-
+            meta.setDisplayName(ChatColor.GOLD + "Dein Pfad zur Macht");
+            meta.setLore(Arrays.asList(
+                    ChatColor.GRAY + "In den Tiefen der FreakyWorld findest du hier",
+                    ChatColor.GRAY + "Möglichkeiten, deine Kräfte dauerhaft zu entfesseln.",
+                    ChatColor.GRAY + "Jedes Upgrade bringt dich näher an deine wahre Stärke.",
+                    "",
+                    ChatColor.DARK_PURPLE + "» Diese magische Tafel zeigt dir alle benötigten",
+                    ChatColor.DARK_PURPLE + "Ressourcen und ihre Menge.",
+                    ChatColor.GRAY + "- Wenn du alle Items beisammen hast, erscheint",
+                    ChatColor.GRAY + " ein grüner Wolle-Block.",
+                    ChatColor.GRAY + "- Ein Klick auf diesen Block entfesselt deine Macht.",
+                    "",
+                    ChatColor.DARK_AQUA + "» Doch sei gewarnt:",
+                    ChatColor.DARK_AQUA + "Mit jeder Stufe wird der Preis für die nächste steigen.",
+                    "",
+                    ChatColor.GOLD + "Bereite dich vor, Held – deine wahre Macht erwartet dich."
             ));
 
             comingSoonItem.setItemMeta(meta);
