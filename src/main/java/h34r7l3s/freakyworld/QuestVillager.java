@@ -475,15 +475,15 @@ public class QuestVillager implements Listener {
                     "\n" +
                     "Bei mir könnt ihr Items abgeben. \n" +
                     "Diese sind nötig, nunja...\n"+
-                    ChatColor.YELLOW+"für wirklich viel.."
+                    ChatColor.GREEN+"für wirklich viel.."
             );
 
             pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Je mehr Items, um so mehr Freaky-XP bekommt ihr.\n" + ChatColor.RESET +
                     "Wir haben auch andere Villager!\n" +
                     "Wir haben einen Meisterschmied, einen Gildenmeister, Dave, einen Bazar Villager, den Uralten Wächter und FrekayWorld.\n"+
-                    "Und natürlich..."+ ChatColor.DARK_RED +" unsere ALTE WELT"+
+                    "Und natürlich..."+ ChatColor.DARK_RED +" unsere ALTE WELT!"+
                     "\n"
-            +"Überall dort, braucht ihr vielleicht eure Freaky-XP.");
+            );
 
             pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Tools und Rüstungen\n" + ChatColor.RESET +
                     "Der Meisterschmied kann für euch nützliche Gegenstände herstellen.\n" +
@@ -491,8 +491,9 @@ public class QuestVillager implements Listener {
                     ChatColor.GOLD + "werdet ihr dafür wirklich gut entlohnt!\n"+
                     ChatColor.RESET+"Eigentlich ist das auch nh ganz netter...");
 
-            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Entdeckung und Innovation\n" + ChatColor.RESET +
-                    "Vieles muss von Spielern entdeckt werden\n");
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Stürzt euch in ein neues Abenteuer,\n" + ChatColor.RESET +
+                    " ob gemeinsam, allein oder als Gilde.\n"+
+                    ChatColor.GOLD+"Euer Hugo Heissluft");
 
             bookMeta.setPages(pages);
             book.setItemMeta(bookMeta);

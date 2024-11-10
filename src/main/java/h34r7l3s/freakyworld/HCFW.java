@@ -1096,6 +1096,9 @@ public void startBlazeSpawnTimer() {
             // Discord-Benachrichtigung über das neue Event senden
             plugin.getDiscordBot().announceEventWithTimer("Event Manager", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!", "Kill die Zombies in der HCFW, um die Event-Koordinate zu erhalten!", 3600);
 
+
+            Bukkit.broadcastMessage("§6[Event] §fEin neues Event wurde in der HCFW gestartet! Besiege die Zombies, um die Koordinaten zu finden!");
+
             // Partikeleffekt für inaktives Event (Rot)
             world.spawnParticle(Particle.DUST, eventLocation.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));
 

@@ -1811,13 +1811,18 @@ public class VampirZepter implements Listener {
         spawnEggItems.add(new ItemStack(Material.WITCH_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.SLIME_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.MAGMA_CUBE_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.GHAST_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.DROWNED_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.SILVERFISH_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.GUARDIAN_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.PIGLIN_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.ZOMBIFIED_PIGLIN_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.HUSK_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.DROWNED_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.PHANTOM_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.IRON_GOLEM_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.VINDICATOR_SPAWN_EGG));
+        spawnEggItems.add(new ItemStack(Material.WITHER_SKELETON_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.EVOKER_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.SHULKER_SPAWN_EGG));
         spawnEggItems.add(new ItemStack(Material.COW_SPAWN_EGG));

@@ -54,6 +54,10 @@ tasks.withType(JavaCompile).configureEach {
         options.release = targetJavaVersion
     }
 }
+tasks.withType(JavaCompile) {
+    options.encoding = 'UTF-8'
+}
+
 
 processResources {
     def props = [version: version]
