@@ -263,7 +263,6 @@ public class CustomVillagerTrader implements Listener {
         addUnlockableItem("legendary_sword", "weapons", 2419200, Map.of("freaky_coin", 7, "freaky_ingot", 85,"auftragsbuch", 3, "freaky_wissen", 5, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
         addUnlockableItem("vampir", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 12, "eisenherz", 13,  "freakyworlds_willen", 25));
         addUnlockableItem("lightning_arrow", "weapons", 2419200, Map.of("freaky_coin", 5, "freaky_ingot", 3,"auftragsbuch", 5, "freaky_wissen", 5, "kriegsmarke", 7, "eisenherz", 3,  "freakyworlds_willen", 10));
-        //addUnlockableItem("Woorpy", "weapons", 3600, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
         addUnlockableItem("schattenklinge", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 10, "eisenherz", 11,  "freakyworlds_willen", 25));
         addUnlockableItem("xpvamp", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 10, "eisenherz", 11,  "freakyworlds_willen", 25));
         addUnlockableItem("sturmwind", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 200,"auftragsbuch", 50, "freaky_wissen", 40, "kriegsmarke", 20, "eisenherz", 11,  "freakyworlds_willen", 25));
@@ -309,6 +308,7 @@ public class CustomVillagerTrader implements Listener {
         addUnlockableItem("staff_of_wisdom", "magical", 432000, Map.of("freaky_coin", 12, "freaky_ingot", 8,"auftragsbuch", 10, "freaky_wissen", 16, "kriegsmarke", 2, "eisenherz", 4,  "freakyworlds_willen", 6));
         addUnlockableItem("blue_lantern_of_doom", "magical", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 35,"auftragsbuch", 10, "freaky_wissen", 15, "kriegsmarke", 13, "eisenherz", 9,  "freakyworlds_willen", 24));
         addUnlockableItem("eagle_eye", "magical", 432000, Map.of("freaky_coin", 1, "freaky_ingot", 5,"auftragsbuch", 1, "freaky_wissen", 2,  "eisenherz", 1 ));
+        addUnlockableItem("woorpy", "magical", 3600, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
 
 
         // Sonstige
@@ -1308,22 +1308,29 @@ public class CustomVillagerTrader implements Listener {
 
 
     private void checkProductionStatus(Player player) {
-        //Spieler ist Offline und Zeit läuft ab, wird das Item nicht korrekt fertiggestellt
-        //Tritt nicht immer auf, durch manuellen Boost kann Prozess abgeschlossen werden.
-        //if (player == null) {
-        // dürfte Error verursachen, sobald ein Spieler Offline ist, da Prüfung auf alle Spieler alle X Sekunden angewendet wird.
-
-
+        // Prüfen, ob der Spieler existiert und online ist
         if (player == null || !player.isOnline()) {
             plugin.getLogger().warning("Spieler ist nicht mehr online. Beende Überprüfung.");
-            return; // Spieler ist nicht online, beende die Überprüfung.
+            return;
         }
 
+        // Endzeit der Produktion abrufen
         Long endTime = dbManager.getProductionEndTime(player.getUniqueId());
-        if (endTime != null && System.currentTimeMillis() >= endTime) {
-            completeProduction(player);
+
+        // Sicherstellen, dass die Endzeit existiert und die aktuelle Zeit >= Endzeit ist
+        if (endTime != null) {
+            long currentTime = System.currentTimeMillis();
+
+            if (currentTime >= endTime) {
+                completeProduction(player);
+
+
+
+                plugin.getLogger().info("Produktion für Spieler " + player.getName() + " erfolgreich abgeschlossen.");
+            }
         }
     }
+
 
 
     private void completeProduction(Player player) {
@@ -1348,8 +1355,8 @@ public class CustomVillagerTrader implements Listener {
             dbManager.removePendingConfirmation(player.getUniqueId());
 
             // Optional: Aktualisiere die Anzeige im Menü (falls erforderlich)
-            player.closeInventory(); // Schließt das Inventar und zwingt den Spieler, es erneut zu öffnen
-            openMainMenu(player); // Öffnet das Hauptmenü erneut
+            //player.closeInventory(); // Schließt das Inventar und zwingt den Spieler, es erneut zu öffnen
+            //openMainMenu(player); // Öffnet das Hauptmenü erneut
         } else {
             player.sendMessage(ChatColor.RED + "Fehler beim Abschluss der Produktion. Das Item konnte nicht gefunden werden.");
         }

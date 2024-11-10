@@ -171,29 +171,30 @@ public class VampirZepter implements Listener {
         }
     }
 
-
     @EventHandler
-    public void onArrowShoot(EntityShootBowEvent event) {
-        if (!(event.getEntity() instanceof Player) || !(event.getProjectile() instanceof Arrow)) {
-            return;
-        }
+    public void onWoorpyArrowShoot(EntityShootBowEvent event) {
+        if (event.getEntity() instanceof Player && event.getProjectile() instanceof Arrow) {
+            Player player = (Player) event.getEntity();
+            Arrow arrow = (Arrow) event.getProjectile();
+            ItemStack arrowItem = event.getArrowItem();
 
-        Player player = (Player) event.getEntity();
-        Arrow arrow = (Arrow) event.getProjectile();
-        ItemStack arrowItem = event.getBow(); // Verwenden Sie getBow() um das Bogen-Item zu bekommen.
+            if (arrowItem.hasItemMeta()) {
+                if (OraxenItems.getItemById("woorpy") != null) {
+                    String displayName = String.valueOf(OraxenItems.getItemById("woorpy").build());
 
-        if (arrowItem == null || !arrowItem.hasItemMeta()) {
-            return;
-        }
-
-        String itemId = OraxenItems.getIdByItem(arrowItem);
-        if (itemId != null && itemId.equals("woorpy")) { // Ersetzen Sie "woorpy" durch die tatsächliche ID des Oraxen-Pfeils
-            arrow.setMetadata("woorpy", new FixedMetadataValue(plugin, true));
+                    if (displayName.contains("woorpy")) {
+                        arrow.setMetadata("woorpy", new FixedMetadataValue(plugin, true));
+                        System.out.println("Woorpy arrow shot by " + player.getName() + " detected.");
+                    }
+                } else {
+                    plugin.getLogger().warning("The item with ID 'woorpy' was not found in Oraxen configuration.");
+                }
+            }
         }
     }
 
     @EventHandler
-    public void onArrowLand(ProjectileHitEvent event) {
+    public void onWoorpyArrowLand(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Arrow)) {
             return;
         }
@@ -203,51 +204,52 @@ public class VampirZepter implements Listener {
             return;
         }
 
-        // Überprüfung, ob der Schütze des Pfeils ein Spieler ist
         if (!(arrow.getShooter() instanceof Player)) {
             return;
         }
 
         Player shooter = (Player) arrow.getShooter();
+        Location arrowLocation = arrow.getLocation();
 
-        // Verarbeitung nur, wenn das getroffene Entity auch ein Spieler ist
-        if (event.getHitEntity() instanceof Player) {
-            Player victim = (Player) event.getHitEntity();
-
-            // Sicherstellen, dass der Code im Hauptthread ausgeführt wird
-            Bukkit.getScheduler().runTask(plugin, () -> {
-                Location shooterLocation = shooter.getLocation().clone();
-                Location victimLocation = victim.getLocation().clone();
-
-                // Tausche die Positionen von Schütze und Opfer
-                shooter.teleport(victimLocation);
-                victim.teleport(shooterLocation);
-
-                // Zeige Partikeleffekte an beiden Standorten
-                showParticlesWarp(shooterLocation, victimLocation);
-            });
-        }
-    }
-
-
-
-    private void showParticlesWarp(org.bukkit.Location location1, org.bukkit.Location location2) {
-        // Erzeuge Partikel-Effekte hier, um den Platztausch visuell darzustellen
         new BukkitRunnable() {
+            int tick = 0;
+            final int maxTicks = 40; // Anzahl der Ticks für die Bewegung
+
             @Override
             public void run() {
-                location1.getWorld().spawnParticle(Particle.DUST, location1, 11, new Particle.DustOptions(Color.RED, 1));
-                location1.getWorld().spawnParticle(Particle.FLAME, location1, 5);
-                location1.getWorld().spawnParticle(Particle.LAVA, location1, 7);
-                location1.getWorld().spawnParticle(Particle.DRAGON_BREATH, location1, 22);
+                if (shooter.isOnline() && tick < maxTicks) {
+                    Location currentLocation = shooter.getLocation();
+                    double progress = (double) tick / maxTicks;
+                    double curveFactor = Math.sin(progress * Math.PI); // Geschwungene Bewegung
 
-                location2.getWorld().spawnParticle(Particle.DUST, location2, 11, new Particle.DustOptions(Color.RED, 1));
-                location2.getWorld().spawnParticle(Particle.FLAME, location2, 5);
-                location2.getWorld().spawnParticle(Particle.LAVA, location2, 7);
-                location2.getWorld().spawnParticle(Particle.DRAGON_BREATH, location2, 22);
+                    double x = currentLocation.getX() + (arrowLocation.getX() - currentLocation.getX()) * progress * curveFactor;
+                    double y = currentLocation.getY() + (arrowLocation.getY() - currentLocation.getY()) * progress * curveFactor;
+                    double z = currentLocation.getZ() + (arrowLocation.getZ() - currentLocation.getZ()) * progress * curveFactor;
+
+                    Location newLocation = new Location(currentLocation.getWorld(), x, y, z, currentLocation.getYaw(), currentLocation.getPitch());
+                    shooter.teleport(newLocation);
+
+                    // Leiser Grappling-Tick-Sound
+                    shooter.playSound(currentLocation, Sound.ITEM_TRIDENT_RIPTIDE_1, 0.3f, 0.8f);
+
+                    // Schlangenpartikel-Effekt
+                    double offset = 0.5 * Math.sin(tick * 0.3);
+                    shooter.getWorld().spawnParticle(Particle.DUST_COLOR_TRANSITION, newLocation.add(offset, 0.3, offset), 5,
+                            new Particle.DustTransition(Color.LIME, Color.AQUA, 1.2f));
+                    shooter.getWorld().spawnParticle(Particle.SMALL_FLAME, newLocation, 2);
+
+                    tick++;
+                } else {
+                    // Effekt und Ton bei Ankunft
+                    shooter.getWorld().spawnParticle(Particle.LARGE_SMOKE, shooter.getLocation(), 1);
+                    shooter.playSound(shooter.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.6f);
+                    shooter.playSound(shooter.getLocation(), Sound.ITEM_TRIDENT_RETURN, 0.7f, 0.8f);
+                    this.cancel();
+                }
             }
-        }.runTaskLater(plugin, 1L);
+        }.runTaskTimer(plugin, 0L, 1L); // Start sofort und wiederhole jede Tick
     }
+
 
 
 

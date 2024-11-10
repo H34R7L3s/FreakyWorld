@@ -2820,7 +2820,7 @@ public void startBlazeSpawnTimer() {
 
         Player player = event.getPlayer();
         player.sendMessage(ChatColor.GREEN + "Soll ich dich für 500 Freaky-XP in die HCFW teleportieren?");
-        player.sendMessage(ChatColor.DARK_RED + "Ich empfehle dir hier nur einzutreten, wenn du breits einen" + ChatColor.GOLD + ChatColor.BOLD + " Orb des Wissens "+ ChatColor.RESET + ChatColor.DARK_RED + "bei dir hast!");
+        player.sendMessage(ChatColor.DARK_RED + "Ich empfehle dir hier nur einzutreten, wenn du breits ein" + ChatColor.GOLD + ChatColor.BOLD + " Buch des Wissens "+ ChatColor.RESET + ChatColor.DARK_RED + "bei dir hast!");
 
         // Baue die klickbaren Chat-Komponenten
         Component message = Component.text("Möchtest du in die HCFW-Welt teleportiert werden? ");
