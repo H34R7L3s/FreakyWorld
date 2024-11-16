@@ -548,7 +548,7 @@ public class VampireVillager implements Listener {
     }
 
     private void openUpgradeGUI(Player player, Enchantment enchantment, String category) {
-        Inventory upgradeInventory = Bukkit.createInventory(null, 9, ChatColor.GOLD + "Upgrade " + category + " Items");
+        Inventory upgradeInventory = Bukkit.createInventory(null, 9, ChatColor.GOLD + "Power-Upgrade " + category + " Items");
 
         List<ItemStack> itemsToUpgrade = getUpgradeableItems(player, enchantment);
         if (itemsToUpgrade.isEmpty()) {
@@ -582,7 +582,9 @@ public class VampireVillager implements Listener {
         if (clickedItem == null || !clickedItem.hasItemMeta()) return;
 
         // Prüfen, ob der Klick in der GUI "Upgrade" stattfindet
-        if (event.getView().getTitle().contains("Upgrade")) {
+
+        // Prüft auch das normale Vanilla Upgrade Fenster
+        if (event.getView().getTitle().contains("Power-Upgrade")) {
             // Unterscheiden, ob der Spieler im GUI oder in seinem eigenen Inventar klickt
             if (event.getClickedInventory() == event.getView().getTopInventory()) {
                 // Klickt in der GUI, blockiere den Klick und informiere den Spieler
