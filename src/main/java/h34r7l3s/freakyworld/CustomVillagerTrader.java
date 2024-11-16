@@ -341,8 +341,8 @@ public class CustomVillagerTrader implements Listener {
 
         addUnlockableItem("smith_gold", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
         addUnlockableItem("smith_silber", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
-        addUnlockableItem("smith_gold", "misc", 7700, Map.of("gold", 15, "freaky_coin", 5),64);
-        addUnlockableItem("smith_silber", "misc", 7700, Map.of("gold", 15, "freaky_coin", 5),64);
+        addUnlockableItem("smith_gold", "misc", 7700, Map.of("silber", 15, "freaky_coin", 5),164);
+        addUnlockableItem("smith_silber", "misc", 7700, Map.of("silber", 15, "freaky_coin", 5),164);
 
 
     }
