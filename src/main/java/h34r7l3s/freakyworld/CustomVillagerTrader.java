@@ -260,97 +260,104 @@ public class CustomVillagerTrader implements Listener {
 
     private void initializeUnlockableItems() {
         // Waffen
-        addUnlockableItem("legendary_sword", "weapons", 2419200, Map.of("freaky_coin", 7, "freaky_ingot", 85,"auftragsbuch", 3, "freaky_wissen", 5, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
-        addUnlockableItem("vampir", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 12, "eisenherz", 13,  "freakyworlds_willen", 25));
-        addUnlockableItem("lightning_arrow", "weapons", 2419200, Map.of("freaky_coin", 5, "freaky_ingot", 3,"auftragsbuch", 5, "freaky_wissen", 5, "kriegsmarke", 7, "eisenherz", 3,  "freakyworlds_willen", 10));
-        addUnlockableItem("schattenklinge", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 10, "eisenherz", 11,  "freakyworlds_willen", 25));
-        addUnlockableItem("xpvamp", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 10, "eisenherz", 11,  "freakyworlds_willen", 25));
-        addUnlockableItem("sturmwind", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 200,"auftragsbuch", 50, "freaky_wissen", 40, "kriegsmarke", 20, "eisenherz", 11,  "freakyworlds_willen", 25));
+        addUnlockableItem("legendary_sword", "weapons", 2419200, Map.of("freaky_coin", 7, "freaky_ingot", 85,"auftragsbuch", 3, "freaky_wissen", 5, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1),1);
+        addUnlockableItem("vampir", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 12, "eisenherz", 13,  "freakyworlds_willen", 25),1);
+        addUnlockableItem("lightning_arrow", "weapons", 2419200, Map.of("freaky_coin", 5, "freaky_ingot", 3,"auftragsbuch", 5, "freaky_wissen", 5, "kriegsmarke", 7, "eisenherz", 3,  "freakyworlds_willen", 10),1);
+        addUnlockableItem("schattenklinge", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 10, "eisenherz", 11,  "freakyworlds_willen", 25),1);
+        addUnlockableItem("xpvamp", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 100,"auftragsbuch", 25, "freaky_wissen", 20, "kriegsmarke", 10, "eisenherz", 11,  "freakyworlds_willen", 25),1);
+        addUnlockableItem("sturmwind", "weapons", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 200,"auftragsbuch", 50, "freaky_wissen", 40, "kriegsmarke", 20, "eisenherz", 11,  "freakyworlds_willen", 25),1);
 
 
 
 
         // Rüstungen
         //Wind-Rüstung
-        addUnlockableItem("sky_crown", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 30,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("sky_guard", "armor", 864000 , Map.of("freaky_coin", 10, "freaky_ingot", 100,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("sky_boots", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 25,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("sky_leggings", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 75,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
+        addUnlockableItem("sky_crown", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 30,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("sky_guard", "armor", 864000 , Map.of("freaky_coin", 10, "freaky_ingot", 100,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("sky_boots", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 25,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("sky_leggings", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 75,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
 
         //Fire-Rüstung
-        addUnlockableItem("fire_crown", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 30,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("fire_guard", "armor", 864000 , Map.of("freaky_coin", 10, "freaky_ingot", 100,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("fire_boots", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 25,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("fire_leggings", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 75,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
+        addUnlockableItem("fire_crown", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 30,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("fire_guard", "armor", 864000 , Map.of("freaky_coin", 10, "freaky_ingot", 100,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("fire_boots", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 25,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("fire_leggings", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 75,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
         //Water-Rüstung
-        addUnlockableItem("water_crown", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 30,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("water_guard", "armor", 864000 , Map.of("freaky_coin", 10, "freaky_ingot", 100,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("water_boots", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 25,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("water_leggings", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 75,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));//Stone-Rüstung
+        addUnlockableItem("water_crown", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 30,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("water_guard", "armor", 864000 , Map.of("freaky_coin", 10, "freaky_ingot", 100,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("water_boots", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 25,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("water_leggings", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 75,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);//Stone-Rüstung
 
         //Stone-Rüstung
-        addUnlockableItem("stone_crown", "armor", 777600, Map.of("freaky_coin", 10, "freaky_ingot", 30,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("stone_guard", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 100,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("stone_boots", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 25,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));
-        addUnlockableItem("stone_leggings", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 75,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5));//Stone-Rüstung
+        addUnlockableItem("stone_crown", "armor", 777600, Map.of("freaky_coin", 10, "freaky_ingot", 30,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("stone_guard", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 100,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("stone_boots", "armor", 777600 , Map.of("freaky_coin", 10, "freaky_ingot", 25,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);
+        addUnlockableItem("stone_leggings", "armor", 846720 , Map.of("freaky_coin", 10, "freaky_ingot", 75,"auftragsbuch", 10, "freaky_wissen", 10, "kriegsmarke", 25, "eisenherz", 28,  "freakyworlds_willen", 5),1);//Stone-Rüstung
 
 
         // Werkzeuge
-        addUnlockableItem("silkspawn_pickaxe", "tools", 172800, Map.of("freaky_coin", 1, "freaky_ingot", 5,"auftragsbuch", 1, "freaky_wissen", 2 ));
-        addUnlockableItem("legendary_hoe", "tools", 432000, Map.of("freaky_coin", 5, "freaky_ingot", 3,"auftragsbuch", 1, "freaky_wissen", 4,  "freakyworlds_willen", 1));
-        addUnlockableItem("legendary_pickaxe1", "tools", 604800, Map.of("freaky_coin", 10, "freaky_ingot", 15,"auftragsbuch", 3, "freaky_wissen", 4, "freakyworlds_willen", 2));
-        addUnlockableItem("timberaxt", "tools", 604800, Map.of("freaky_coin", 10, "freaky_ingot", 12,"auftragsbuch", 15, "freaky_wissen", 4, "freakyworlds_willen", 5));
-        addUnlockableItem("legendary_pickaxe", "tools", 604800, Map.of("freaky_coin", 5, "freaky_ingot", 11,"auftragsbuch", 2, "freaky_wissen", 2, "freakyworlds_willen", 1));
+        addUnlockableItem("silkspawn_pickaxe", "tools", 172800, Map.of("freaky_coin", 1, "freaky_ingot", 5,"auftragsbuch", 1, "freaky_wissen", 2 ),1);
+        addUnlockableItem("legendary_hoe", "tools", 432000, Map.of("freaky_coin", 5, "freaky_ingot", 3,"auftragsbuch", 1, "freaky_wissen", 4,  "freakyworlds_willen", 1),1);
+        addUnlockableItem("legendary_pickaxe1", "tools", 604800, Map.of("freaky_coin", 10, "freaky_ingot", 15,"auftragsbuch", 3, "freaky_wissen", 4, "freakyworlds_willen", 2),1);
+        addUnlockableItem("timberaxt", "tools", 604800, Map.of("freaky_coin", 10, "freaky_ingot", 12,"auftragsbuch", 15, "freaky_wissen", 4, "freakyworlds_willen", 5),1);
+        addUnlockableItem("legendary_pickaxe", "tools", 604800, Map.of("freaky_coin", 5, "freaky_ingot", 11,"auftragsbuch", 2, "freaky_wissen", 2, "freakyworlds_willen", 1),1);
 
         // Magische Artefakte
-        addUnlockableItem("aura_of_bloom", "magical", 2419200, Map.of("freaky_coin", 14, "freaky_ingot", 3,"auftragsbuch", 10, "freaky_wissen", 10,"freakyworlds_willen", 20));
-        addUnlockableItem("experience_orb", "magical", 2419200, Map.of("freaky_coin", 21, "freaky_ingot", 35,"auftragsbuch", 10, "freaky_wissen", 5, "kriegsmarke", 11, "eisenherz", 9,  "freakyworlds_willen", 14));
-        addUnlockableItem("staff_of_wisdom", "magical", 432000, Map.of("freaky_coin", 12, "freaky_ingot", 8,"auftragsbuch", 10, "freaky_wissen", 16, "kriegsmarke", 2, "eisenherz", 4,  "freakyworlds_willen", 6));
-        addUnlockableItem("blue_lantern_of_doom", "magical", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 35,"auftragsbuch", 10, "freaky_wissen", 15, "kriegsmarke", 13, "eisenherz", 9,  "freakyworlds_willen", 24));
-        addUnlockableItem("eagle_eye", "magical", 432000, Map.of("freaky_coin", 1, "freaky_ingot", 5,"auftragsbuch", 1, "freaky_wissen", 2,  "eisenherz", 1 ));
-        addUnlockableItem("woorpy", "magical", 3600, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
+        addUnlockableItem("aura_of_bloom", "magical", 2419200, Map.of("freaky_coin", 14, "freaky_ingot", 3,"auftragsbuch", 10, "freaky_wissen", 10,"freakyworlds_willen", 20),1);
+        addUnlockableItem("experience_orb", "magical", 2419200, Map.of("freaky_coin", 21, "freaky_ingot", 35,"auftragsbuch", 10, "freaky_wissen", 5, "kriegsmarke", 11, "eisenherz", 9,  "freakyworlds_willen", 14),1);
+        addUnlockableItem("staff_of_wisdom", "magical", 432000, Map.of("freaky_coin", 12, "freaky_ingot", 8,"auftragsbuch", 10, "freaky_wissen", 16, "kriegsmarke", 2, "eisenherz", 4,  "freakyworlds_willen", 6),1);
+        addUnlockableItem("blue_lantern_of_doom", "magical", 2419200, Map.of("freaky_coin", 25, "freaky_ingot", 35,"auftragsbuch", 10, "freaky_wissen", 15, "kriegsmarke", 13, "eisenherz", 9,  "freakyworlds_willen", 24),1);
+        addUnlockableItem("eagle_eye", "magical", 432000, Map.of("freaky_coin", 1, "freaky_ingot", 5,"auftragsbuch", 1, "freaky_wissen", 2,  "eisenherz", 1 ),1);
+        addUnlockableItem("woorpy", "magical", 3600, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1),1);
 
 
         // Sonstige
         //addUnlockableItem("gold", "misc", 600, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
         //addUnlockableItem("silber", "misc", 600, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
         //addUnlockableItem("gildenhome", "misc", 600, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
-        addUnlockableItem("eggmac", "misc", 5100, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1));
-        addUnlockableItem("freaky_gold", "misc", 6300, Map.of("freaky_coin", 2, "freaky_ingot", 10));
+        addUnlockableItem("eggmac", "misc", 5100, Map.of("freaky_coin", 10, "freaky_ingot", 1,"auftragsbuch", 1, "freaky_wissen", 1, "kriegsmarke", 1, "eisenherz", 1,  "freakyworlds_willen", 1),1);
+        addUnlockableItem("freaky_gold", "misc", 6300, Map.of("freaky_coin", 2, "freaky_ingot", 10),1);
 
         //Möbel Set 1
-        addUnlockableItem("table", "misc", 72800, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("cart", "misc", 62400, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("chair", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("coach", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("shelf", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2));
+        addUnlockableItem("table", "misc", 72800, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("cart", "misc", 62400, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("chair", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("coach", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("shelf", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
 
         //Möbel Set 2
-        addUnlockableItem("forest_area_rug", "misc", 72800, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("forest_armchair", "misc", 62400, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("forest_bed", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("forest_chandelier", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("forest_endtable", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("forest_screen", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("forest_sofa", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("forest_wall_lamp", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2));
+        addUnlockableItem("forest_area_rug", "misc", 72800, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("forest_armchair", "misc", 62400, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("forest_bed", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("forest_chandelier", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("forest_endtable", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("forest_screen", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("forest_sofa", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("forest_wall_lamp", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
 
-        addUnlockableItem("tavernchandelier", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("dyestation", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2));
-        addUnlockableItem("weaponrack", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2));
+        addUnlockableItem("tavernchandelier", "misc", 32800, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("dyestation", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
+        addUnlockableItem("weaponrack", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
 
+        addUnlockableItem("smith_gold", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
+        addUnlockableItem("smith_silber", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
+        addUnlockableItem("smith_gold", "misc", 7700, Map.of("gold", 15, "freaky_coin", 5),64);
+        addUnlockableItem("smith_silber", "misc", 7700, Map.of("gold", 15, "freaky_coin", 5),64);
 
 
     }
 
-    private void addUnlockableItem(String itemId, String category, int productionTime, Map<String, Integer> cost) {
+    private void addUnlockableItem(String itemId, String category, int productionTime, Map<String, Integer> cost, int quantity) {
         ItemBuilder itemBuilder = OraxenItems.getItemById(itemId);
         if (itemBuilder == null) {
             plugin.getLogger().warning("Oraxen-Item mit ID " + itemId + " konnte nicht gefunden werden.");
             return; // Abbrechen, wenn das Item nicht gefunden wurde
         }
 
+        // Baue den ItemStack mit der angegebenen Menge
         ItemStack itemStack = itemBuilder.build();
+        itemStack.setAmount(quantity); // Setze die Menge
+
         ItemMeta meta = itemStack.getItemMeta();
         if (meta != null) {
             // Setze den Display-Namen, falls keiner vorhanden ist
@@ -376,9 +383,9 @@ public class CustomVillagerTrader implements Listener {
                             : costItem; // Fallback auf die Item-ID, wenn kein DisplayName vorhanden ist
 
                     lore.add(ChatColor.YELLOW + "- " + amount + "x " + costName);
-
                 });
             }
+
             // Nur einmal leere Zeile und Herstellungszeit hinzufügen
             if (!lore.contains(ChatColor.YELLOW + "Meisterlich gefertigte Unikate")) {
                 lore.add(ChatColor.YELLOW + "");
@@ -391,10 +398,15 @@ public class CustomVillagerTrader implements Listener {
                 lore.add(formattedProductionTime);
             }
 
+            // Menge hinzufügen
+            String quantityInfo = ChatColor.GREEN + "Menge: " + quantity + "x";
+            if (!lore.contains(quantityInfo)) {
+                lore.add(quantityInfo);
+            }
+
             meta.setLore(lore);
             itemStack.setItemMeta(meta);
         }
-
 
         // Füge das Item zu den freischaltbaren Items hinzu
         unlockableItems.put(category + ":" + itemId, itemStack);
