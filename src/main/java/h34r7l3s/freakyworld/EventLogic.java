@@ -171,7 +171,7 @@ public class EventLogic {
                 // Zusätzliche seltene Belohnung für den Top-Spieler
                 if (i == 0) {
                     //ggfs. anpassen und herausnehmen, wenn zu stark
-                    rewards.add(new ItemStack(Material.NETHERITE_INGOT, 1)); // Netherite-Ingot für den Top-Spieler
+                    rewards.add(new ItemStack(Material.NETHERITE_SCRAP, 1)); // Netherite-Ingot für den Top-Spieler
                 }
 
                 // Mische die Belohnungen und wähle eine zufällige aus

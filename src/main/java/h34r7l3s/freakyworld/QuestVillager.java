@@ -392,7 +392,7 @@ public class QuestVillager implements Listener {
         questInventory.setItem(4, createNamedItem(Material.ENDER_EYE, "Selbstfindung"));
         questInventory.setItem(5, createNamedItem(Material.DIAMOND, "Reichtum"));
         questInventory.setItem(6, createNamedItem(Material.SOUL_CAMPFIRE, "Unbekannt"));
-        questInventory.setItem(7, createNamedItem(Material.POTION, "Mystischer Trank - Mich gibts um sonst!")); // Dies wird später spezifiziert
+        questInventory.setItem(7, createNamedItem(Material.CAKE, "Lecker Kuchen - Mich gibts um sonst!")); // Dies wird später spezifiziert
 
         questInventory.setItem(8, createQuestBook());
 
@@ -471,15 +471,15 @@ public class QuestVillager implements Listener {
                     "Jedem steht es frei so zu bauen und spielen wie er möchte.\n");
 
             pages.add(ChatColor.GOLD + "" + ChatColor.BOLD + "Es gibt ein paar Besonderheiten bei uns.\n" + ChatColor.RESET +
-                    "Angefangen bei MIR Hugo.\n" +
+                    "Angefangen bei MIR, Hugo.\n" +
                     "\n" +
                     "Bei mir könnt ihr Items abgeben. \n" +
                     "Diese sind nötig, nunja...\n"+
                     ChatColor.GREEN+"für wirklich viel.."
             );
 
-            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Je mehr Items, um so mehr Freaky-XP bekommt ihr.\n" + ChatColor.RESET +
-                    "Wir haben auch andere Villager!\n" +
+            pages.add(ChatColor.DARK_PURPLE + "" + ChatColor.BOLD + "Je mehr Items, um so mehr Freaky-XP bekommst du!\n" + ChatColor.RESET +
+                    "Wir haben auch andere Villager.\n" +
                     "Wir haben einen Meisterschmied, einen Gildenmeister, Dave, einen Bazar Villager, den Uralten Wächter und FrekayWorld.\n"+
                     "Und natürlich..."+ ChatColor.DARK_RED +" unsere ALTE WELT!"+
                     "\n"

@@ -223,6 +223,8 @@ public class GuildGUIListener implements Listener, CommandExecutor  {
         } else if (inventoryTitle.equals("Spieler einladen")) {
             handlePlayerInvitation(event, player, currentItem, playerGuild);
         } else if (inventoryTitle.equals("Aufgabe/Nachricht hinzufügen")) {
+
+            //hier falscher aufruf
             handleTaskOrMessageAddition(event, player, currentItem, playerGuild);
         } else if (inventoryTitle.equals("Gilden-Nachrichten und Aufgaben")) {
             handleGuildMessagesAndTasks(event, player, currentItem, playerGuild);
@@ -425,14 +427,23 @@ public class GuildGUIListener implements Listener, CommandExecutor  {
 
         if (meta.getDisplayName().equals("Aufgabe hinzufügen")) {
             playerStates.put(player, PlayerState.ADDING_TASK);
+            viewedGuilds.put(player, playerGuild); // Gilde speichern, um später darauf zuzugreifen
             player.closeInventory();
             player.sendMessage("Bitte gebe die Beschreibung für die neue Aufgabe im Chat ein.");
         } else if (meta.getDisplayName().equals("Nachricht hinzufügen")) {
             playerStates.put(player, PlayerState.ADDING_MESSAGE);
+            viewedGuilds.put(player, playerGuild); // Gilde speichern, um später darauf zuzugreifen
             player.closeInventory();
             player.sendMessage("Bitte gebe die Nachricht für die Gilde im Chat ein.");
         }
     }
+
+
+
+
+
+
+
     private Map<Integer, Guild.GuildTask> taskMap = new HashMap<>();
     private void handleGuildMessagesAndTasks(InventoryClickEvent event, Player player, ItemStack currentItem, Guild playerGuild) {
         event.setCancelled(true);
@@ -787,15 +798,27 @@ public class GuildGUIListener implements Listener, CommandExecutor  {
 
 
     private Set<Player> playersWithOpenTreasury = new HashSet<>();
+    private final Map<Guild, Player> treasuryInUseBy = new HashMap<>();
+
     private void openTreasuryMenu(Player player, Guild guild) {
-        if (playersWithOpenTreasury.contains(player)) {
-            player.sendMessage("Die Schatztruhe ist bereits geöffnet!");
+        // Überprüfen, ob der Spieler die Truhe bereits geöffnet hat
+        if (treasuryInUseBy.containsValue(player)) {
+            player.sendMessage("Du hast bereits eine Schatztruhe geöffnet!");
             return;
         }
 
-        playersWithOpenTreasury.add(player);
+        // Überprüfen, ob die Gilde von einem anderen Spieler genutzt wird
+        if (treasuryInUseBy.containsKey(guild)) {
+            Player currentUser = treasuryInUseBy.get(guild);
+            player.sendMessage("Die Schatztruhe wird derzeit von " + currentUser.getName() + " genutzt!");
+            return;
+        }
 
-        Inventory treasuryMenu = Bukkit.createInventory(null, 27, "Gilden Schatztruhe für " + guild.getName());
+        // Reserviere die Gilde für diesen Spieler
+        treasuryInUseBy.put(guild, player);
+
+        // Erstelle das Truhen-Inventar
+        Inventory treasuryMenu = Bukkit.createInventory(player, 27, "Gilden Schatztruhe für " + guild.getName());
         List<ItemStack> storedItems = guildManager.getGuildItems(guild.getName());
 
         for (int i = 0; i < storedItems.size() && i < treasuryMenu.getSize(); i++) {
@@ -803,8 +826,15 @@ public class GuildGUIListener implements Listener, CommandExecutor  {
             treasuryMenu.setItem(i, item);
         }
 
+        // Öffne das Inventar für den Spieler
         player.openInventory(treasuryMenu);
     }
+
+    // Methode, um zu prüfen, ob die Schatztruhe bereits von einem anderen Spieler genutzt wird
+    private boolean isTreasuryInUse(Guild guild) {
+        return treasuryInUseBy.containsKey(guild);
+    }
+
 
 
     private void showGuildOptions(Player player, Guild guild) {
@@ -920,11 +950,12 @@ public class GuildGUIListener implements Listener, CommandExecutor  {
             if (guild != null) {
                 Guild.GuildTask newTask = guild.new GuildTask(guild.getTasks().size() + 1, event.getMessage());
                 guild.addTask(newTask);
-                player.sendMessage("Aufgabe erfolgreich hinzugefügt!");
+
                 playerStates.put(player, PlayerState.VIEWING_GUILD);
-                showGuildOptions(player, guild);
+                //showGuildOptions(player, guild);
                 guildManager.saveGuildData(guild); // Speichern der Gildendaten
                 guildSaver.saveGuildTask(newTask, guild.getName());
+                player.sendMessage("Aufgabe erfolgreich hinzugefügt!");
             }
         }
 
@@ -959,7 +990,7 @@ public class GuildGUIListener implements Listener, CommandExecutor  {
         Player player = (Player) event.getPlayer();
         Inventory inventory = event.getInventory();
         String inventoryTitle = event.getView().getTitle();
-
+        treasuryInUseBy.values().removeIf(currentUser -> currentUser.equals(player));
         if (inventoryTitle.startsWith("Gilden Schatztruhe für ")) {
             String guildName = inventoryTitle.replace("Gilden Schatztruhe für ", "");
             Guild guild = guildManager.getGuild(guildName);
@@ -974,7 +1005,11 @@ public class GuildGUIListener implements Listener, CommandExecutor  {
                 }
             }
 
-            playersWithOpenTreasury.remove(player);
+            if (playersWithOpenTreasury.contains(player)) {
+                treasuryInUseBy.values().removeIf(currentUser -> currentUser.equals(player));
+                playersWithOpenTreasury.remove(player);
+                player.sendMessage("Du hast die Gilden Schatztruhe geschlossen!");
+            }
         }
     }
 

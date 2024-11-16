@@ -232,9 +232,11 @@ public class VillagerInteractionHandler implements Listener {
                     }
                     plugin.getVillagerCategoryManager().clearStoredRewardsForPlayer(player.getUniqueId());
                     player.sendMessage("Du hast alle gespeicherten Belohnungen abgeholt.");
+                    player.closeInventory();
                     hasRewards = true;
                 } else {
                     player.sendMessage("Du hast keine gespeicherten Belohnungen.");
+                    player.closeInventory();
                 }
 
                 // Gildenbelohnungen abholen, falls der Spieler ein Gildenleiter ist
@@ -249,9 +251,11 @@ public class VillagerInteractionHandler implements Listener {
                             }
                             plugin.getVillagerCategoryManager().clearStoredRewardsForPlayer(guildLeaderUUID);
                             player.sendMessage("Du hast alle gespeicherten Belohnungen für deine Gilde abgeholt.");
+                            player.closeInventory();
                             hasRewards = true;
                         } else {
                             player.sendMessage("Deine Gilde wurde ebenfalls gut entlohnt.");
+                            player.closeInventory();
                         }
                     }
                 }
