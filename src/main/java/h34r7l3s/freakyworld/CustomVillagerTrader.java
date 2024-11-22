@@ -204,7 +204,7 @@ public class CustomVillagerTrader implements Listener {
             public void run() {
                 checkAndHandleProductionState();
             }
-        }.runTaskTimer(plugin, 0L, 85L); // Alle 10 Sekunden (200 Ticks) überprüfen
+        }.runTaskTimer(plugin, 0L, 850L); // Alle 10 Sekunden (200 Ticks) überprüfen
     }
 
     private void checkAndHandleProductionState() {
@@ -229,7 +229,7 @@ public class CustomVillagerTrader implements Listener {
         playSmithSounds(); // Die Methode zum Abspielen der Sounds aufrufen
 
         // Sicherstellen, dass nur eine Instanz des Sound-Loops läuft
-        soundTask = Bukkit.getScheduler().runTaskTimer(plugin, this::playSmithSounds, 0L, 200L);
+        soundTask = Bukkit.getScheduler().runTaskTimer(plugin, this::playSmithSounds, 0L, 600L);
     }
 
     // Methode, die aufgerufen wird, wenn ein Herstellungsprozess beginnt oder endet
@@ -343,6 +343,8 @@ public class CustomVillagerTrader implements Listener {
         addUnlockableItem("smith_silber", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
         addUnlockableItem("smith_gold", "misc", 7700, Map.of("silber", 15, "freaky_coin", 5),164);
         addUnlockableItem("smith_silber", "misc", 7700, Map.of("silber", 15, "freaky_coin", 5),164);
+        addUnlockableItem("freaky_ingot", "misc", 4700, Map.of("silber", 64, "freaky_coin", 1),1);
+        addUnlockableItem("freaky_ingot", "misc", 4700, Map.of("gold", 24, "freaky_coin", 1),1);
 
 
     }
@@ -1049,7 +1051,7 @@ public class CustomVillagerTrader implements Listener {
             public void run() {
                 checkProductionStatus(player);
             }
-        }.runTaskTimer(plugin, 0L, 20L); // Überprüfung jede Sekunde
+        }.runTaskTimer(plugin, 0L, 200L); // Überprüfung jede Sekunde
 
         activeProcesses.put(player, task);
         player.sendMessage(ChatColor.GREEN + "Herstellung von Freaky Coins gestartet! Benötigtes Material: " + materialCost + " " + material);
@@ -1301,7 +1303,7 @@ public class CustomVillagerTrader implements Listener {
             public void run() {
                 checkProductionStatus(Bukkit.getPlayer(uuid));
             }
-        }.runTaskTimer(plugin, 0L, 20L); // Jede Sekunde prüfen
+        }.runTaskTimer(plugin, 0L, 200L); // Jede Sekunde prüfen
 
         // Füge den Produktionsprozess zur Liste hinzu
         activeProcesses.put(Bukkit.getPlayer(uuid), task);
@@ -1322,7 +1324,7 @@ public class CustomVillagerTrader implements Listener {
     private void checkProductionStatus(Player player) {
         // Prüfen, ob der Spieler existiert und online ist
         if (player == null || !player.isOnline()) {
-            plugin.getLogger().warning("Spieler ist nicht mehr online. Beende Überprüfung.");
+            //plugin.getLogger().warning("Spieler ist nicht mehr online. Beende Überprüfung.");
             return;
         }
 
@@ -1467,23 +1469,28 @@ public class CustomVillagerTrader implements Listener {
     }
 
     private void loadActiveProductions() {
-        List<UUID> playersWithActiveProductions = dbManager.getPlayersWithActiveProductions();
-        for (UUID playerId : playersWithActiveProductions) {
-            Player player = Bukkit.getPlayer(playerId);
-            if (player != null) {
-                BukkitTask task = new BukkitRunnable() {
-                    @Override
-                    public void run() {
-                        checkProductionStatus(player);
+        Bukkit.getScheduler().runTaskAsynchronously(plugin, () -> {
+            List<UUID> playersWithActiveProductions = dbManager.getPlayersWithActiveProductions();
+            Bukkit.getScheduler().runTask(plugin, () -> {
+                for (UUID playerId : playersWithActiveProductions) {
+                    Player player = Bukkit.getPlayer(playerId);
+                    if (player != null) {
+                        BukkitTask task = new BukkitRunnable() {
+                            @Override
+                            public void run() {
+                                checkProductionStatus(player);
+                            }
+                        }.runTaskTimer(plugin, 0L, 100L); // Check every 5 seconds
+                        activeProcesses.put(player, task);
                     }
-                }.runTaskTimer(plugin, 0L, 20L); // Check every second
-                activeProcesses.put(player, task);
-            }
-        }
+                }
+            });
+        });
     }
 
 
-    // Spielerische Lore-Interaktion mit dem Schmied hinzufügen
+
+        // Spielerische Lore-Interaktion mit dem Schmied hinzufügen
     private void interactWithPlayer(Player player) {
         // Zeige sofort Titel und Untertitel mit zufälligem Tipp an
         String title = ChatColor.GOLD + "Meisterhändler";

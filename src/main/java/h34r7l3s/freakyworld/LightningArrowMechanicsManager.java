@@ -26,7 +26,7 @@ public class LightningArrowMechanicsManager implements Listener {
     }
 
     @EventHandler
-    public void onArrowShoot(EntityShootBowEvent event) {
+    public void onArrowShootLight(EntityShootBowEvent event) {
         if (event.getEntity() instanceof Player && event.getProjectile() instanceof Arrow) {
             Player player = (Player) event.getEntity();
             Arrow arrow = (Arrow) event.getProjectile();

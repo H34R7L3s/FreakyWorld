@@ -28,6 +28,8 @@ import org.bukkit.inventory.Inventory;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.inventory.meta.ItemMeta;
 import org.bukkit.metadata.FixedMetadataValue;
+import org.bukkit.persistence.PersistentDataContainer;
+import org.bukkit.persistence.PersistentDataType;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
@@ -178,49 +180,64 @@ public class VampirZepter implements Listener {
             Arrow arrow = (Arrow) event.getProjectile();
             ItemStack arrowItem = event.getArrowItem();
 
-            if (arrowItem.hasItemMeta()) {
-                if (OraxenItems.getItemById("woorpy") != null) {
-                    String displayName = String.valueOf(OraxenItems.getItemById("woorpy").build());
+            if (arrowItem == null || !arrowItem.hasItemMeta()) {
+                plugin.getLogger().info("Arrow item is null or has no meta.");
+                return;
+            }
 
-                    if (displayName.contains("woorpy")) {
-                        arrow.setMetadata("woorpy", new FixedMetadataValue(plugin, true));
-                        System.out.println("Woorpy arrow shot by " + player.getName() + " detected.");
-                    }
-                } else {
-                    plugin.getLogger().warning("The item with ID 'woorpy' was not found in Oraxen configuration.");
-                }
+            // Überprüfen des Display-Namens
+            String displayName = arrowItem.getItemMeta().getDisplayName();
+            plugin.getLogger().info("Arrow Display Name: " + displayName);
+
+            if (displayName.contains("Woorpy")) {
+                plugin.getLogger().info("Woorpy arrow shot by: " + player.getName());
+
+                // Setze PersistentData
+                NamespacedKey key = new NamespacedKey(plugin, "woorpy");
+                arrow.getPersistentDataContainer().set(key, PersistentDataType.BYTE, (byte) 1);
+                plugin.getLogger().info("PersistentData 'woorpy' set for arrow.");
             }
         }
     }
 
+
     @EventHandler
     public void onWoorpyArrowLand(ProjectileHitEvent event) {
         if (!(event.getEntity() instanceof Arrow)) {
+            plugin.getLogger().info("Entity is not an arrow.");
             return;
         }
 
         Arrow arrow = (Arrow) event.getEntity();
-        if (!arrow.hasMetadata("woorpy")) {
+
+        // Überprüfen, ob der Pfeil die PersistentData "woorpy" hat
+        NamespacedKey key = new NamespacedKey(plugin, "woorpy");
+        if (!arrow.getPersistentDataContainer().has(key, PersistentDataType.BYTE)) {
+            plugin.getLogger().info("Arrow landed but does not have 'woorpy' PersistentData.");
             return;
         }
 
         if (!(arrow.getShooter() instanceof Player)) {
+            plugin.getLogger().info("Arrow shooter is not a player.");
             return;
         }
 
         Player shooter = (Player) arrow.getShooter();
         Location arrowLocation = arrow.getLocation();
 
+        plugin.getLogger().info("Woorpy effect triggered for player: " + shooter.getName());
+
+        // Grappling-Effekt mit Animation
         new BukkitRunnable() {
             int tick = 0;
-            final int maxTicks = 40; // Anzahl der Ticks für die Bewegung
+            final int maxTicks = 40;
 
             @Override
             public void run() {
                 if (shooter.isOnline() && tick < maxTicks) {
                     Location currentLocation = shooter.getLocation();
                     double progress = (double) tick / maxTicks;
-                    double curveFactor = Math.sin(progress * Math.PI); // Geschwungene Bewegung
+                    double curveFactor = Math.sin(progress * Math.PI);
 
                     double x = currentLocation.getX() + (arrowLocation.getX() - currentLocation.getX()) * progress * curveFactor;
                     double y = currentLocation.getY() + (arrowLocation.getY() - currentLocation.getY()) * progress * curveFactor;
@@ -229,10 +246,7 @@ public class VampirZepter implements Listener {
                     Location newLocation = new Location(currentLocation.getWorld(), x, y, z, currentLocation.getYaw(), currentLocation.getPitch());
                     shooter.teleport(newLocation);
 
-                    // Leiser Grappling-Tick-Sound
-                    shooter.playSound(currentLocation, Sound.ITEM_TRIDENT_RIPTIDE_1, 0.3f, 0.8f);
-
-                    // Schlangenpartikel-Effekt
+                    // Partikel- und Soundeffekte
                     double offset = 0.5 * Math.sin(tick * 0.3);
                     shooter.getWorld().spawnParticle(Particle.DUST_COLOR_TRANSITION, newLocation.add(offset, 0.3, offset), 5,
                             new Particle.DustTransition(Color.LIME, Color.AQUA, 1.2f));
@@ -240,16 +254,14 @@ public class VampirZepter implements Listener {
 
                     tick++;
                 } else {
-                    // Effekt und Ton bei Ankunft
                     shooter.getWorld().spawnParticle(Particle.LARGE_SMOKE, shooter.getLocation(), 1);
                     shooter.playSound(shooter.getLocation(), Sound.ENTITY_ENDERMAN_TELEPORT, 1.0f, 0.6f);
                     shooter.playSound(shooter.getLocation(), Sound.ITEM_TRIDENT_RETURN, 0.7f, 0.8f);
                     this.cancel();
                 }
             }
-        }.runTaskTimer(plugin, 0L, 1L); // Start sofort und wiederhole jede Tick
+        }.runTaskTimer(plugin, 0L, 1L);
     }
-
 
 
 
