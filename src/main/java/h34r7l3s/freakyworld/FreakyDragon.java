@@ -20,6 +20,7 @@ import org.bukkit.boss.BossBar;
 import org.bukkit.boss.BarColor;
 
 import java.util.*;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.bukkit.boss.DragonBattle;
 import org.bukkit.util.Vector;
@@ -70,9 +71,9 @@ public class FreakyDragon implements Listener {
         new BukkitRunnable() {
             @Override
             public void run() {
-                startArtilleryAttack();
+
                 startLaserBeamAttack();
-                startVortexAttack();
+
             }
         }.runTaskLater(plugin, 15 * 20L);
 
@@ -433,9 +434,11 @@ public class FreakyDragon implements Listener {
         // Basic abilities for easy mode
         dragon.addPotionEffect(new PotionEffect(PotionEffectType.STRENGTH, Integer.MAX_VALUE, 1));
 
+
         // Spawn supporting mobs
-        spawnSupportingMobs(1, EntityType.GHAST);
-        spawnSupportingMobs(3, EntityType.BLAZE);
+        spawnSupportingMobs(2, 6, EntityType.GHAST);
+        spawnSupportingMobs(2, 6, EntityType.BLAZE);
+        //spawnSupportingMobs(5, 10, EntityType.WITHER_SKELETON);
     }
 
     private void configureHardDragon() {
@@ -448,9 +451,12 @@ public class FreakyDragon implements Listener {
         dragon.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, Integer.MAX_VALUE, 2));
 
         // Spawn more challenging supporting mobs
-        spawnSupportingMobs(2, EntityType.GHAST);
-        spawnSupportingMobs(5, EntityType.BLAZE);
-        spawnSupportingMobs(3, EntityType.WITHER_SKELETON);
+        //spawnSupportingMobs(2, EntityType.GHAST);
+        spawnSupportingMobs(5, 10, EntityType.GHAST);
+        spawnSupportingMobs(5, 10, EntityType.BLAZE);
+        spawnSupportingMobs(5, 10, EntityType.WITHER_SKELETON);
+        //spawnSupportingMobs(5, EntityType.BLAZE);
+        //spawnSupportingMobs(3, EntityType.WITHER_SKELETON);
 
         //Attacken SCHWER
         new BukkitRunnable() {
@@ -458,6 +464,8 @@ public class FreakyDragon implements Listener {
             public void run() {
                 startLightningStrikeAttack();
                 startTearBombardmentAttack();
+                startVortexAttack();
+                startArtilleryAttack();
             }
             }.runTaskLater(plugin, 15 * 20L);
         }
@@ -559,24 +567,48 @@ public class FreakyDragon implements Listener {
 
 
 
-    private void spawnSupportingMobs(int count, EntityType mobType) {
+    private void spawnSupportingMobs(int count, int maxMobs, EntityType mobType) {
+        Set<Entity> livingMobs = new HashSet<>(); // Speichert alle lebenden Mobs
+
         new BukkitRunnable() {
             @Override
             public void run() {
+                // Stoppe, wenn der Drache tot ist
                 if (dragon.isDead()) {
-                    this.cancel();  // Stop spawning if the dragon is dead
+                    this.cancel();
                     return;
                 }
 
-                for (int i = 0; i < count; i++) {
-                    Location mobLocation = spawnLocation.clone().add(random.nextInt(10) - 5, 0, random.nextInt(10) - 5);
-                    Location groundLocation = findGroundLocation(mobLocation); // Finde die nächste Bodenposition
+                // Prüfe, ob neue Mobs gespawnt werden können
+                if (livingMobs.size() >= maxMobs) {
+                    return; // Warte, bis Platz für neue Mobs entsteht
+                }
 
-                    world.spawnEntity(groundLocation, mobType);
+                // Spawne die Mobs
+                for (int i = 0; i < count; i++) {
+                    if (livingMobs.size() >= maxMobs) {
+                        break; // Beende die Schleife, wenn das Limit erreicht ist
+                    }
+
+                    Location mobLocation = spawnLocation.clone().add(random.nextInt(10) - 5, 0, random.nextInt(10) - 5);
+                    Location groundLocation = findGroundLocation(mobLocation); // Finde die Bodenposition
+
+                    Entity mob = world.spawnEntity(groundLocation, mobType);
+                    livingMobs.add(mob); // Füge das neue Mob zur Liste hinzu
                 }
             }
-        }.runTaskTimer(plugin, 0L, 400L);  // Repeat every 20 seconds (400 ticks)
+        }.runTaskTimer(plugin, 0L, 400L); // Wiederhole alle 20 Sekunden
+
+        // Event-Listener, um gestorbene Mobs zu entfernen
+        Bukkit.getPluginManager().registerEvents(new Listener() {
+            @EventHandler
+            public void onEntityDeathSupportMobs(EntityDeathEvent event) {
+                livingMobs.remove(event.getEntity()); // Entferne das gestorbene Mob aus der Liste
+            }
+        }, plugin);
     }
+
+
 
     // Hilfsmethode, um die nächste Bodenposition unterhalb eines Standorts zu finden
     private Location findGroundLocation(Location startLocation) {

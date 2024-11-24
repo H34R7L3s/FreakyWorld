@@ -204,7 +204,7 @@ public class CustomVillagerTrader implements Listener {
             public void run() {
                 checkAndHandleProductionState();
             }
-        }.runTaskTimer(plugin, 0L, 850L); // Alle 10 Sekunden (200 Ticks) überprüfen
+        }.runTaskTimer(plugin, 0L, 50L); // Alle 10 Sekunden (200 Ticks) überprüfen
     }
 
     private void checkAndHandleProductionState() {
@@ -428,8 +428,16 @@ public class CustomVillagerTrader implements Listener {
 
     private void resetItems() {
         //initializeUnlockableItems();
-        Bukkit.broadcastMessage(ChatColor.GREEN + "Der Schmied braucht"+ChatColor.RED + " Hilfe!"+ ChatColor.GREEN + "\n Vermutlich sind die"+ ChatColor.GOLD+" Rohstoffe"+ChatColor.RED+" knapp.");
+        String message = ChatColor.GREEN + "Der Schmied braucht" + ChatColor.RED + " Hilfe!"
+                + ChatColor.GREEN + "\n Vermutlich sind die" + ChatColor.GOLD + " Rohstoffe" + ChatColor.RED + " knapp.";
+
+        for (Player player : Bukkit.getOnlinePlayers()) {
+            if (player.hasPermission("FreakyMessage")) {
+                player.sendMessage(message); // Sende die Nachricht nur an Spieler mit der Berechtigung
+            }
+        }
     }
+
 
     private final List<String> smithTips = Arrays.asList(
             "Ein scharfes Schwert schneidet durch jedes Problem!",
@@ -1051,7 +1059,7 @@ public class CustomVillagerTrader implements Listener {
             public void run() {
                 checkProductionStatus(player);
             }
-        }.runTaskTimer(plugin, 0L, 200L); // Überprüfung jede Sekunde
+        }.runTaskTimer(plugin, 0L, 20L); // Überprüfung jede Sekunde
 
         activeProcesses.put(player, task);
         player.sendMessage(ChatColor.GREEN + "Herstellung von Freaky Coins gestartet! Benötigtes Material: " + materialCost + " " + material);
@@ -1303,7 +1311,7 @@ public class CustomVillagerTrader implements Listener {
             public void run() {
                 checkProductionStatus(Bukkit.getPlayer(uuid));
             }
-        }.runTaskTimer(plugin, 0L, 200L); // Jede Sekunde prüfen
+        }.runTaskTimer(plugin, 0L, 20L); // Jede Sekunde prüfen
 
         // Füge den Produktionsprozess zur Liste hinzu
         activeProcesses.put(Bukkit.getPlayer(uuid), task);
@@ -1480,7 +1488,7 @@ public class CustomVillagerTrader implements Listener {
                             public void run() {
                                 checkProductionStatus(player);
                             }
-                        }.runTaskTimer(plugin, 0L, 100L); // Check every 5 seconds
+                        }.runTaskTimer(plugin, 0L, 10L); // Check every 5 seconds
                         activeProcesses.put(player, task);
                     }
                 }

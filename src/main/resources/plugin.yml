@@ -24,3 +24,8 @@ commands:
     usage: /serverlock <open|close>
     permission: freakyworld.serverlock
     permission-message: You do not have permission to use this command.
+
+permissions:
+  FreakyMessage:
+    description: Erlaubt das Empfangen von speziellen Nachrichten.
+    default: op
