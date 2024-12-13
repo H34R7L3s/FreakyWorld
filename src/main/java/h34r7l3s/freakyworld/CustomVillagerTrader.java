@@ -339,12 +339,12 @@ public class CustomVillagerTrader implements Listener {
         addUnlockableItem("dyestation", "misc", 52400, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
         addUnlockableItem("weaponrack", "misc", 42700, Map.of("freaky_coin", 5, "freaky_ingot", 2),1);
 
-        addUnlockableItem("smith_gold", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
-        addUnlockableItem("smith_silber", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
-        addUnlockableItem("smith_gold", "misc", 7700, Map.of("silber", 15, "freaky_coin", 5),164);
-        addUnlockableItem("smith_silber", "misc", 7700, Map.of("silber", 15, "freaky_coin", 5),164);
-        addUnlockableItem("freaky_ingot", "misc", 4700, Map.of("silber", 64, "freaky_coin", 1),1);
-        addUnlockableItem("freaky_ingot", "misc", 4700, Map.of("gold", 24, "freaky_coin", 1),1);
+        //addUnlockableItem("smith_gold", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
+        //addUnlockableItem("smith_silber", "misc", 2700, Map.of("gold", 5, "freaky_coin", 2),64);
+        //addUnlockableItem("smith_gold", "misc", 7700, Map.of("silber", 15, "freaky_coin", 5),164);
+        //addUnlockableItem("smith_silber", "misc", 7700, Map.of("silber", 15, "freaky_coin", 5),164);
+        addUnlockableItem("freaky_ingot", "misc", 970, Map.of("silber", 64, "freaky_coin", 1),1);
+        addUnlockableItem("freaky_ingot", "tools", 790, Map.of("gold", 24, "freaky_coin", 1),1);
 
 
     }

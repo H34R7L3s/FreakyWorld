@@ -14,6 +14,10 @@ import java.sql.SQLException;
 import java.util.*;
 import java.util.stream.Collectors;
 
+import java.util.Random;
+
+
+
 public class EventLogic {
     private final FreakyWorld plugin;
     private final CategoryManager categoryManager;
@@ -23,6 +27,7 @@ public class EventLogic {
     private final Map<String, List<UUID>> topPlayersRewards = new HashMap<>();
     private final Map<String, UUID> topGuildRewards = new HashMap<>();
     private final GuildManager guildManager;
+
 
 
     public EventLogic(FreakyWorld plugin, CategoryManager categoryManager, CustomDatabaseManager customDatabaseManager, GuildManager guildManager) {
@@ -133,79 +138,82 @@ public class EventLogic {
         return lore;
     }
 
-
+    //Belohnung 1
     public void calculateAndStoreRewards() {
-        Random random = new Random();
-
         for (String category : categoryManager.getCategories()) {
-            List<UUID> topPlayers = getTopPlayersForCategory(category, 3); // Hol die Top 3 Spieler
+            List<UUID> topPlayers = getTopPlayersForCategory(category, 3);
 
-            // Überprüfe, ob es Spieler in der Kategorie gibt, andernfalls überspringen
             if (topPlayers.isEmpty()) {
-                plugin.getLogger().info("Keine Spieler in der Kategorie " + category + " für Belohnungen.");
+                Bukkit.getLogger().info("Keine Spieler in der Kategorie " + category + " für Belohnungen.");
                 continue;
             }
+            Random random = new Random();
+            int villagerMood = random.nextInt(3); // 0 = Low, 1 = Mid, 2 = High
 
-            // Generiere Belohnungen für die Top 3 Spieler
-            for (int i = 0; i < topPlayers.size(); i++) {
-                UUID playerUUID = topPlayers.get(i);
+            for (UUID playerUUID : topPlayers) {
+                ItemStack reward = null;
 
-                // Basisbelohnungen mischen, dabei Menge > 0 sicherstellen
-                List<ItemStack> rewards = new ArrayList<>();
-                rewards.add(new ItemStack(Material.DIAMOND, Math.max(random.nextInt(3) + 1, 1))); // 1-3 Diamanten
-                rewards.add(new ItemStack(Material.GOLD_INGOT, Math.max(random.nextInt(2) + 1, 1))); // 1-2 Goldbarren
-                rewards.add(new ItemStack(Material.IRON_INGOT, Math.max(random.nextInt(2) + 1, 1))); // 1-2 Eisenbarren
-
-                // Füge Oraxen-Items hinzu (z. B. Gold & Silber) falls vorhanden
-                if (OraxenItems.exists("gold")) {
-                    ItemStack oraxenGold = OraxenItems.getItemById("gold").build();
-                    oraxenGold.setAmount(Math.max(random.nextInt(2) + (i == 0 ? 2 : 1), 1)); // 2-3 für den ersten, 1-2 für andere
-                    rewards.add(oraxenGold);
-                }
-                if (OraxenItems.exists("silber")) {
-                    ItemStack oraxenSilver = OraxenItems.getItemById("silber").build();
-                    oraxenSilver.setAmount(Math.max(random.nextInt(2) + 1, 1)); // 1-2 Silber für alle
-                    rewards.add(oraxenSilver);
+                switch (villagerMood) {
+                    case 0:
+                        reward = generateLowTierReward(random);
+                        break;
+                    case 1:
+                        reward = generateMidTierReward(random);
+                        break;
+                    case 2:
+                        reward = generateHighTierReward(random);
+                        break;
                 }
 
-                // Zusätzliche seltene Belohnung für den Top-Spieler
-                if (i == 0) {
-                    //ggfs. anpassen und herausnehmen, wenn zu stark
-                    rewards.add(new ItemStack(Material.NETHERITE_SCRAP, 1)); // Netherite-Ingot für den Top-Spieler
+                if (reward != null) {
+                    plugin.getVillagerCategoryManager().storeRewardForPlayer(playerUUID, category, reward);
+
                 }
-
-                // Mische die Belohnungen und wähle eine zufällige aus
-                Collections.shuffle(rewards);
-                ItemStack reward = rewards.get(0); // Eine zufällige Belohnung auswählen
-                plugin.getVillagerCategoryManager().storeRewardForPlayer(playerUUID, category, reward);
-            }
-
-            // Belohnung für die führende Gilde, falls vorhanden
-            UUID topGuildLeader = getLeadingGuildForCategory(category);
-            if (topGuildLeader != null) {
-                List<ItemStack> guildRewards = new ArrayList<>();
-                guildRewards.add(new ItemStack(Material.EMERALD, Math.max(random.nextInt(3) + 2, 1))); // 2-4 Emeralds
-
-                if (OraxenItems.exists("gold")) {
-                    ItemStack guildGold = OraxenItems.getItemById("gold").build();
-                    guildGold.setAmount(Math.max(random.nextInt(3) + 2, 1)); // 2-4 Gold für die Gilde
-                    guildRewards.add(guildGold);
-                }
-
-                if (OraxenItems.exists("silber")) {
-                    ItemStack guildSilver = OraxenItems.getItemById("silber").build();
-                    guildSilver.setAmount(Math.max(random.nextInt(3) + 1, 1)); // 1-3 Silber
-                    guildRewards.add(guildSilver);
-                }
-
-                // Zusätzliche Belohnung für die führende Gilde
-                guildRewards.add(new ItemStack(Material.DIAMOND, Math.max(1 + random.nextInt(2), 1))); // 1-2 Diamanten für die führende Gilde
-                Collections.shuffle(guildRewards);
-                ItemStack guildReward = guildRewards.get(0); // Zufällige Auswahl einer Gildenbelohnung
-                plugin.getVillagerCategoryManager().storeRewardForGuildLeader(topGuildLeader, category, guildReward);
             }
         }
     }
+
+//Konfiguration Belohnungen --DUmm
+
+
+    private ItemStack generateLowTierReward(Random random) {
+        int quantity = random.nextInt(12) + 1; // 1-12
+        Material material = getRandomMaterial(random, Material.DIAMOND, Material.GOLD_INGOT, Material.IRON_INGOT);
+        return new ItemStack(material, quantity);
+    }
+
+    private ItemStack generateMidTierReward(Random random) {
+        if (random.nextBoolean()) { // 50% Chance auf normales Material oder Oraxen-Item
+            int quantity = random.nextInt(33) + 1; // 1-33
+            Material material = getRandomMaterial(random, Material.DIAMOND, Material.GOLD_INGOT, Material.IRON_INGOT);
+            return new ItemStack(material, quantity);
+        } else {
+            return getRandomOraxenItem(random, "silber", "gold");
+        }
+    }
+
+    private ItemStack generateHighTierReward(Random random) {
+        if (random.nextBoolean()) { // 50% Chance auf normales Material oder Oraxen-Item
+            int quantity = random.nextInt(64) + 1; // 1-64
+            Material material = getRandomMaterial(random, Material.DIAMOND, Material.GOLD_INGOT, Material.IRON_INGOT);
+            return new ItemStack(material, quantity);
+        } else {
+            return getRandomOraxenItem(random, "silber", "gold");
+        }
+    }
+
+    private Material getRandomMaterial(Random random, Material... materials) {
+        return materials[random.nextInt(materials.length)];
+    }
+
+    private ItemStack getRandomOraxenItem(Random random, String... oraxenItemIds) {
+        String selectedItem = oraxenItemIds[random.nextInt(oraxenItemIds.length)];
+        if (OraxenItems.exists(selectedItem)) {
+            return OraxenItems.getItemById(selectedItem).build();
+        }
+        return null; // Fallback, falls das Oraxen-Item nicht existiert
+    }
+
 
 
 

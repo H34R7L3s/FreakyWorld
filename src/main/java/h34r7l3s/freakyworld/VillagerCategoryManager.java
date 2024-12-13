@@ -98,24 +98,30 @@ public class VillagerCategoryManager {
         }
     }
 
+    private Map<String, Integer> categoryCount = new HashMap<>();
+
     public void chooseDailyCategory() {
         String[] categoriesArray = {"Bauernmarkt", "Minenarbeit", "Monsterjagd", "Angeln", "Schmiedekunst", "Baumfäller"};
-        this.currentCategory = categoriesArray[new Random().nextInt(categoriesArray.length)];
+        for (String category : categoriesArray) {
+            categoryCount.putIfAbsent(category, 0);
+        }
+
+        String leastUsedCategory = Collections.min(categoryCount.entrySet(), Map.Entry.comparingByValue()).getKey();
+        this.currentCategory = leastUsedCategory;
+
+        categoryCount.put(leastUsedCategory, categoryCount.get(leastUsedCategory) + 1);
+
         adjustTaskDifficulty();
 
-        // Wähle 2 zufällige Items aus der gewählten Kategorie
         List<String> randomItems = chooseRandomItemsFromCategory(this.currentCategory, 2);
         plugin.getLogger().info("Kategorie: " + this.currentCategory + " - Items: " + randomItems);
 
-        // Erzeuge die Event-Beschreibung mit der Kategorie und den Items
         String eventDescription = "Aktuelle Kategorie: **" + this.currentCategory + "**\n" +
                 "Sammle: **" + String.join(", ", randomItems) + "**";
 
-        // Event über Discord senden
-        plugin.getDiscordBot().announceEventWithTimer("Event Manager", eventDescription, "Zeit verbleibend: ",1800);
-
-
+        plugin.getDiscordBot().announceEventWithTimer("Event Manager", eventDescription, "Zeit verbleibend: ", 1800);
     }
+
 
     public List<String> chooseRandomItemsFromCategory(String category, int itemCount) {
         // Erstelle eine neue Liste, um sicherzustellen, dass das Original nicht geändert wird
@@ -280,6 +286,49 @@ public class VillagerCategoryManager {
         return String.format("%02d:%02d", minutes, seconds);
     }
 
+    //Konfiguration Belohnungen
+
+
+    private ItemStack generateLowTierReward(Random random) {
+        int quantity = random.nextInt(12) + 1; // 1-12
+        Material material = getRandomMaterial(random, Material.DIAMOND, Material.GOLD_INGOT, Material.IRON_INGOT);
+        return new ItemStack(material, quantity);
+    }
+
+    private ItemStack generateMidTierReward(Random random) {
+        if (random.nextBoolean()) { // 50% Chance auf normales Material oder Oraxen-Item
+            int quantity = random.nextInt(33) + 1; // 1-33
+            Material material = getRandomMaterial(random, Material.DIAMOND, Material.GOLD_INGOT, Material.IRON_INGOT);
+            return new ItemStack(material, quantity);
+        } else {
+            return getRandomOraxenItem(random, "silber", "gold");
+        }
+    }
+
+    private ItemStack generateHighTierReward(Random random) {
+        if (random.nextBoolean()) { // 50% Chance auf normales Material oder Oraxen-Item
+            int quantity = random.nextInt(64) + 1; // 1-64
+            Material material = getRandomMaterial(random, Material.DIAMOND, Material.GOLD_INGOT, Material.IRON_INGOT);
+            return new ItemStack(material, quantity);
+        } else {
+            return getRandomOraxenItem(random, "silber", "gold");
+        }
+    }
+
+    private Material getRandomMaterial(Random random, Material... materials) {
+        return materials[random.nextInt(materials.length)];
+    }
+
+    private ItemStack getRandomOraxenItem(Random random, String... oraxenItemIds) {
+        String selectedItem = oraxenItemIds[random.nextInt(oraxenItemIds.length)];
+        if (OraxenItems.exists(selectedItem)) {
+            return OraxenItems.getItemById(selectedItem).build();
+        }
+        return null; // Fallback, falls das Oraxen-Item nicht existiert
+    }
+
+
+    // Belohnung 2
     public void rewardAllPlayers() {
         // Spieler und ihre Punktestände sammeln
         List<OfflinePlayer> allPlayers = Arrays.asList(Bukkit.getOfflinePlayers());
@@ -300,22 +349,36 @@ public class VillagerCategoryManager {
             UUID playerUUID = entry.getKey();
             int playerScore = entry.getValue();
 
-            // Verschiedene Belohnungen für unterschiedliche Punktestände
-            ItemStack reward;
-            if (playerScore >= 100) {
-                reward = OraxenItems.getItemById("gold").build(); // Höchste Belohnung für hohe Punkte
-            } else if (playerScore >= 50) {
+            // Villager-Mood festlegen: 0 = Low, 1 = Mid, 2 = High
+            Random random = new Random();
+            int villagerMood = random.nextInt(3);
+
+            // Belohnung basierend auf Punkten und Villager-Mood
+            ItemStack reward = null;
+
+            if (villagerMood == 0) { // Low Tier
+                reward = generateLowTierReward(random);
+            } else if (villagerMood == 1) { // Mid Tier
+                reward = generateMidTierReward(random);
+            } else if (villagerMood == 2) { // High Tier
+                reward = generateHighTierReward(random);
+            }
+
+            // Falls zusätzliche Punktzahl-basierte Logik benötigt wird, kann dies hier angepasst werden
+            if (playerScore >= 100 && villagerMood == 2) {
+                reward = OraxenItems.getItemById("gold").build();
+            } else if (playerScore >= 50 && villagerMood >= 1) {
                 reward = OraxenItems.getItemById("silber").build();
             } else if (playerScore >= 20) {
                 reward = new ItemStack(Material.DIAMOND, Math.max(1, playerScore / 20));
             } else if (playerScore >= 10) {
                 reward = new ItemStack(Material.EMERALD, Math.max(1, playerScore / 10));
-            } else {
+            } else if (playerScore >= 5) {
                 reward = new ItemStack(Material.IRON_INGOT, Math.max(1, playerScore / 5));
             }
 
             // Falls die Menge 0 ist, wird die Belohnung nicht ausgegeben, um Fehler zu vermeiden
-            if (reward.getAmount() > 0) {
+            if (reward != null && reward.getAmount() > 0) {
                 plugin.getVillagerCategoryManager().storeRewardForPlayer(playerUUID, currentCategory, reward);
 
                 // Wenn der Spieler online ist, Nachricht senden
