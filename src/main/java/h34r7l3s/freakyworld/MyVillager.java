@@ -12,6 +12,7 @@ import org.bukkit.entity.Villager;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
 import org.bukkit.event.Listener;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
 import org.bukkit.event.entity.EntityTargetEvent;
 import org.bukkit.event.player.PlayerChatEvent;
@@ -89,10 +90,24 @@ public class MyVillager implements Listener {
         if (event.getEntity().getType() == EntityType.VILLAGER) {
             Villager villager = (Villager) event.getEntity();
             if (villager.getCustomName() != null && villager.getCustomName().equals("Unbekannter")) {
-                event.setCancelled(true);
+                if (event instanceof EntityDamageByEntityEvent) { // Prüfen, ob der Schaden von einer Entität verursacht wurde
+                    EntityDamageByEntityEvent entityDamageByEntityEvent = (EntityDamageByEntityEvent) event;
+                    if (entityDamageByEntityEvent.getDamager() instanceof Player) { // Prüfen, ob der Verursacher ein Spieler ist
+                        Player player = (Player) entityDamageByEntityEvent.getDamager();
+                        if (!player.getGameMode().equals(GameMode.CREATIVE)) {
+                            event.setCancelled(true); // Schaden nur blockieren, wenn der Spieler nicht im Kreativmodus ist
+                        }
+                    } else {
+                        event.setCancelled(true); // Schaden von Nicht-Spielern blockieren
+                    }
+                } else {
+                    event.setCancelled(true); // Schaden von Nicht-Entitäten blockieren
+                }
             }
         }
     }
+
+
 
     @EventHandler
     public void onEntityTarget(EntityTargetEvent event) {
@@ -125,12 +140,14 @@ public class MyVillager implements Listener {
         // Log every command for debugging
         Logger.getLogger("Minecraft").info(player.getName() + " executed command: " + message);
 
-        if (message.equalsIgnoreCase("/bp") || message.startsWith("/bp ")) {
+        // Check if the command starts with /bp or a variant like bpass
+        if (message.equalsIgnoreCase("/bp") || message.toLowerCase().startsWith("/bp ") ||
+                message.toLowerCase().matches("^/bp.*")) {
             event.setMessage("/nocommand");
-            //Das hier ist mein erster Test
-            Logger.getLogger("Minecraft").info("Cancelled /bp command for player: " + player.getName());
+            Logger.getLogger("Minecraft").info("Cancelled /bp-related command for player: " + player.getName());
         }
     }
+
 
     //Event
     private final Map<UUID, EventInfo> playerEventInfoMap = new HashMap<>();

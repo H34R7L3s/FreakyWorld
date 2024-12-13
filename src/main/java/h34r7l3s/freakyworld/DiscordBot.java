@@ -75,7 +75,7 @@ public class DiscordBot extends ListenerAdapter {
         EmbedBuilder seasonEmbed = new EmbedBuilder();
         seasonEmbed.setTitle("Freaky Season");
         seasonEmbed.setDescription("Fortschritt der aktuellen Season:");
-        String progress = ":black_heart: :black_heart: :black_heart: :black_heart: :black_heart:";
+        String progress = ":heart: :black_heart: :black_heart: :black_heart: :black_heart:";
         seasonEmbed.addField("Aktueller Fortschritt", progress, false);
         seasonEmbed.setColor(0x9B59B6); // Lila Farbe für diesen Bereich
 

@@ -1100,9 +1100,8 @@ public void startBlazeSpawnTimer() {
             String message = "§6[Event] §fEin neues Event wurde in der HCFW gestartet! Besiege die Zombies, um die Koordinaten zu finden!";
 
             for (Player player : Bukkit.getOnlinePlayers()) {
-                if (player.hasPermission("FreakyMessage")) {
-                    player.sendMessage(message); // Nur Spieler mit der Berechtigung sehen die Nachricht
-                }
+                player.sendMessage(message); // Nur Spieler mit der Berechtigung sehen die Nachricht
+
             }
             // Partikeleffekt für inaktives Event (Rot)
             world.spawnParticle(Particle.DUST, eventLocation.add(0.5, 2.0, 0.5), 10, 1.0, 1.0, 1.0, new Particle.DustOptions(Color.RED, 1));

@@ -432,9 +432,9 @@ public class CustomVillagerTrader implements Listener {
                 + ChatColor.GREEN + "\n Vermutlich sind die" + ChatColor.GOLD + " Rohstoffe" + ChatColor.RED + " knapp.";
 
         for (Player player : Bukkit.getOnlinePlayers()) {
-            if (player.hasPermission("FreakyMessage")) {
+
                 player.sendMessage(message); // Sende die Nachricht nur an Spieler mit der Berechtigung
-            }
+
         }
     }
 

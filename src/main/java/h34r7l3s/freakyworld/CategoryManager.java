@@ -14,7 +14,7 @@ public class CategoryManager {
         // Kategorien hinzufügen
         categories.put("Bauernmarkt", Arrays.asList("WHEAT", "CARROT", "BEETROOT", "POTATO", "MELON_SLICE", "PUMPKIN", "BAMBOO", "COCOA_BEANS", "SUGAR_CANE", "CACTUS", "KELP", "NETHER_WART", "GLOW_BERRIES", "CHORUS_FRUIT"));
         categories.put("Minenarbeit", Arrays.asList("IRON_INGOT", "GOLD_INGOT", "FLINT", "CLAY", "COAL", "EMERALD", "COPPER_INGOT", "BRICK", "NEHTERRITE_INGOT"));
-        categories.put("Monsterjagd", Arrays.asList("ROTTEN_FLESH", "BONE", "BLAZE_ROD", "LEATHER", "GUNPOWDER", "SLIMEBALL", "GHAST_TEAR", "STRING", "SPIDER_EYE", "ENDER_PEARL", "MAGMA_CREAM"));
+        categories.put("Monsterjagd", Arrays.asList("ROTTEN_FLESH", "BONE", "BLAZE_ROD", "LEATHER", "GUNPOWDER", "SLIME_BALL", "GHAST_TEAR", "STRING", "SPIDER_EYE", "ENDER_PEARL", "MAGMA_CREAM"));
         categories.put("Angeln", Arrays.asList("COD", "SALMON", "TROPICAL_FISH", "PUFFERFISH", "INK_SAC", "POTION"));
         categories.put("Schmiedekunst", Arrays.asList("IRON_SWORD", "GOLDEN_HELMET", "BOW", "IRON_CHESTPLATE", "IRON_BOOTS", "IRON_LEGGINS", "IRON_HELMET", "CROSSBOW", "SHIELD", "IRON_SHOVEL", "IRON_AXE", "IRON_HOE", "BUCKET"));
         categories.put("Baumfäller", Arrays.asList("OAK_LOG", "SPRUCE_LOG", "BIRCH_LEAVES", "BIRCH_LOG","CHERRY_LOG","DARK_OAK_LOG", "JUNGLE_LOG", "MANGROVE_LOG","ACACIA_LEAVES","AZALEA_LEAVES", "BIRCH_LEAVES", "CHERRY_LEAVES", "DARK_OAK_LEAVES", "FLOWERING_AZALEA_LEAVES","JUNGLE_LEAVES", "MANGROVE_LEAVES", "OAK_LEAVES", "SPRUCE_LEAVES"   ));
