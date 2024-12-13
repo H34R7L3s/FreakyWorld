@@ -45,6 +45,9 @@ public class DiscordBot extends ListenerAdapter {
     }
 
     private void start() throws LoginException, InterruptedException {
+
+        //Boolean zwecks Wartungsmodus
+
         jda = JDABuilder.createDefault(token)
                 .addEventListeners(this) // Add this class as an event listener
                 .build();

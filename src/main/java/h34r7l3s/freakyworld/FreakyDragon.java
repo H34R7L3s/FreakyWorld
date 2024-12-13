@@ -746,8 +746,11 @@ public class FreakyDragon implements Listener {
                 // Spawn crystals
                 .forEach(loc -> world.spawnEntity(loc, EntityType.END_CRYSTAL));
 
+        //Spieler kann es sich leichter machen
+        //Nachteil --> Ghast + Blazes am Spawn, da Portal nicht zerstört wird (DrachenRitual)
 
         battle.initiateRespawn();
+
 
         //Monolog Starten
         //Intro

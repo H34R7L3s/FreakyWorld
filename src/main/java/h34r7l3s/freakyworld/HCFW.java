@@ -57,6 +57,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.Random;
 import io.th0rgal.oraxen.api.OraxenItems;
+import org.jetbrains.annotations.NotNull;
+
 import java.io.File;
 import java.io.IOException;
 import java.sql.*;
@@ -73,6 +75,7 @@ public class HCFW implements Listener, CommandExecutor {
     private final Set<UUID> playersInHCFW;
     private final Map<UUID, Long> playerDeathTimes;
     private Connection connection;
+    private UUID eventItemFrameUUID;
 
     public HCFW(FreakyWorld plugin) {
         this.plugin = plugin;
@@ -1084,6 +1087,8 @@ public void startBlazeSpawnTimer() {
             eventItemFrame.setInvulnerable(true);
             eventItemFrame.setFixed(true);
             eventItemFrame.setItem(new ItemStack(Material.DIAMOND)); // Zeigt einen Diamanten als Hinweis
+
+            eventItemFrameUUID = eventItemFrame.getUniqueId();
             isEventActive = false; // Das Event wird noch nicht aktiviert
             isEventInitialized = true;
             isEventCompleted = false;
@@ -1159,23 +1164,40 @@ public void startBlazeSpawnTimer() {
 
 
     @EventHandler
-    public void onPlayerInteractEntity(PlayerInteractEntityEvent event) {
+    public void onPlayerInteractEntityItemFrameEvent(PlayerInteractEntityEvent event) {
         Player player = event.getPlayer();
         Entity clickedEntity = event.getRightClicked();
 
+        Bukkit.getLogger().info("ItemFrame CLicked" + clickedEntity.getType());
+        Bukkit.getLogger().info("ItemFrame CLicked" + clickedEntity.getClass().getName());
+
+
         // Prüfen, ob das angeklickte Entity ein ItemFrame ist
+        // Cast zu ItemFrame unter Verwendung der konkreten Implementierung
+        //Über Zusatzweg
         if (!(clickedEntity instanceof ItemFrame)) {
-            return;
+            // Manuelles Casten durch spezifische Implementierung
+            if (!(clickedEntity instanceof org.bukkit.entity.ItemFrame)) {
+                Bukkit.getLogger().info("Nicht ein Bukkit ItemFrame.");
+                return;
+            }
         }
 
         ItemFrame clickedFrame = (ItemFrame) clickedEntity;
 
         // Überprüfen, ob es sich um den spezifischen Rahmen handelt, der für das Event verwendet wird
-        if (!clickedFrame.equals(eventItemFrame)) {
+
+        if (!clickedFrame.getUniqueId().equals(eventItemFrameUUID)) {
             return;
         }
+        Bukkit.getLogger().info("444" + clickedFrame.getType() );
+
 
         ItemStack itemInHand = player.getInventory().getItemInMainHand();
+
+
+        Bukkit.getLogger().info("989999" + clickedFrame.getType() );
+
 
         // Überprüfen, ob der Spieler das erforderliche Item (z. B. ein Diamant) in der Hand hat
         if (itemInHand == null || itemInHand.getType() != Material.DIAMOND) {
@@ -1396,7 +1418,7 @@ public void startBlazeSpawnTimer() {
                 Player player = (Player) entity;
                 // Erstelle eine zufällige Menge an Silber zwischen 3 und 9
                 // Korrigiere die Berechnung für eine zufällige Menge zwischen 3 und 9
-                int randomSilverAmount = new Random().nextInt(7) + 1;
+                int randomSilverAmount = new Random().nextInt(27) + 1;
                 ItemStack silverStack = createSilverStack(randomSilverAmount);
 
                 if (hasEnoughSpace(player, silverStack)) {

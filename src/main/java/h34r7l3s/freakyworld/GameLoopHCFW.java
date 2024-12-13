@@ -317,7 +317,7 @@ public class GameLoopHCFW implements Listener {
     private void addXPToPlayer(Player player, int xp) {
         UUID playerId = player.getUniqueId();
         String playerName = player.getName();
-        player.sendMessage(xp + " Freaky XP erhalten!");
+        //player.sendMessage(xp + " Freaky XP erhalten!");
 
         try (Connection connection = gameLoop.getConnection()) {
             connection.setAutoCommit(false);

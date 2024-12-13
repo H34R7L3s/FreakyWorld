@@ -295,7 +295,13 @@ public final class FreakyWorld extends JavaPlugin {
             @Override
             public void run() {
                 Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "oraxen reload all");
-                Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "chunky continue");
+
+                // MAP PRE-RENDER //
+                //Ausschließlich zu Season Start aktivieren!!
+
+                //Bukkit.dispatchCommand(Bukkit.getConsoleSender(), "chunky continue");
+                // MAP PRE-RENDER //
+
                 allPluginsLoaded = true;  // Spieler-Login freigeben
                 getLogger().info("Oraxen-Reload abgeschlossen und Login freigegeben.");
                 if (discordBot != null) {
