@@ -353,67 +353,46 @@ public class CustomVillagerTrader implements Listener {
         ItemBuilder itemBuilder = OraxenItems.getItemById(itemId);
         if (itemBuilder == null) {
             plugin.getLogger().warning("Oraxen-Item mit ID " + itemId + " konnte nicht gefunden werden.");
-            return; // Abbrechen, wenn das Item nicht gefunden wurde
+            return;
         }
 
-        // Baue den ItemStack mit der angegebenen Menge
         ItemStack itemStack = itemBuilder.build();
-        itemStack.setAmount(quantity); // Setze die Menge
+        itemStack.setAmount(quantity);
 
         ItemMeta meta = itemStack.getItemMeta();
         if (meta != null) {
-            // Setze den Display-Namen, falls keiner vorhanden ist
-            if (!meta.hasDisplayName()) {
-                meta.setDisplayName(ChatColor.YELLOW + itemId); // Fallback auf die Item-ID als Name
-            }
-
             List<String> lore = meta.getLore() != null ? meta.getLore() : new ArrayList<>();
 
-            // Kosten hinzufügen, wenn sie noch nicht vorhanden sind
-            if (!lore.contains(ChatColor.GOLD + "Kosten:")) {
-                lore.add(ChatColor.GOLD + "Kosten:");
-                cost.forEach((costItem, amount) -> {
-                    ItemBuilder costItemBuilder = OraxenItems.getItemById(costItem);
-                    if (costItemBuilder == null) {
-                        plugin.getLogger().warning("Kosten-Item mit ID " + costItem + " konnte nicht gefunden werden.");
-                        return; // Überspringe diesen Kosten-Eintrag, wenn er nicht gefunden wird
-                    }
+            // Kategorie in der Lore speichern
+            lore.add(ChatColor.GOLD + "Kategorie: " + category);
 
+            // Kosten in der Lore speichern
+            lore.add(ChatColor.GOLD + "Kosten:");
+            cost.forEach((costItem, amount) -> {
+                ItemBuilder costItemBuilder = OraxenItems.getItemById(costItem);
+                if (costItemBuilder != null) {
                     ItemStack costItemStack = costItemBuilder.build();
                     String costName = (costItemStack.getItemMeta() != null && costItemStack.getItemMeta().hasDisplayName())
-                            ? costItemStack.getItemMeta().getDisplayName()
-                            : costItem; // Fallback auf die Item-ID, wenn kein DisplayName vorhanden ist
-
+                            ? ChatColor.stripColor(costItemStack.getItemMeta().getDisplayName())
+                            : costItem;
                     lore.add(ChatColor.YELLOW + "- " + amount + "x " + costName);
-                });
-            }
+                } else {
+                    plugin.getLogger().warning("Kosten-Item mit ID " + costItem + " konnte nicht gefunden werden.");
+                    lore.add(ChatColor.YELLOW + "- " + amount + "x " + costItem); // Fallback
+                }
+            });
 
-            // Nur einmal leere Zeile und Herstellungszeit hinzufügen
-            if (!lore.contains(ChatColor.YELLOW + "Meisterlich gefertigte Unikate")) {
-                lore.add(ChatColor.YELLOW + "");
-                lore.add(ChatColor.YELLOW + "Meisterlich gefertigte Unikate");
-            }
-
-            // Herstellungszeit nur einmal hinzufügen
-            String formattedProductionTime = ChatColor.RED + "Herstellungszeit: " + formatDuration(productionTime);
-            if (!lore.contains(formattedProductionTime)) {
-                lore.add(formattedProductionTime);
-            }
-
-            // Menge hinzufügen
-            String quantityInfo = ChatColor.GREEN + "Menge: " + quantity + "x";
-            if (!lore.contains(quantityInfo)) {
-                lore.add(quantityInfo);
-            }
+            // Produktionszeit hinzufügen
+            lore.add(ChatColor.YELLOW + "Herstellungszeit: " + formatDuration(productionTime));
 
             meta.setLore(lore);
             itemStack.setItemMeta(meta);
         }
 
-        // Füge das Item zu den freischaltbaren Items hinzu
-        unlockableItems.put(category + ":" + itemId, itemStack);
-        itemProductionTimes.put(category + ":" + itemId, productionTime);
-        itemCosts.put(category + ":" + itemId, cost);
+        String uniqueKey = category + ":" + itemId;
+        unlockableItems.put(uniqueKey, itemStack);
+        itemProductionTimes.put(uniqueKey, productionTime);
+        itemCosts.put(uniqueKey, cost);
     }
 
 
@@ -784,7 +763,6 @@ public class CustomVillagerTrader implements Listener {
         // Überprüfe, ob bereits ein Klick verarbeitet wird
         AtomicBoolean isProcessing = clickProcessing.getOrDefault(player, new AtomicBoolean(false));
 
-        // Verarbeite den Klick nur, wenn kein anderer Klick verarbeitet wird
         if (isProcessing.compareAndSet(false, true)) {
             try {
                 if (clickedItem == null || clickedItem.getItemMeta() == null) {
@@ -804,131 +782,20 @@ public class CustomVillagerTrader implements Listener {
 
                 // Hauptmenü - Kategorien
                 if (title != null && title.equals("Hauptmenü - Kategorien")) {
-                    switch (displayName) {
-                        case "Waffen":
-                            openCategoryMenu(player, "weapons");
-                            break;
-                        case "Rüstungen":
-                            openCategoryMenu(player, "armor");
-                            break;
-                        case "Werkzeuge":
-                            openCategoryMenu(player, "tools");
-                            break;
-                        case "Magische Artefakte":
-                            openCategoryMenu(player, "magical");
-                            break;
-                        case "Sonstiges":
-                            openCategoryMenu(player, "misc");
-                            break;
-                        case "Aktiver Herstellungsprozess":
-                            player.sendMessage(ChatColor.YELLOW + "Du hast einen aktiven Herstellungsprozess.");
-                            break;
-                        case "Verkürze Zeit um 10 Minuten":
-                            applyBoost(player, "freaky_ingot");
-                            break;
-                        case "Verkürze Zeit um 30 Minuten":
-                            applyBoost(player, "freaky_gold");
-                            break;
-                        case "Abholbare Items":
-                            collectCompletedItems(player);
-                            openMainMenu(player);
-                            break;
-                        case "Freaky Coin herstellen":
-                            openCoinProductionMenu(player);
-                            break;
-                        default:
-                            plugin.getLogger().warning("Unbekannte Option ausgewählt: " + displayName);
-                            player.sendMessage("Unbekannte Option ausgewählt: " + displayName);
-                            break;
-                    }
+                    handleCategoryMenu(player, displayName);
                 }
                 // Freaky Coin Herstellung Menü
                 else if (title != null && title.equals("Freaky Coin Herstellung")) {
-                    if (displayName.equals("Mit Silber (30 Minuten)")) {
-                        startCoinProduction(player, "silber", 1800); // 1800 Sekunden = 30 Minuten
-                        openMainMenu(player);
-                    } else if (displayName.equals("Mit Gold (10 Minuten)")) {
-                        startCoinProduction(player, "gold", 600); // 600 Sekunden = 10 Minuten
-                        openMainMenu(player);
-                    }
+                    handleCoinProduction(player, displayName);
                 }
                 // Kategorie-Menü: Überprüfung der Item-Auswahl
                 else if (title != null && title.startsWith("Kategorie: ")) {
-                    String itemName = ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName());
-                    plugin.getLogger().info("Item selected in category: " + itemName);
-
-                    // Aktueller Herstellungsprozess wird angezeigt
-                    if (itemName.equals(ChatColor.stripColor(createActiveProcessItem(player).getItemMeta().getDisplayName()))) {
-                        player.sendMessage(ChatColor.YELLOW + "Aktueller Herstellungsprozess wird angezeigt.");
-                    }
-                    // Abholbare Items anzeigen
-                    else if (itemName.equals(ChatColor.stripColor(createCompletedItemsChest(player).getItemMeta().getDisplayName()))) {
-                        collectCompletedItems(player);
-                        openMainMenu(player);
-                    }
-                    // Bestätigungsmenü für das Item öffnen
-                    else {
-                        ItemStack selectedItem = clickedItem.clone();
-                        openConfirmationMenu(player, selectedItem);
-                    }
+                    handleCategoryItemClick(player, clickedItem);
                 }
                 // Bestätigungsmenü
                 else if (title != null && title.equals("Bestätigung")) {
-                    if (displayName.equals("Bestätigen")) {
-                        // Erst versuchen, das Item aus der temporären Map zu holen
-                        ItemStack itemToProduce = pendingItemConfirmations.get(player.getUniqueId());
-
-                        if (itemToProduce == null) {
-                            // Fallback auf die Datenbank, falls es in der Map nicht gefunden wurde
-                            itemToProduce = dbManager.getPendingConfirmation(player.getUniqueId());
-                            plugin.getLogger().info("Item aus der Datenbank abgerufen für UUID: " + player.getUniqueId());
-                        } else {
-                            plugin.getLogger().info("Item aus der temporären Map abgerufen für UUID: " + player.getUniqueId());
-                        }
-
-                        if (itemToProduce != null && itemToProduce.getItemMeta() != null) {
-                            // Logge das abgerufene Item und starte die Produktion
-                            String itemToProduceName = ChatColor.stripColor(itemToProduce.getItemMeta().getDisplayName());
-                            plugin.getLogger().info("Confirmed item to produce: " + itemToProduceName);
-
-                            // Starte die Produktion mit der UUID des Spielers
-                            String itemToProduce2 = getItemIdByName(ChatColor.stripColor(itemToProduce.getItemMeta().getDisplayName()));
-
-                            if (canProduceItem(player, itemToProduce2)) {
-                                // Debug: Überprüfe die Ressourcen vor dem Abzug
-                                plugin.getLogger().info("Player has enough resources for item: " + itemToProduce2);
-
-                                deductResources(player, itemToProduce2);
-
-                                // Debug: Starte die Produktion und prüfe das Item erneut
-                                plugin.getLogger().info("Starting production for item: " + itemToProduce2);
-
-                                startProduction(player.getUniqueId(), OraxenItems.getIdByItem(itemToProduce), itemToProduce);
-
-                            } else {
-                                player.sendMessage(ChatColor.RED + "Du hast nicht genug Ressourcen, um dieses Item herzustellen.");
-                            }
-
-                            // Lösche die Bestätigung aus der Map und Datenbank
-                            pendingItemConfirmations.remove(player.getUniqueId());
-                            //dbManager.removePendingConfirmation(player.getUniqueId());
-                            dbManager.removePendingConfirmation(player.getUniqueId());
-                            player.closeInventory();
-                            openMainMenu(player);
-                        } else {
-                            // Wenn das Item nicht gefunden wird, logge eine Warnung
-                            player.sendMessage(ChatColor.RED + "...");
-                            plugin.getLogger().warning("Pending confirmation item is null or has no meta for player " + player.getName());
-                        }
-                    } else if (displayName.equals("Abbrechen")) {
-                        player.closeInventory();
-                        player.sendMessage(ChatColor.RED + "Herstellung abgebrochen.");
-                        pendingItemConfirmations.remove(player.getUniqueId());
-                        dbManager.removePendingConfirmation(player.getUniqueId());
-                        openMainMenu(player);
-                    }
+                    handleConfirmationMenu(player, clickedItem);
                 }
-
 
             } finally {
                 // Setze die Verarbeitung zurück
@@ -937,6 +804,152 @@ public class CustomVillagerTrader implements Listener {
             }
         }
     }
+
+    private void handleCategoryMenu(Player player, String displayName) {
+        switch (displayName) {
+            case "Waffen":
+                openCategoryMenu(player, "weapons");
+                break;
+            case "Rüstungen":
+                openCategoryMenu(player, "armor");
+                break;
+            case "Werkzeuge":
+                openCategoryMenu(player, "tools");
+                break;
+            case "Magische Artefakte":
+                openCategoryMenu(player, "magical");
+                break;
+            case "Sonstiges":
+                openCategoryMenu(player, "misc");
+                break;
+            case "Aktiver Herstellungsprozess":
+                player.sendMessage(ChatColor.YELLOW + "Du hast einen aktiven Herstellungsprozess.");
+                break;
+            case "Verkürze Zeit um 10 Minuten":
+                applyBoost(player, "freaky_ingot");
+                break;
+            case "Verkürze Zeit um 30 Minuten":
+                applyBoost(player, "freaky_gold");
+                break;
+            case "Abholbare Items":
+                collectCompletedItems(player);
+                openMainMenu(player);
+                break;
+            case "Freaky Coin herstellen":
+                openCoinProductionMenu(player);
+                break;
+            default:
+                plugin.getLogger().warning("Unbekannte Option ausgewählt: " + displayName);
+                player.sendMessage("Unbekannte Option ausgewählt: " + displayName);
+                break;
+        }
+    }
+
+    private void handleCoinProduction(Player player, String displayName) {
+        if (displayName.equals("Mit Silber (30 Minuten)")) {
+            startCoinProduction(player, "silber", 1800); // 30 Minuten
+            openMainMenu(player);
+        } else if (displayName.equals("Mit Gold (10 Minuten)")) {
+            startCoinProduction(player, "gold", 600); // 10 Minuten
+            openMainMenu(player);
+        }
+    }
+
+    private void handleCategoryItemClick(Player player, ItemStack clickedItem) {
+        String itemName = ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName());
+        plugin.getLogger().info("Item selected in category: " + itemName);
+
+        if (itemName.equals(ChatColor.stripColor(createActiveProcessItem(player).getItemMeta().getDisplayName()))) {
+            player.sendMessage(ChatColor.YELLOW + "Aktueller Herstellungsprozess wird angezeigt.");
+        } else if (itemName.equals(ChatColor.stripColor(createCompletedItemsChest(player).getItemMeta().getDisplayName()))) {
+            collectCompletedItems(player);
+            openMainMenu(player);
+        } else {
+            ItemStack selectedItem = clickedItem.clone();
+            openConfirmationMenu(player, selectedItem);
+        }
+    }
+
+    private void handleConfirmationMenu(Player player, ItemStack clickedItem) {
+        if (clickedItem == null || clickedItem.getItemMeta() == null) {
+            player.sendMessage(ChatColor.RED + "Es wurde kein gültiges Item ausgewählt.");
+            plugin.getLogger().warning("Clicked item or its meta is null for player " + player.getName());
+            return;
+        }
+
+        String displayName = ChatColor.stripColor(clickedItem.getItemMeta().getDisplayName());
+        plugin.getLogger().info("Player clicked item: " + displayName + " in confirmation menu.");
+
+        ItemStack itemToProduce = pendingItemConfirmations.get(player.getUniqueId());
+
+        if (itemToProduce == null) {
+            itemToProduce = dbManager.getPendingConfirmation(player.getUniqueId());
+            if (itemToProduce == null) {
+                player.sendMessage(ChatColor.RED + "Fehler: Das zu produzierende Item konnte nicht abgerufen werden.");
+                plugin.getLogger().warning("Keine Einträge für UUID " + player.getUniqueId() + " in pending_confirmations gefunden.");
+                return;
+            }
+            plugin.getLogger().info("Item aus der Datenbank abgerufen für UUID: " + player.getUniqueId());
+        }
+
+        if (itemToProduce != null && itemToProduce.getItemMeta() != null) {
+            String itemToProduceName = ChatColor.stripColor(itemToProduce.getItemMeta().getDisplayName());
+            plugin.getLogger().info("Processing item: " + itemToProduceName);
+
+            String category = getCategoryFromItem(itemToProduce);
+            if (category == null) {
+                player.sendMessage(ChatColor.RED + "Fehler: Die Kategorie für dieses Item konnte nicht ermittelt werden.");
+                plugin.getLogger().warning("Kategorie konnte nicht ermittelt werden für Item: " + itemToProduceName);
+                return;
+            }
+
+            String uniqueKey = category + ":" + getItemIdByName(itemToProduceName);
+
+            if (uniqueKey == null || uniqueKey.isEmpty()) {
+                player.sendMessage(ChatColor.RED + "Fehler: Der eindeutige Schlüssel für dieses Item konnte nicht generiert werden.");
+                plugin.getLogger().warning("Ungültiger Schlüssel für Item: " + itemToProduceName);
+                return;
+            }
+
+            if (canProduceItem(player, category, uniqueKey)) {
+                deductResources(player, category, uniqueKey);
+                startProduction(player.getUniqueId(), OraxenItems.getIdByItem(itemToProduce), itemToProduce);
+                player.sendMessage(ChatColor.GREEN + "Die Produktion deines Items wurde gestartet!");
+            } else {
+                player.sendMessage(ChatColor.RED + "Du hast nicht genug Ressourcen, um dieses Item herzustellen.");
+                plugin.getLogger().info("Player lacks resources for item: " + uniqueKey);
+            }
+
+            pendingItemConfirmations.remove(player.getUniqueId());
+            dbManager.removePendingConfirmation(player.getUniqueId());
+            plugin.getLogger().info("Pending confirmation cleared for UUID: " + player.getUniqueId());
+            player.closeInventory();
+            openMainMenu(player);
+        } else {
+            player.sendMessage(ChatColor.RED + "Fehler: Das zu produzierende Item konnte nicht verarbeitet werden.");
+            plugin.getLogger().warning("Pending confirmation item is null or has no meta for player " + player.getName());
+        }
+    }
+
+
+
+
+    private String getCategoryFromItem(ItemStack item) {
+        if (item == null || item.getItemMeta() == null || item.getItemMeta().getLore() == null) {
+            plugin.getLogger().warning("Das Item oder seine Lore ist null: " + item);
+            return null;
+        }
+
+        for (String line : item.getItemMeta().getLore()) {
+            if (line.startsWith(ChatColor.GOLD + "Kategorie: ")) {
+                return ChatColor.stripColor(line.replace("Kategorie: ", ""));
+            }
+        }
+
+        plugin.getLogger().warning("Kategorie konnte nicht aus der Lore des Items extrahiert werden: " + item);
+        return null;
+    }
+
 
 
     private void openCoinProductionMenu(Player player) {
@@ -1084,48 +1097,6 @@ public class CustomVillagerTrader implements Listener {
 
 
 
-    private void handleItemSelection(Player player, String itemName) {
-        if (clickCooldown.contains(player)) return; // Doppelklick verhindern
-        clickCooldown.add(player);
-
-        try {
-            // Debug: Überprüfe den itemName
-            plugin.getLogger().info("Item selected by player: " + itemName);
-
-            String itemId = getItemIdByName(itemName);
-
-            // Debug: Überprüfe die itemId nach dem Abruf
-            plugin.getLogger().info("Item ID retrieved: " + itemId);
-
-            if (itemId == null) {
-                player.sendMessage(ChatColor.RED + "Dieses Item ist nicht verfügbar.");
-                return;
-            }
-
-            if (dbManager.hasActiveProduction(player.getUniqueId())) {
-                player.sendMessage(ChatColor.RED + "Du hast eine aktive Produktion.");
-                return;
-            }
-
-            if (canProduceItem(player, itemId)) {
-                // Debug: Überprüfe die Ressourcen vor dem Abzug
-                plugin.getLogger().info("Player has enough resources for item: " + itemId);
-
-                deductResources(player, itemId);
-
-                // Debug: Starte die Produktion und prüfe das Item erneut
-                plugin.getLogger().info("Starting production for item: " + itemId);
-
-                startProduction(player.getUniqueId(), itemId, unlockableItems.get(itemId));
-
-            } else {
-                player.sendMessage(ChatColor.RED + "Du hast nicht genug Ressourcen, um dieses Item herzustellen.");
-            }
-        } finally {
-            Bukkit.getScheduler().runTaskLater(plugin, () -> clickCooldown.remove(player), 10L); // Entferne den Spieler nach 0,5 Sekunden aus der Doppelklick-Liste
-        }
-    }
-
 
 
     public String getItemIdByName(String itemName) {
@@ -1150,9 +1121,14 @@ public class CustomVillagerTrader implements Listener {
     }
 
 
-    private boolean canProduceItem(Player player, String itemId) {
-        Map<String, Integer> cost = itemCosts.get(itemId);
-        if (cost == null) return false;
+    private boolean canProduceItem(Player player, String category, String itemId) {
+        String uniqueKey = category + ":" + itemId; // Einzigartiger Schlüssel basierend auf Kategorie und Item-ID
+        Map<String, Integer> cost = itemCosts.get(uniqueKey);
+
+        if (cost == null) {
+            player.sendMessage(ChatColor.RED + "Das Item ist in dieser Kategorie nicht verfügbar.");
+            return false;
+        }
 
         PlayerInventory inventory = player.getInventory();
 
@@ -1171,6 +1147,7 @@ public class CustomVillagerTrader implements Listener {
 
         return true; // Alle benötigten Ressourcen sind vorhanden
     }
+
 
 
 
@@ -1234,10 +1211,12 @@ public class CustomVillagerTrader implements Listener {
 
 
 
-    private void deductResources(Player player, String itemId) {
-        Map<String, Integer> cost = itemCosts.get(itemId);
+    private void deductResources(Player player, String category, String itemId) {
+        String uniqueKey = category + ":" + itemId; // Eindeutiger Schlüssel
+        Map<String, Integer> cost = itemCosts.get(uniqueKey);
+
         if (cost == null) {
-            plugin.getLogger().warning("Keine Kosten für Item ID: " + itemId  + "gefunden.");
+            plugin.getLogger().warning("Keine Kosten für Item ID: " + uniqueKey + " gefunden.");
             return;
         }
 
@@ -1249,9 +1228,17 @@ public class CustomVillagerTrader implements Listener {
             int amountToDeduct = entry.getValue();
 
             // Entferne die erforderliche Menge des Items
-            removeItems(inventory, OraxenItems.getItemById(costItemId).build(), amountToDeduct);
+            ItemBuilder costItemBuilder = OraxenItems.getItemById(costItemId);
+            if (costItemBuilder != null) {
+                ItemStack costItemStack = costItemBuilder.build();
+                removeItems(inventory, costItemStack, amountToDeduct);
+            } else {
+                plugin.getLogger().warning("Oraxen-Item konnte nicht gefunden werden: " + costItemId);
+            }
         }
     }
+
+
 
 
     private void removeItems(PlayerInventory inventory, ItemStack itemStack, int amount) {

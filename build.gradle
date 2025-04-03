@@ -1,6 +1,7 @@
 plugins {
     id 'java'
     id 'com.github.johnrengelman.shadow' version '7.1.2' // Add this line for the Shadow plugin
+
 }
 
 group = 'H34R7L3s'
