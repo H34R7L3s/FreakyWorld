@@ -7,6 +7,11 @@ import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.block.Block;
+
+import org.bukkit.block.BlockState;
+import org.bukkit.block.data.BlockData;
+import org.bukkit.block.data.Directional;
+
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -63,10 +68,18 @@ public class BloomAura implements Listener {
                             for (double y = -BOOST_RADIUS; y <= BOOST_RADIUS; y++) {
                                 for (double z = -BOOST_RADIUS; z <= BOOST_RADIUS; z++) {
                                     if (isNearWater) {
+
+                                        loc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc.clone().add(x, y + 1, z), 1, 0.5, 0.5, 0.5);
+
+                                    } else {
+                                        Particle.DustOptions dustOptions = new Particle.DustOptions(Color.RED, 1);
+                                        loc.getWorld().spawnParticle(Particle.DUST, loc.clone().add(x, y + 1, z), 2, 0.5, 0.5, 0.5, dustOptions);
+
                                         loc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc.clone().add(x, y + 1, z), 5, 0.5, 0.5, 0.5);
                                     } else {
                                         Particle.DustOptions dustOptions = new Particle.DustOptions(Color.RED, 1);
                                         loc.getWorld().spawnParticle(Particle.REDSTONE, loc.clone().add(x, y + 1, z), 5, 0.5, 0.5, 0.5, dustOptions);
+
                                     }
                                 }
                             }
@@ -174,26 +187,129 @@ public class BloomAura implements Listener {
     }
 
     private void boostPlantGrowth(Location location) {
+        int boostedBlocks = 0; // Counter for boosted blocks for logging
+
         for (double x = -BOOST_RADIUS; x <= BOOST_RADIUS; x++) {
             for (double y = -BOOST_RADIUS; y <= BOOST_RADIUS; y++) {
                 for (double z = -BOOST_RADIUS; z <= BOOST_RADIUS; z++) {
                     Block block = location.clone().add(x, y, z).getBlock();
+                    Material blockType = block.getType();
 
+                    // Accelerate growth of ageable crops (wheat, carrots, potatoes, beetroot)
                     if (block.getBlockData() instanceof org.bukkit.block.data.Ageable) {
                         org.bukkit.block.data.Ageable ageable = (org.bukkit.block.data.Ageable) block.getBlockData();
                         if (ageable.getAge() < ageable.getMaximumAge()) {
                             ageable.setAge(ageable.getAge() + 1);
                             block.setBlockData(ageable);
+                            boostedBlocks++;
                         }
+
+
                     } else if (block.getType() == Material.CACTUS || block.getType() == Material.SUGAR_CANE) {
                         if (block.getRelative(0, 1, 0).getType() == Material.AIR) {
                             block.getRelative(0, 1, 0).setType(block.getType());
                         }
+
+                    }
+                    // Apply growth boost for saplings
+                    else if (isSapling(blockType)) {
+                        growSapling(block);
+                        boostedBlocks++;
+                    }
+                    // Accelerate growth of bamboo
+                    else if (blockType == Material.BAMBOO || blockType == Material.BAMBOO_SAPLING) {
+                        growBamboo(block);
+                        boostedBlocks++;
+                    }
+                    // Accelerate growth of cactus and sugar cane
+                    else if (blockType == Material.CACTUS || blockType == Material.SUGAR_CANE) {
+                        growCactusOrSugarCane(block);
+                        boostedBlocks++;
+                    }
+                    // Accelerate growth of melon and pumpkin stems
+                    else if (blockType == Material.MELON_STEM || blockType == Material.PUMPKIN_STEM) {
+                        growStem(block);
+                        boostedBlocks++;
                     }
                 }
             }
         }
+
+        plugin.getLogger().info("Boosted blocks count: " + boostedBlocks);
     }
+
+    // Check if the block is a sapling
+    private boolean isSapling(Material blockType) {
+        return blockType == Material.OAK_SAPLING || blockType == Material.BIRCH_SAPLING ||
+                blockType == Material.SPRUCE_SAPLING || blockType == Material.JUNGLE_SAPLING ||
+                blockType == Material.ACACIA_SAPLING || blockType == Material.DARK_OAK_SAPLING;
+    }
+
+    // Grow a sapling into a tree with a delay
+    private void growSapling(Block saplingBlock) {
+        new BukkitRunnable() {
+            @Override
+            public void run() {
+                if (saplingBlock.getType() != Material.AIR && isSapling(saplingBlock.getType())) {
+                    // Apply the tree growth directly
+                    TreeType treeType = getTreeType(saplingBlock.getType());
+                    saplingBlock.getWorld().generateTree(saplingBlock.getLocation(), treeType);
+                }
+            }
+        }.runTaskLater(plugin, 20L); // 1-second delay (20 ticks)
+    }
+
+    // Grow bamboo one block taller
+    private void growBamboo(Block bambooBlock) {
+        Block above = bambooBlock.getRelative(0, 1, 0);
+        if (above.getType() == Material.AIR) {
+            above.setType(Material.BAMBOO);
+            BlockData blockData = above.getBlockData();
+            if (blockData instanceof org.bukkit.block.data.Ageable) {
+                ((org.bukkit.block.data.Ageable) blockData).setAge(1);
+                above.setBlockData(blockData);
+            }
+        }
+    }
+
+
+    // Grow cactus or sugar cane by adding a block above
+    private void growCactusOrSugarCane(Block block) {
+        Block above = block.getRelative(0, 1, 0);
+        if (above.getType() == Material.AIR) {
+            above.setType(block.getType());
+        }
+    }
+
+    // Grow melon or pumpkin stem to full growth
+    private void growStem(Block stemBlock) {
+        if (stemBlock.getBlockData() instanceof org.bukkit.block.data.Ageable) {
+            org.bukkit.block.data.Ageable ageable = (org.bukkit.block.data.Ageable) stemBlock.getBlockData();
+            if (ageable.getAge() < ageable.getMaximumAge()) {
+                ageable.setAge(ageable.getMaximumAge());
+                stemBlock.setBlockData(ageable);
+            }
+        }
+    }
+
+    // Get the corresponding TreeType based on sapling type
+    private TreeType getTreeType(Material saplingType) {
+        switch (saplingType) {
+            case OAK_SAPLING: return TreeType.TREE;
+            case BIRCH_SAPLING: return TreeType.BIRCH;
+            case SPRUCE_SAPLING: return TreeType.REDWOOD;
+            case JUNGLE_SAPLING: return TreeType.JUNGLE;
+            case ACACIA_SAPLING: return TreeType.ACACIA;
+            case DARK_OAK_SAPLING: return TreeType.DARK_OAK;
+            default: return TreeType.TREE;
+        }
+    }
+
+
+
+
+
+
 
     private boolean isNearWater(Location location) {
         for (double x = -BOOST_RADIUS; x <= BOOST_RADIUS; x++) {
