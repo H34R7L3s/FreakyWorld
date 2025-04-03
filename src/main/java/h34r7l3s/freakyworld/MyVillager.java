@@ -37,7 +37,9 @@ public class MyVillager implements Listener {
 
         this.plugin = plugin;
         this.villagerKey = new NamespacedKey(plugin, "Unbekannter");
+
         this.discordBot = discordBot;
+
     }
 
     @EventHandler
@@ -56,7 +58,16 @@ public class MyVillager implements Listener {
 
                     // Definiere die Sätze, die der Villager sagen soll
                     List<String> sentences = Arrays.asList(
+
                             "Verrueckt was hier abgeht, oder?!"
+
+
+                            "FREAKS?! Es freut mich, euch zu sehen!",
+                            "Ich habe etwas Besonderes vorbereitet. Viel Arbeit wartet auf euch!",
+                            "Muss ich da viel erklären?",
+                            "....",
+                            "Schau es dir einfach mal an",
+                            "Hier:"
 
                     );
 
@@ -90,6 +101,7 @@ public class MyVillager implements Listener {
         if (event.getEntity().getType() == EntityType.VILLAGER) {
             Villager villager = (Villager) event.getEntity();
             if (villager.getCustomName() != null && villager.getCustomName().equals("Unbekannter")) {
+
                 if (event instanceof EntityDamageByEntityEvent) { // Prüfen, ob der Schaden von einer Entität verursacht wurde
                     EntityDamageByEntityEvent entityDamageByEntityEvent = (EntityDamageByEntityEvent) event;
                     if (entityDamageByEntityEvent.getDamager() instanceof Player) { // Prüfen, ob der Verursacher ein Spieler ist
@@ -103,6 +115,9 @@ public class MyVillager implements Listener {
                 } else {
                     event.setCancelled(true); // Schaden von Nicht-Entitäten blockieren
                 }
+
+                event.setCancelled(true);
+
             }
         }
     }

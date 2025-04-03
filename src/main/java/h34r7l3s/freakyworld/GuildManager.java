@@ -1,5 +1,6 @@
 package h34r7l3s.freakyworld;
 
+
 import org.bukkit.Bukkit;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
@@ -15,6 +16,12 @@ import java.util.logging.Level;
 //import static io.th0rgal.oraxen.shaded.playeranimator.api.PlayerAnimatorPlugin.plugin;
 
 //import static io.th0rgal.oraxen.shaded.playeranimator.api.PlayerAnimatorPlugin.plugin;
+
+
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+
 
 public class GuildManager {
     private DataSource dataSource;
@@ -192,6 +199,7 @@ public class GuildManager {
         return null;
     }
 
+
     public List<Guild> getAllGuilds() {
         List<Guild> guilds = new ArrayList<>();
         String selectSQL = "SELECT name FROM guilds";
@@ -309,6 +317,10 @@ public class GuildManager {
             e.printStackTrace();
         }
         return alliances;
+
+    public void deleteGuild(String name) {
+        guilds.remove(name);
+
     }
 
     public boolean isPlayerAllowedToManageAlliances(String playerName, String guildName) {

@@ -58,11 +58,13 @@ public class ArmorEnhancements implements Listener {
             @Override
             public void run() {
                 for (UUID uuid : playerBossBars.keySet()) {
+
                     Player player = Bukkit.getPlayer(uuid);
                     if (player == null || !player.isOnline()) {
                         // Der Spieler ist offline, gehe zum nächsten Spieler in der Schleife
                         continue;
                     }
+
 
                     BossBar bossBar = playerBossBars.get(uuid);
                     if (bossBar.getColor() == BarColor.PURPLE) {

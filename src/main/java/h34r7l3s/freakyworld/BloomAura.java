@@ -1,12 +1,17 @@
 package h34r7l3s.freakyworld;
 
 
-import org.bukkit.*;
+import org.bukkit.Color;
 import io.th0rgal.oraxen.api.OraxenItems;
+import org.bukkit.Location;
+import org.bukkit.Material;
+import org.bukkit.Particle;
 import org.bukkit.block.Block;
+
 import org.bukkit.block.BlockState;
 import org.bukkit.block.data.BlockData;
 import org.bukkit.block.data.Directional;
+
 import org.bukkit.entity.ArmorStand;
 import org.bukkit.entity.EntityType;
 import org.bukkit.event.EventHandler;
@@ -19,7 +24,8 @@ import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
 import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.inventory.ItemStack;
-
+import org.bukkit.Bukkit;
+import org.bukkit.Tag;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -62,11 +68,18 @@ public class BloomAura implements Listener {
                             for (double y = -BOOST_RADIUS; y <= BOOST_RADIUS; y++) {
                                 for (double z = -BOOST_RADIUS; z <= BOOST_RADIUS; z++) {
                                     if (isNearWater) {
+
                                         loc.getWorld().spawnParticle(Particle.HAPPY_VILLAGER, loc.clone().add(x, y + 1, z), 1, 0.5, 0.5, 0.5);
 
                                     } else {
                                         Particle.DustOptions dustOptions = new Particle.DustOptions(Color.RED, 1);
                                         loc.getWorld().spawnParticle(Particle.DUST, loc.clone().add(x, y + 1, z), 2, 0.5, 0.5, 0.5, dustOptions);
+
+                                        loc.getWorld().spawnParticle(Particle.VILLAGER_HAPPY, loc.clone().add(x, y + 1, z), 5, 0.5, 0.5, 0.5);
+                                    } else {
+                                        Particle.DustOptions dustOptions = new Particle.DustOptions(Color.RED, 1);
+                                        loc.getWorld().spawnParticle(Particle.REDSTONE, loc.clone().add(x, y + 1, z), 5, 0.5, 0.5, 0.5, dustOptions);
+
                                     }
                                 }
                             }
@@ -190,6 +203,13 @@ public class BloomAura implements Listener {
                             block.setBlockData(ageable);
                             boostedBlocks++;
                         }
+
+
+                    } else if (block.getType() == Material.CACTUS || block.getType() == Material.SUGAR_CANE) {
+                        if (block.getRelative(0, 1, 0).getType() == Material.AIR) {
+                            block.getRelative(0, 1, 0).setType(block.getType());
+                        }
+
                     }
                     // Apply growth boost for saplings
                     else if (isSapling(blockType)) {
@@ -252,6 +272,7 @@ public class BloomAura implements Listener {
         }
     }
 
+
     // Grow cactus or sugar cane by adding a block above
     private void growCactusOrSugarCane(Block block) {
         Block above = block.getRelative(0, 1, 0);
@@ -283,6 +304,7 @@ public class BloomAura implements Listener {
             default: return TreeType.TREE;
         }
     }
+
 
 
 

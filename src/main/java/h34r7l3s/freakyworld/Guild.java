@@ -187,6 +187,7 @@ public class Guild {
         }
 
 
+
         public void setId(int id) {
             this.id = id;
         }
@@ -217,8 +218,15 @@ public class Guild {
 
         public void setStatus(String status) {
             this.status = status;
+
+    public boolean withdraw(Material material, int amount) {
+        if (treasury.getOrDefault(material, 0) >= amount) {
+            treasury.put(material, treasury.get(material) - amount);
+            return true;
+
         }
     }
+
 
     public boolean removeTask(int taskId, String playerName) {
         if (leader.equals(playerName)) {
@@ -243,6 +251,10 @@ public class Guild {
         if (members.containsKey(playerName)) {
             members.put(playerName, newRank); // Aktualisiert den Rang in der members Map
         }
+
+    public Map<Material, Integer> getTreasury() {
+        return treasury;
+
     }
 
 
